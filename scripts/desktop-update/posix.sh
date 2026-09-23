@@ -40,6 +40,7 @@ INSTALL_ROOT="" BRANCH="main" DESKTOP_PID=0 RELAUNCH_TARGET=""
 RELAUNCH_CWD="" SANDBOX_FALLBACK=0 RELAUNCH_ARGS=()
 NO_UI=0 NO_MARKER_CLEANUP=0 SELF_TEST_UI=0 SELF_TEST_GATE=0 SELF_TEST_MARKER=0
 SELF_TEST_TCC_HEAL=0
+SELF_TEST_VENV_RESOLVER=0
 HANDOFF_DAEMONIZED=0
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -54,6 +55,7 @@ while [ $# -gt 0 ]; do
     --self-test-ui) SELF_TEST_UI=1; shift ;;
     --self-test-gate) SELF_TEST_GATE=1; shift ;;
     --self-test-tcc-heal) SELF_TEST_TCC_HEAL=1; shift ;;
+    --self-test-venv-resolver) SELF_TEST_VENV_RESOLVER=1; NO_UI=1; NO_MARKER_CLEANUP=1; shift ;;
     --daemonized) HANDOFF_DAEMONIZED=1; shift ;;
     --self-test-marker) SELF_TEST_MARKER=1; NO_UI=1; NO_MARKER_CLEANUP=1; shift ;;
     --) shift; RELAUNCH_ARGS=("$@"); shift $# ;;
@@ -518,6 +520,17 @@ tcc_probe_python() { # interpreter path → 0 iff it boots a real stdlib.
     "$1" -c 'import encodings' >/dev/null 2>&1
 }
 
+resolve_update_venv() { # checkout root → selected venv directory
+  # Source/developer installs use `.venv`; managed installs historically use
+  # `venv`. Prefer the managed layout when both are present, but never reject
+  # a healthy source install merely because it has the other canonical name.
+  local root="$1" candidate
+  for candidate in "$root/venv" "$root/.venv"; do
+    [ -x "$candidate/bin/hermes" ] && { printf '%s\n' "$candidate"; return 0; }
+  done
+  return 1
+}
+
 TCC_HEAL_STATE="not-run"
 
 tcc_heal_rollback() { # restore every .tcc-heal-old.$$ backup in a bin dir
@@ -627,6 +640,12 @@ tcc_pick_update_invoke() { # sets UPDATE_INVOKE; safety net past a failed heal
 }
 
 # ── self-tests: no update, touch nothing ────────────────────────────────────
+if [ "$SELF_TEST_VENV_RESOLVER" -eq 1 ]; then
+  trap - EXIT
+  resolve_update_venv "$INSTALL_ROOT" || exit 1
+  exit 0
+fi
+
 if [ "$SELF_TEST_TCC_HEAL" -eq 1 ]; then
   # Runs the REAL heal + invoke selection against --install-root and reports;
   # tests/scripts/desktop_update/test_desktop_update_tcc_heal.py drives the state matrix through it.
@@ -730,14 +749,18 @@ fi
 sleep 1
 start_ui
 
-HERMES_BIN="$INSTALL_ROOT/venv/bin/hermes"
-[ -x "$HERMES_BIN" ] || { FINAL_CODE=3 FINAL_MSG="Update aborted: $HERMES_BIN is missing. The install needs repair (run the Hermes installer or hermes doctor)."; log "$FINAL_MSG"; exit 3; }
+UPDATE_VENV="$(resolve_update_venv "$INSTALL_ROOT")" || {
+  FINAL_CODE=3
+  FINAL_MSG="Update aborted: neither $INSTALL_ROOT/venv/bin/hermes nor $INSTALL_ROOT/.venv/bin/hermes is available. The install needs repair (run the Hermes installer or hermes doctor)."
+  log "$FINAL_MSG"; exit 3
+}
+HERMES_BIN="$UPDATE_VENV/bin/hermes"
 
 # Heal a venv the reverted TCC anchor left bricked BEFORE invoking the CLI:
 # venv/bin/hermes execs venv/bin/python3, so a dead alias kills every attempt
 # and its retry identically (#95759). macOS-only artifact; probe is cheap.
 if [ "$(uname)" = "Darwin" ]; then
-  if tcc_anchor_heal "$INSTALL_ROOT/venv/bin"; then
+  if tcc_anchor_heal "$UPDATE_VENV/bin"; then
     case "$TCC_HEAL_STATE" in
       healed-*) log "TCC anchor self-heal repaired the venv interpreter ($TCC_HEAL_STATE)" ;;
     esac
@@ -745,9 +768,9 @@ if [ "$(uname)" = "Darwin" ]; then
     log "TCC anchor self-heal could not repair the venv ($TCC_HEAL_STATE)"
   fi
 fi
-tcc_pick_update_invoke "$INSTALL_ROOT/venv/bin"
+tcc_pick_update_invoke "$UPDATE_VENV/bin"
 if [ "${UPDATE_INVOKE[0]}" != "$HERMES_BIN" ]; then
-  log "venv/bin/python3 still unbootable; invoking the update via ${UPDATE_INVOKE[*]}"
+  log "${UPDATE_VENV##*/}/bin/python3 still unbootable; invoking the update via ${UPDATE_INVOKE[*]}"
 fi
 
 # Run FROM the install root: `hermes update` resolves the tree it mutates
@@ -761,6 +784,11 @@ cd "$INSTALL_ROOT" || {
   log "$FINAL_MSG"; exit 3
 }
 export PYTHONUNBUFFERED=1
+# A source checkout may intentionally share a venv outside INSTALL_ROOT. Its
+# generated `hermes` entrypoint then cannot import this checkout unless the
+# checkout root is on sys.path. Managed installs are unaffected (same source
+# root, merely made explicit); source installs stop failing before argparse.
+export PYTHONPATH="$INSTALL_ROOT${PYTHONPATH:+:$PYTHONPATH}"
 # --keep-stash: never re-apply local source edits after the update (they stay
 # parked in git stash). Probe --help first: older installed backends don't
 # know the flag and argparse would abort with exit 2, which collides with the
@@ -819,9 +847,9 @@ else
   # The bricked-venv class is fixable and must not read as a generic exit 1:
   # a dead interpreter with a failed/impossible heal means retrying can never
   # succeed — tell the user what is actually wrong (#95759).
-  if ! tcc_probe_python "$INSTALL_ROOT/venv/bin/python3" \
-      && ! tcc_probe_python "$INSTALL_ROOT/venv/bin/python"; then
-    FINAL_MSG="Update failed: the Python interpreter inside $INSTALL_ROOT/venv cannot start (heal state: $TCC_HEAL_STATE). Reinstall the runtime with the Hermes installer, or run hermes doctor --fix from a terminal if any hermes command still works."
+  if ! tcc_probe_python "$UPDATE_VENV/bin/python3" \
+      && ! tcc_probe_python "$UPDATE_VENV/bin/python"; then
+    FINAL_MSG="Update failed: the Python interpreter inside $UPDATE_VENV cannot start (heal state: $TCC_HEAL_STATE). Reinstall the runtime with the Hermes installer, or run hermes doctor --fix from a terminal if any hermes command still works."
   fi
 fi
 exit "$FINAL_CODE"
