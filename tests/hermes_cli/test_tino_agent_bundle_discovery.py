@@ -88,3 +88,20 @@ def test_failed_macos_signing_keeps_existing_branded_app(tmp_path, monkeypatch, 
     assert live.read_text(encoding="utf-8") == "working app"
     assert not staging.exists()
     assert "previous desktop app was left untouched" in capsys.readouterr().out
+
+
+@pytest.mark.macos_only
+def test_staging_follows_isolated_release_symlink(tmp_path):
+    desktop = tmp_path / "checkout" / "apps" / "desktop"
+    desktop.mkdir(parents=True)
+    isolated_release = tmp_path / "local-build" / "release"
+    isolated_release.mkdir(parents=True)
+    (desktop / "release").symlink_to(isolated_release, target_is_directory=True)
+    unrelated = isolated_release.parent / ".staging-other-project"
+    unrelated.mkdir()
+
+    staging = main_desktop._desktop_staging_dir(desktop)
+
+    assert staging.parent == isolated_release.parent
+    assert staging.name.startswith(".tino-desktop-staging-")
+    assert unrelated.is_dir()

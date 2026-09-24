@@ -41,6 +41,7 @@ RELAUNCH_CWD="" SANDBOX_FALLBACK=0 RELAUNCH_ARGS=()
 NO_UI=0 NO_MARKER_CLEANUP=0 SELF_TEST_UI=0 SELF_TEST_GATE=0 SELF_TEST_MARKER=0
 SELF_TEST_TCC_HEAL=0
 SELF_TEST_VENV_RESOLVER=0
+SELF_TEST_MAC_PATH_EQUALITY=0
 HANDOFF_DAEMONIZED=0
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -56,6 +57,7 @@ while [ $# -gt 0 ]; do
     --self-test-gate) SELF_TEST_GATE=1; shift ;;
     --self-test-tcc-heal) SELF_TEST_TCC_HEAL=1; shift ;;
     --self-test-venv-resolver) SELF_TEST_VENV_RESOLVER=1; NO_UI=1; NO_MARKER_CLEANUP=1; shift ;;
+    --self-test-mac-path-equality) SELF_TEST_MAC_PATH_EQUALITY=1; NO_UI=1; NO_MARKER_CLEANUP=1; shift ;;
     --daemonized) HANDOFF_DAEMONIZED=1; shift ;;
     --self-test-marker) SELF_TEST_MARKER=1; NO_UI=1; NO_MARKER_CLEANUP=1; shift ;;
     --) shift; RELAUNCH_ARGS=("$@"); shift $# ;;
@@ -357,6 +359,17 @@ linux_gate() {
   GATE=manual GATE_MSG="Update complete, but the rebuilt app can't relaunch itself (its sandbox helper needs root ownership). Reopen Tino to finish."
 }
 
+same_macos_bundle() {
+  # The checkout's release/ may be a symlink into a local signing-safe build
+  # directory. Compare physical bundles, not their different textual paths,
+  # so an in-place rebuild is not pointlessly copied over itself.
+  [ -d "$1" ] && [ -d "$2" ] || return 1
+  local first second
+  first="$(cd "$1" 2>/dev/null && pwd -P)" || return 1
+  second="$(cd "$2" 2>/dev/null && pwd -P)" || return 1
+  [ "$first" = "$second" ]
+}
+
 mac_swap() {
   local rebuilt="" c
   for c in "$INSTALL_ROOT/apps/desktop/release/mac-arm64/Tino Agent.app" \
@@ -375,7 +388,8 @@ mac_swap() {
   # Transactional swap: stage a full copy, move the old bundle aside, move
   # the copy in. Every step checked; a failed final move ROLLS BACK so the
   # user always has a launchable app, and the result file tells the truth.
-  if [ "$FINAL_CODE" -eq 0 ] && [ -n "$rebuilt" ] && [ -d "$RELAUNCH_TARGET" ] && [ "$rebuilt" != "$RELAUNCH_TARGET" ]; then
+  if [ "$FINAL_CODE" -eq 0 ] && [ -n "$rebuilt" ] && [ -d "$RELAUNCH_TARGET" ] \
+      && ! same_macos_bundle "$rebuilt" "$RELAUNCH_TARGET"; then
     publish_stage "Installing the new app"
     rm -rf "$RELAUNCH_TARGET.new" "$RELAUNCH_TARGET.old" 2>/dev/null || true
     if ! /usr/bin/ditto "$rebuilt" "$RELAUNCH_TARGET.new"; then
@@ -674,6 +688,16 @@ if [ "$SELF_TEST_GATE" -eq 1 ]; then
   trap - EXIT
   linux_gate
   echo "$GATE${GATE_MSG:+:$GATE_MSG}"
+  exit 0
+fi
+
+if [ "$SELF_TEST_MAC_PATH_EQUALITY" -eq 1 ]; then
+  trap - EXIT
+  if same_macos_bundle "$INSTALL_ROOT" "$RELAUNCH_TARGET"; then
+    echo same
+  else
+    echo different
+  fi
   exit 0
 fi
 

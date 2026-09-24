@@ -359,6 +359,7 @@ import {
 } from './profile-session-routing'
 import { createQuickEntryShortcut, quickEntryWindowBounds, sanitizeQuickEntrySettings } from './quick-entry'
 import { type ActiveWork, mergeActiveWork, normalizeActiveWork, quitPromptFor } from './quit-guard'
+import { resolveTinoIsolatedRoot } from './tino-isolated-root'
 import { backendQuitNeedsWait, createQuitTeardownCoordinator } from './quit-teardown'
 import * as remoteLifecycle from './remote-lifecycle'
 import {
@@ -512,17 +513,20 @@ import { isPackagedInstallPath as isPackagedInstallPathUnderRoots } from './work
 import { readWslWindowsClipboardImage } from './wsl-clipboard-image'
 import { resolvePickerDefaultPath, setActiveGatewayProfile, setWslBridgeProfileState } from './wsl-path-bridge'
 
-// A Finder/Dock launch does not inherit the environment from
-// script/build_and_run.sh. When this development bundle still lives inside
-// the Tino checkout, recover its private runtime before resolving userData
-// or the backend. Never fall through to the upstream Tino installer while
-// a complete Tino runtime is present next to this bundle.
+// A Finder/Dock launch does not inherit the environment from the shell. Find
+// this checkout either beside the app or from the marker beside an externally
+// built bundle, before resolving userData or the backend. Keep its private
+// runtime even when the signed app must live outside a File Provider folder.
 if (app.isPackaged && process.platform === 'darwin' && !process.env.TINO_DESKTOP_ROOT) {
-  const tinoRoot = path.resolve(process.resourcesPath, '../../../../../../../')
-  const tinoPython = path.join(tinoRoot, '.venv', 'bin', 'python')
+  const tinoRoot = resolveTinoIsolatedRoot(
+    process.resourcesPath,
+    candidate => fs.existsSync(candidate),
+    candidate => fs.readFileSync(candidate, 'utf8')
+  )
 
-  if (fs.existsSync(path.join(tinoRoot, 'hermes_cli', 'main.py')) && fs.existsSync(tinoPython)) {
+  if (tinoRoot) {
     const tinoHome = path.join(tinoRoot, '.tino-runtime', 'home')
+    const tinoPython = path.join(tinoRoot, '.venv', 'bin', 'python')
     process.env.TINO_DESKTOP_ROOT = tinoRoot
     process.env.TINO_DESKTOP_PYTHON = tinoPython
     process.env.TINO_HOME = tinoHome

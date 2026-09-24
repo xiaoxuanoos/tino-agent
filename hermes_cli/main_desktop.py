@@ -200,11 +200,25 @@ def _rename_riding_out_file_lock(src: Path, dst: Path) -> None:
 
 
 def _desktop_staging_dir(desktop_dir: Path) -> Path:
-    """Fresh staging dir ``apps/desktop/.staging-<pid>-<ts>``: a sibling of ``release/`` (same fs → the
-    swap is a rename) but not inside it, so ``release/*-unpacked`` globs never see it. Sweeps leftovers."""
-    for stale in desktop_dir.glob(f"{_DESKTOP_STAGING_PREFIX}*"):
+    """Fresh staging dir beside the real ``release/`` directory (same fs → rename).
+
+    A checkout in a macOS File Provider folder can attach Finder metadata to
+    generated .app bundles, invalidating their signatures. An isolated release
+    symlink may point outside that folder; stage next to its target too, so the
+    build and signing never cross back through the File Provider directory.
+    """
+    release = desktop_dir / "release"
+    staging_parent = release.resolve().parent
+    # A release symlink may point into a directory we do not own. Sweep only
+    # this checkout's uniquely named staging trees there, never every generic
+    # .staging-* sibling in the target directory.
+    prefix = _DESKTOP_STAGING_PREFIX
+    if release.is_symlink():
+        scope = hashlib.sha256(str(desktop_dir.resolve()).encode()).hexdigest()[:12]
+        prefix = f".tino-desktop-staging-{scope}-"
+    for stale in staging_parent.glob(f"{prefix}*"):
         shutil.rmtree(stale, ignore_errors=True)
-    return desktop_dir / f"{_DESKTOP_STAGING_PREFIX}{os.getpid()}-{int(_time_mod.time())}"
+    return staging_parent / f"{prefix}{os.getpid()}-{int(_time_mod.time())}"
 
 
 def _desktop_unpacked_root(exe: Path, release_dir: Path) -> Path:
