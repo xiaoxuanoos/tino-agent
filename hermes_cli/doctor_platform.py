@@ -330,13 +330,16 @@ def check_macos_tcc_grants() -> None:
 
 
 def _desktop_app_bundle() -> Path | None:
-    """Locate the locally-built desktop bundle (``apps/desktop/release/mac-<arch>/Tino.app``), newest first.
+    """Locate the locally-built desktop bundle (``apps/desktop/release/mac-<arch>/*.app``), newest first.
 
-    The only layout whose ad-hoc re-signed bundle can invalidate TCC grants. ``/Applications/Tino.app`` is
+    The only layout whose ad-hoc re-signed bundle can invalidate TCC grants. ``/Applications/Tino Agent.app`` is
     deliberately not probed: it is the separately-signed, certificate-anchored Tino-Setup launcher.
     """
     release_dir = Path(__file__).resolve().parents[1] / "apps" / "desktop" / "release"
-    candidates = [p for p in release_dir.glob("mac*/Tino.app") if p.is_dir()]
+    candidates = [
+        p for name in ("Tino Agent.app", "Tino.app")
+        for p in release_dir.glob(f"mac*/{name}") if p.is_dir()
+    ]
     return max(candidates, key=lambda p: p.stat().st_mtime) if candidates else None
 
 

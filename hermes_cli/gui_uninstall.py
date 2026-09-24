@@ -50,13 +50,17 @@ def packaged_gui_app_paths() -> "list[Path]":
     electron-builder output locations for the "Tino" product."""
     home = Path.home()
     if sys.platform == "darwin":
-        return [Path("/Applications/Tino.app"), home / "Applications" / "Tino.app"]
+        return [
+            Path("/Applications/Tino Agent.app"), home / "Applications" / "Tino Agent.app",
+            Path("/Applications/Tino.app"), home / "Applications" / "Tino.app",
+        ]
     if sys.platform == "win32":
         local_base = _env_dir("LOCALAPPDATA", home / "AppData" / "Local")
         # NSIS per-user install (perMachine=false), an older/alternate layout, NSIS per-machine (needs admin).
         program_files = os.environ.get("ProgramFiles")
-        return [local_base / "Programs" / "Tino", local_base / "hermes-desktop"] + (
-            [Path(program_files) / "Tino"] if program_files else [])
+        return [local_base / "Programs" / "Tino Agent", local_base / "Programs" / "Tino",
+                local_base / "hermes-desktop"] + (
+            [Path(program_files) / "Tino Agent", Path(program_files) / "Tino"] if program_files else [])
     # Linux: an AppImage lives wherever the user put it and deb/rpm files belong to the package manager
     # (see the hint in ``uninstall_gui``), so only the desktop entry + hicolor icons are cleaned here.
     from hermes_cli.linux_desktop_entry import desktop_entry_path

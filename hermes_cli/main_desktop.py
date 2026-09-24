@@ -135,17 +135,20 @@ def _desktop_packaged_executable_in(release_dir: Path) -> Optional[Path]:
     stage-and-swap staging dir (#86443).
     """
     if sys.platform == "darwin":
-        candidates = list(release_dir.glob("mac*/Tino.app/Contents/MacOS/Tino"))
+        current = list(release_dir.glob("mac*/Tino Agent.app/Contents/MacOS/Tino Agent"))
+        legacy = list(release_dir.glob("mac*/Tino.app/Contents/MacOS/Tino"))
     elif sys.platform == "win32":
-        candidates = [
-            release_dir / d / "Tino.exe" for d in ("win-unpacked", "win-ia32-unpacked", "win-arm64-unpacked")
-        ]
+        unpacked = ("win-unpacked", "win-ia32-unpacked", "win-arm64-unpacked")
+        current = [release_dir / d / "Tino Agent.exe" for d in unpacked]
+        legacy = [release_dir / d / "Tino.exe" for d in unpacked]
     else:
-        candidates = [
-            release_dir / d / n for d in ("linux-unpacked", "linux-arm64-unpacked") for n in ("hermes", "Tino")
-        ]
+        unpacked = ("linux-unpacked", "linux-arm64-unpacked")
+        current = [release_dir / d / "Tino Agent" for d in unpacked]
+        legacy = [release_dir / d / n for d in unpacked for n in ("Tino", "hermes")]
 
-    existing = [p for p in candidates if p.exists()]
+    # The package now builds as "Tino Agent". If an older "Tino" bundle is
+    # still beside it, never let that stale product win on filesystem mtime.
+    existing = [p for p in current if p.exists()] or [p for p in legacy if p.exists()]
     if not existing:
         return None
     if sys.platform == "win32" and len(existing) > 1:
@@ -1124,7 +1127,7 @@ def _running_macos_app_bundles() -> set[Path]:
     bundles: set[Path] = set()
     for proc in psutil.process_iter(["exe"]):
         exe = proc.info.get("exe") or ""
-        if exe.endswith("/Contents/MacOS/Tino"):
+        if exe.endswith(("/Contents/MacOS/Tino Agent", "/Contents/MacOS/Tino")):
             bundles.add(Path(exe).resolve().parents[2])
     return bundles
 
@@ -1518,7 +1521,13 @@ def _promote_staged_desktop_app(desktop_dir: Path, staging_dir: Path) -> Path:
     # Locally-built apps are ad-hoc signed; make them relaunchable after an
     # in-place self-update. Signs the STAGED bundle so the live app is never
     # half-signed. No-op on non-macOS and on real-identity builds.
-    _desktop_macos_relaunchable_fixup(desktop_dir, release_dir=staging_dir)
+    if not _desktop_macos_relaunchable_fixup(desktop_dir, release_dir=staging_dir):
+        # On macOS a failed signature can leave an apparently complete .app
+        # that Finder refuses to open. Never promote it over the working app.
+        _discard_desktop_staging(staging_dir)
+        print("✗ Desktop build failed macOS code-signing verification")
+        print(_PREVIOUS_APP_KEPT)
+        sys.exit(1)
 
     # Windows integrity gate: never declare the rebuild a success on a
     # Tino.exe Windows cannot load. Verified on the STAGED exe, so a failure
