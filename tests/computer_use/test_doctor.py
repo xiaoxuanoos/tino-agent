@@ -13,7 +13,7 @@ downstream consumers (CI / `hermes update`) rely on:
 We do NOT spin up a real cua-driver — that lives in the cua-driver
 integration test suite (libs/cua-driver/rust/tests/integration/
 test_health_report_mcp.py). Here we mock the subprocess and assert the
-Hermes-side adapter behaves correctly against the documented response
+Tino-side adapter behaves correctly against the documented response
 shape.
 """
 
@@ -154,7 +154,7 @@ class TestDoctorExitCodes:
             code = doctor.run_doctor()
         assert code == 2
         err = capsys.readouterr().err
-        assert "Access is denied" in err and "HERMES_CUA_DRIVER_CMD" in err
+        assert "Access is denied" in err and "TINO_CUA_DRIVER_CMD" in err
 
     def test_protocol_error_exits_2(self, capsys):
         """An empty stdout response (driver crashed during handshake) is a
@@ -270,7 +270,7 @@ class TestJsonOutput:
              patch("sys.stdout", new_callable=StringIO) as out:
             doctor.run_doctor(json_output=True)
         # Verify the captured text round-trips through json.loads. Upstream
-        # health_report keys are preserved; Hermes adds hermes_identity.
+        # health_report keys are preserved; Tino adds hermes_identity.
         parsed = json.loads(out.getvalue())
         report = _ok_report()
         for key, value in report.items():
@@ -279,7 +279,7 @@ class TestJsonOutput:
         assert parsed["hermes_identity"]["resolved_binary"]
 
 
-# ── HERMES_CUA_DRIVER_CMD resolution ───────────────────────────────────────
+# ── TINO_CUA_DRIVER_CMD resolution ───────────────────────────────────────
 
 
 class TestDriverCmdResolution:
@@ -301,7 +301,7 @@ class TestDriverCmdResolution:
     def test_env_var_used_when_no_arg_given(self, monkeypatch):
         from tools.computer_use import doctor
 
-        monkeypatch.setenv("HERMES_CUA_DRIVER_CMD", "/env/path/cua-driver")
+        monkeypatch.setenv("TINO_CUA_DRIVER_CMD", "/env/path/cua-driver")
         proc = _fake_proc_with_responses(
             {"jsonrpc": "2.0", "id": 1, "result": {}},
             {"jsonrpc": "2.0", "id": 2, "result": {"structuredContent": _ok_report()}},
@@ -324,7 +324,7 @@ class TestDriverCmdResolution:
         driver.write_text("#!/bin/sh\nexit 0\n")
         driver.chmod(0o755)
 
-        monkeypatch.delenv("HERMES_CUA_DRIVER_CMD", raising=False)
+        monkeypatch.delenv("TINO_CUA_DRIVER_CMD", raising=False)
         monkeypatch.setenv("HOME", str(tmp_path))
         monkeypatch.setenv("PATH", "/usr/bin:/bin:/usr/sbin:/sbin")
 

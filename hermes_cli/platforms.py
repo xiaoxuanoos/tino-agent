@@ -1,4 +1,4 @@
-"""Shared platform registry for Hermes Agent."""
+"""Shared platform registry for Tino Agent."""
 
 from collections import OrderedDict
 from typing import NamedTuple
@@ -20,7 +20,7 @@ PLATFORMS: OrderedDict[str, PlatformInfo] = OrderedDict([
     ("whatsapp_cloud", PlatformInfo(label="📱 WhatsApp Business (Cloud)", default_toolset="hermes-whatsapp")),
     ("signal",         PlatformInfo(label="📡 Signal",          default_toolset="hermes-signal")),
     ("bluebubbles",    PlatformInfo(label="💙 BlueBubbles",     default_toolset="hermes-bluebubbles")),
-    ("email",          PlatformInfo(label="📧 Email",           default_toolset="hermes-email")),
+    ("email",          PlatformInfo(label="📧 Email",           default_toolset="tino-email")),
     ("homeassistant",  PlatformInfo(label="🏠 Home Assistant",  default_toolset="hermes-homeassistant")),
     ("mattermost",     PlatformInfo(label="💬 Mattermost",      default_toolset="hermes-mattermost")),
     ("matrix",         PlatformInfo(label="💬 Matrix",          default_toolset="hermes-matrix")),

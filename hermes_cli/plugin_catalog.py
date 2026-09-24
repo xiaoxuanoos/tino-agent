@@ -1,4 +1,4 @@
-"""Plugin catalog — curated, Nous-approved Hermes plugins shipped with the repo.
+"""Plugin catalog — curated, Nous-approved Tino plugins shipped with the repo.
 
 Mirrors the ``optional-mcps/`` MCP-catalog pattern: one YAML file per entry under the in-tree
 ``plugin-catalog/`` directory, pinned to an exact 40-character commit SHA. Presence in the directory IS
@@ -8,7 +8,7 @@ the human-merged approval gate; SHA bumps are new, re-reviewed PRs; ``removed.ya
 
 Live refresh: the docs build publishes the same data as ONE JSON document
 (``website/scripts/extract-plugins.py`` → ``/docs/api/plugin-catalog.json``, like the skills index), so
-an installed Hermes sees new entries and removals without updating. Any fetch failure falls back to the
+an installed Tino sees new entries and removals without updating. Any fetch failure falls back to the
 in-tree copy silently.
 """
 
@@ -30,7 +30,7 @@ CATALOG_TIERS = ("official", "community")
 # Browse taxonomy for the catalog page / picker. Entries without one land on the Desktop shelf
 # (the common case for community submissions); "general" is for plugins that fit no shelf.
 CATALOG_CATEGORIES = ("desktop", "memory", "platform", "web", "tools", "voice", "automation", "models", "general")
-LIVE_CATALOG_URL = "https://hermes-agent.nousresearch.com/docs/api/plugin-catalog.json"
+LIVE_CATALOG_URL = ""  # fork: upstream catalog disabled; the in-tree plugin-catalog/ dir is authoritative
 LIVE_CATALOG_TTL_SECONDS = 6 * 60 * 60
 LIVE_CATALOG_FAILURE_TTL_SECONDS = 60.0
 _REQUEST_TIMEOUT = 5.0
@@ -288,11 +288,13 @@ def _stale_live_cache(cache: Path) -> Optional[Dict[str, Any]]:
 
 def fetch_live_catalog(*, force: bool = False) -> Optional[Dict[str, Any]]:
     """The published ``plugin-catalog.json`` (``{"entries": [...], "removed": [...]}``), cached under
-    ``HERMES_HOME/cache`` for :data:`LIVE_CATALOG_TTL_SECONDS`. ``None`` on ANY failure — callers fall
+    ``TINO_HOME/cache`` for :data:`LIVE_CATALOG_TTL_SECONDS`. ``None`` on ANY failure — callers fall
     back to the in-tree catalog. A failed network attempt is remembered for
     :data:`LIVE_CATALOG_FAILURE_TTL_SECONDS` so a dead host costs one timeout per TTL window, not one
     per call (``force`` bypasses both caches)."""
     global _live_fetch_failed_until
+    if not LIVE_CATALOG_URL:
+        return None
     cache = _live_cache_path()
     try:
         if not force and cache.is_file() and time.time() - cache.stat().st_mtime < LIVE_CATALOG_TTL_SECONDS:
@@ -356,5 +358,5 @@ def entry_capability_summary(entry: PluginCatalogEntry) -> str:
     if entry.platforms:
         bits.append(f"Platforms: {', '.join(entry.platforms)}.")
     if entry.requires_hermes:
-        bits.append(f"Requires Hermes {entry.requires_hermes}.")
+        bits.append(f"Requires Tino {entry.requires_hermes}.")
     return " ".join(bits)

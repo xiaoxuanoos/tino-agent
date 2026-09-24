@@ -47,7 +47,7 @@ _STARTUP_GRACE_SECONDS = 5
 
 # Management API (v0.39): loopback POST /v1/reload hot-swaps the ruleset.  Bearer key minted at
 # setup (0600 at <proxy>/management.token), injected under this env name; empty => daemon refuses to start.
-_MGMT_API_KEY_ENV = "HERMES_IRON_PROXY_MGMT_KEY"
+_MGMT_API_KEY_ENV = "TINO_IRON_PROXY_MGMT_KEY"
 _MGMT_PORT_OFFSET = 2  # tunnel_port is CONNECT/MITM, +1 is plain-HTTP forward, +2 is management
 _MGMT_RELOAD_TIMEOUT = 15
 
@@ -77,7 +77,7 @@ _BEARER_PROVIDERS: Dict[str, Tuple[str, ...]] = {
 # ``secrets.replace.match_headers`` targets arbitrary header names (case-insensitive; confirmed by the
 # iron-proxy author on PR #30179 and verified in the pinned v0.39.0 source — ``swapHeaders`` +
 # ``parseHeaderMatchers``), so these are first-class swapped providers, not "uncovered". ``aliases`` are
-# interchangeable env-var names for the SAME upstream credential (Hermes' auth.py keys Google on both
+# interchangeable env-var names for the SAME upstream credential (Tino' auth.py keys Google on both
 # GEMINI_API_KEY and GOOGLE_API_KEY). The sandbox receives the minted token under the canonical name AND
 # every alias so SDKs reading either work.
 _HEADER_AUTH_PROVIDERS: Dict[str, Dict[str, Tuple[str, ...]]] = {
@@ -120,7 +120,7 @@ _VERSION_CACHE: Dict[str, str] = {}
 
 # Nonce planted in the daemon env so ``_pid_alive`` can prove a PID is still *our* binary across
 # PID recycling (a fresh process can't inherit our arbitrary env value).
-_HERMES_IRON_PROXY_NONCE_ENV = "HERMES_IRON_PROXY_NONCE"
+_TINO_IRON_PROXY_NONCE_ENV = "TINO_IRON_PROXY_NONCE"
 _proxy_nonce: Optional[str] = None
 
 
@@ -398,7 +398,7 @@ def ensure_management_token(*, force: bool = False) -> str:
 
 
 def _yaml():
-    """PyYAML module or None (it is a Hermes dep, but never a hard requirement here)."""
+    """PyYAML module or None (it is a Tino dep, but never a hard requirement here)."""
     try:
         import yaml
         return yaml
@@ -711,7 +711,7 @@ def _pid_alive(pid: int) -> bool:
     if nonce_candidates:
         with suppress(OSError):
             env_bytes = Path(f"/proc/{pid}/environ").read_bytes()
-            if any(f"{_HERMES_IRON_PROXY_NONCE_ENV}={n}".encode() in env_bytes for n in nonce_candidates):
+            if any(f"{_TINO_IRON_PROXY_NONCE_ENV}={n}".encode() in env_bytes for n in nonce_candidates):
                 return True
     with suppress(OSError):
         if (cmdline_path := Path(f"/proc/{pid}/cmdline")).exists():
@@ -744,7 +744,7 @@ def start_proxy(
         env[_MGMT_API_KEY_ENV] = ensure_management_token()
     # Per-start nonce for PID-recycling defense; module-global is fine (one proxy per process).
     _proxy_nonce = hashlib.sha256(os.urandom(16)).hexdigest()
-    env[_HERMES_IRON_PROXY_NONCE_ENV] = _proxy_nonce
+    env[_TINO_IRON_PROXY_NONCE_ENV] = _proxy_nonce
     log_path = _proxy_state_dir() / "iron-proxy.log"
     proc = _spawn_daemon(bin_path, cfg, env, log_path)
     # Pidfile BEFORE the listening poll so `hermes egress stop` can clean an orphan if the parent dies mid-poll.

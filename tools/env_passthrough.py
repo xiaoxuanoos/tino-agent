@@ -28,39 +28,39 @@ def _get_allowed() -> set[str]:
         return val
 
 
-# Config-based allowlist, keyed by Hermes home: under gateway.multiplex_profiles one process serves
+# Config-based allowlist, keyed by Tino home: under gateway.multiplex_profiles one process serves
 # many profiles, and a single slot would let the first profile's operator allowlist decide which env
 # vars tunnel into every other profile's sandbox children.
 _config_passthrough: dict[str, frozenset[str]] = {}
 
 
 def _is_hermes_provider_credential(name: str) -> bool:
-    """True if ``name`` is a Hermes-managed provider credential per
-    ``_HERMES_PROVIDER_ENV_BLOCKLIST`` or a dynamic Hermes-internal secret
+    """True if ``name`` is a Tino-managed provider credential per
+    ``_TINO_PROVIDER_ENV_BLOCKLIST`` or a dynamic Tino-internal secret
     (AUXILIARY_*_API_KEY / _BASE_URL, GATEWAY_RELAY_*). Skill-declared
     ``required_environment_variables`` must not override this — that was the
     GHSA-rhgp-j443-p4rf bypass (a skill registered ``OPENAI_API_KEY`` and received it
-    in the ``execute_code`` child); non-Hermes keys (TENOR_API_KEY, …) stay
+    in the ``execute_code`` child); non-Tino keys (TENOR_API_KEY, …) stay
     registerable. Fails closed when the blocklist cannot be imported."""
     try:
         from tools.environments.local_env_policy import (
-            _HERMES_PROVIDER_ENV_BLOCKLIST, _is_hermes_internal_secret)
+            _TINO_PROVIDER_ENV_BLOCKLIST, _is_hermes_internal_secret)
     except Exception as e:
         logger.warning(
             "env passthrough: provider credential blocklist import failed; "
             "failing closed and refusing passthrough registration for %r: %s", name, e)
         return True
-    return _is_hermes_internal_secret(name) or name in _HERMES_PROVIDER_ENV_BLOCKLIST
+    return _is_hermes_internal_secret(name) or name in _TINO_PROVIDER_ENV_BLOCKLIST
 
 
 def register_env_passthrough(var_names: Iterable[str]) -> None:
     """Register env var names as allowed in sandboxed environments (typically a
-    skill's ``required_environment_variables``). Hermes-managed provider credentials
+    skill's ``required_environment_variables``). Tino-managed provider credentials
     are rejected (GHSA-rhgp-j443-p4rf) — such skills should use the main-process tools
     (web_search, web_extract, …); third-party keys pass normally."""
     for name in _accepted((n.strip() for n in var_names), (
-        "env passthrough: refusing to register Hermes provider "
-        "credential %r (blocked by _HERMES_PROVIDER_ENV_BLOCKLIST). "
+        "env passthrough: refusing to register Tino provider "
+        "credential %r (blocked by _TINO_PROVIDER_ENV_BLOCKLIST). "
         "Skills must not override the execute_code sandbox's "
         "credential scrubbing; see GHSA-rhgp-j443-p4rf."
     )):
@@ -69,7 +69,7 @@ def register_env_passthrough(var_names: Iterable[str]) -> None:
 
 
 def _accepted(names, refusal_msg: str):
-    """Yield non-empty *names* that are not Hermes provider credentials; refused
+    """Yield non-empty *names* that are not Tino provider credentials; refused
     names are logged with *refusal_msg* (``%r`` = name)."""
     for name in names:
         if not name:
@@ -99,9 +99,9 @@ def _load_config_passthrough() -> frozenset[str]:
         passthrough = cfg_get(read_raw_config(), "terminal", "env_passthrough")
         items = passthrough if isinstance(passthrough, list) else ()
         result.update(_accepted((i.strip() for i in items if isinstance(i, str)), (
-            "env passthrough: refusing to register Hermes "
+            "env passthrough: refusing to register Tino "
             "provider credential %r from config.yaml (blocked "
-            "by _HERMES_PROVIDER_ENV_BLOCKLIST). Operator "
+            "by _TINO_PROVIDER_ENV_BLOCKLIST). Operator "
             "configuration must not override the execute_code "
             "sandbox's credential scrubbing; see "
             "GHSA-rhgp-j443-p4rf."

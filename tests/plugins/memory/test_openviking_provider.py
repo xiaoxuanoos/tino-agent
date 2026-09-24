@@ -8,13 +8,13 @@ from unittest.mock import MagicMock
 import pytest
 
 import plugins.memory.openviking as openviking_module
-from hermes_cli import __version__ as _HERMES_VERSION
+from hermes_cli import __version__ as _TINO_VERSION
 from plugins.memory.openviking import (
     OpenVikingMemoryProvider,
     _VikingClient,
 )
 
-_EXPECTED_USER_AGENT = f"openviking-memory-hermes/{_HERMES_VERSION}"
+_EXPECTED_USER_AGENT = f"openviking-memory-hermes/{_TINO_VERSION}"
 
 
 def _clear_openviking_tenant_env(monkeypatch):
@@ -120,7 +120,7 @@ memory:
 """,
         encoding="utf-8",
     )
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+    monkeypatch.setenv("TINO_HOME", str(hermes_home))
 
     settings = openviking_module._resolve_connection_settings(
         openviking_module._load_hermes_openviking_config()
@@ -276,7 +276,7 @@ def test_post_setup_existing_profile_picker_validates_and_links_saved_profile(
     if peer_key:
         saved_values[peer_key] = "existing-peer"
     saved_path.write_text(json.dumps(saved_values), encoding="utf-8")
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+    monkeypatch.setenv("TINO_HOME", str(hermes_home))
     monkeypatch.setattr(openviking_module.Path, "home", staticmethod(lambda: tmp_path))
 
     from hermes_cli import memory_setup
@@ -384,10 +384,10 @@ def test_start_local_openviking_server_uses_endpoint_host_and_port(monkeypatch):
 
 
 def test_start_local_openviking_server_strips_pythonpath_from_child_env(monkeypatch):
-    """The spawned server must not inherit Hermes's PYTHONPATH (#78153).
+    """The spawned server must not inherit Tino's PYTHONPATH (#78153).
 
-    Inheriting it makes openviking-server import packages from the Hermes
-    venv instead of its own, and on Windows locks Hermes venv DLLs so the
+    Inheriting it makes openviking-server import packages from the Tino
+    venv instead of its own, and on Windows locks Tino venv DLLs so the
     venv cannot be rebuilt during `hermes update`.
     """
     popen_calls = []
@@ -400,7 +400,7 @@ def test_start_local_openviking_server_strips_pythonpath_from_child_env(monkeypa
     monkeypatch.setattr(openviking_module.shutil, "which", lambda name: "/usr/local/bin/openviking-server")
     monkeypatch.setattr(openviking_module.subprocess, "Popen", fake_popen)
     monkeypatch.setenv("PYTHONPATH", "/opt/hermes/.venv/Lib/site-packages")
-    monkeypatch.setenv("HERMES_PROFILE", "test-profile")
+    monkeypatch.setenv("TINO_PROFILE", "test-profile")
 
     state, _message = openviking_module._start_local_openviking_server("http://127.0.0.1:1934")
 
@@ -409,7 +409,7 @@ def test_start_local_openviking_server_strips_pythonpath_from_child_env(monkeypa
     child_env = kwargs["env"]
     assert child_env is not None
     assert "PYTHONPATH" not in child_env
-    assert child_env.get("HERMES_PROFILE") == "test-profile"
+    assert child_env.get("TINO_PROFILE") == "test-profile"
 
 
 def test_start_local_openviking_server_does_not_spawn_when_port_already_open(monkeypatch):
@@ -555,7 +555,7 @@ def test_https_local_endpoint_is_not_runtime_autostart_eligible(monkeypatch):
     assert provider._client is None
     assert warnings == [
         "Remote OpenViking server at https://localhost:1934 is not reachable. "
-        "OpenViking memory is temporarily unavailable; Hermes will retry on a later access or when "
+        "OpenViking memory is temporarily unavailable; Tino will retry on a later access or when "
         "the config changes. "
         "Check the configured endpoint and network connectivity."
     ]
@@ -589,7 +589,7 @@ def test_runtime_does_not_autostart_when_local_server_reports_unhealthy(monkeypa
     assert provider._client is None
     assert warnings == [
         "Service at http://localhost:1934 responded but reported unhealthy OpenViking status. "
-        "OpenViking memory is temporarily unavailable; Hermes will retry on a later access "
+        "OpenViking memory is temporarily unavailable; Tino will retry on a later access "
         "or when the config changes."
     ]
 
@@ -1878,7 +1878,7 @@ class TestOpenVikingEnvWriter:
         _write_env_vars(env, {"OPENAI_API_KEY": "new"})
 
         lines = [l for l in env.read_text(encoding="utf-8-sig").splitlines() if l]
-        # The stale value must be gone, not left as a duplicate. Hermes and
+        # The stale value must be gone, not left as a duplicate. Tino and
         # python-dotenv use the last occurrence, but the file must have one value.
         assert lines.count("OPENAI_API_KEY=new") == 1
         assert not any(l.endswith("=old") for l in lines)

@@ -73,8 +73,8 @@ def _account_state() -> dict:
 
 @pytest.fixture(autouse=True)
 def isolated_auth_store(tmp_path, monkeypatch):
-    monkeypatch.setenv("HERMES_SHARED_AUTH_DIR", str(tmp_path / "shared-store"))
-    monkeypatch.setenv("HERMES_GUEST_ONBOARDING", "1")
+    monkeypatch.setenv("TINO_SHARED_AUTH_DIR", str(tmp_path / "shared-store"))
+    monkeypatch.setenv("TINO_GUEST_ONBOARDING", "1")
 
 
 @pytest.mark.asyncio

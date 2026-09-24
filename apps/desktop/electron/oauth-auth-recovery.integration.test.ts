@@ -261,7 +261,7 @@ test('HTTP outage, dead-refresh and cookie coexistence reach the correct ticket/
         })
     })
 
-    const mediaRequest = { url: 'hermes-media://remote/%2Ftmp%2Fclip.mp4', headers: new Headers(), method: 'GET' }
+    const mediaRequest = { url: 'tino-media://remote/%2Ftmp%2Fclip.mp4', headers: new Headers(), method: 'GET' }
     expect((await media(mediaRequest)).status).toBe(502)
     f.state.cookie = true
     expect(await f.mint()).toMatch(/^one-use-/)

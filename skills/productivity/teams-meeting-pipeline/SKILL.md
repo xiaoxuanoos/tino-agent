@@ -2,7 +2,7 @@
 name: teams-meeting-pipeline
 description: Teams meeting summaries, job replay, Graph subscriptions.
 version: 1.1.0
-author: Hermes Agent + Teknium
+author: Tino Agent + Teknium
 license: MIT
 platforms: [linux, macos, windows]
 prerequisites:
@@ -44,7 +44,7 @@ Multilingual trigger examples (not exhaustive):
 
 ## Prerequisites
 
-Before using the pipeline, verify these are set in `${HERMES_HOME:-~/.hermes}/.env`:
+Before using the pipeline, verify these are set in `${TINO_HOME:-~/.hermes}/.env`:
 
 ```bash
 MSGRAPH_TENANT_ID=...

@@ -821,7 +821,7 @@ def test_restore_rejects_invalid_python_and_keeps_clean_updated_tree(
     assert git("status", "--porcelain").stdout == ""
     assert git("stash", "list").stdout.strip()
     output = capsys.readouterr().out
-    assert "made the Hermes agent unexecutable" in output
+    assert "made the Tino agent unexecutable" in output
     assert "gateway was not restarted" in output
     assert f"git stash apply {stash_ref}" in output
 

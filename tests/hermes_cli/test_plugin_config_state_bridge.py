@@ -49,16 +49,16 @@ def test_config_round_trip_uses_canonical_settings_namespace(
     ctx = _context(key="category/fixture-plugin")
 
     assert ctx.get_config("api_url", default="unset") == "unset"
-    ctx.set_config("api_url", r"C:\Users\Owner\Hermes 🚀")
+    ctx.set_config("api_url", r"C:\Users\Owner\Tino 🚀")
     ctx.set_config("retry.policy", {"attempts": 3, "enabled": True})
 
     raw = yaml.safe_load((isolated_home / "config.yaml").read_text(encoding="utf-8"))
     settings = raw["plugins"]["entries"]["category/fixture-plugin"]["settings"]
     assert settings == {
-        "api_url": r"C:\Users\Owner\Hermes 🚀",
+        "api_url": r"C:\Users\Owner\Tino 🚀",
         "retry": {"policy": {"attempts": 3, "enabled": True}},
     }
-    assert ctx.get_config("api_url") == r"C:\Users\Owner\Hermes 🚀"
+    assert ctx.get_config("api_url") == r"C:\Users\Owner\Tino 🚀"
     assert ctx.get_config("retry.policy") == {"attempts": 3, "enabled": True}
 
 
@@ -167,7 +167,7 @@ ctx = PluginContext(PluginManifest(name='fixture-plugin'), PluginManager())
 for i in range(int(sys.argv[1]), int(sys.argv[2])):
     ctx.set_config(f'process_{i}', i)
 """
-    env = dict(os.environ, HERMES_HOME=str(isolated_home))
+    env = dict(os.environ, TINO_HOME=str(isolated_home))
     processes = [
         subprocess.Popen(
             [sys.executable, "-c", script, str(start), str(start + 20)],
@@ -238,7 +238,7 @@ ctx = PluginContext(PluginManifest(name='fixture-plugin'), PluginManager())
 for i in range(int(sys.argv[1]), int(sys.argv[2])):
     ctx.state.set(f'process_{i}', i)
 """
-    env = dict(os.environ, HERMES_HOME=str(isolated_home))
+    env = dict(os.environ, TINO_HOME=str(isolated_home))
     processes = [
         subprocess.Popen(
             [sys.executable, "-c", script, str(start), str(start + 20)],

@@ -52,7 +52,7 @@ def _restore_agent_model_runtime(agent, snapshot: dict | None) -> None:
 
 
 def _profile_runtime_scope_tokens(profile_home) -> "_TurnScopes":
-    """Bind HERMES_HOME + secret + terminal scope for ``profile_home`` (None = launch profile) and
+    """Bind TINO_HOME + secret + terminal scope for ``profile_home`` (None = launch profile) and
     return the reset tokens. The launch profile's SECRET scope is always bound — its ``.env`` over
     the launch env (live while single-profile, frozen at activation afterwards; never live
     ``os.environ`` once a secondary context may have written to it, #107422) — so the credential
@@ -91,7 +91,7 @@ def _profile_runtime_scope_tokens(profile_home) -> "_TurnScopes":
 
 def _release_profile_runtime_scope_tokens(scopes: "_TurnScopes | None") -> None:
     """Release terminal → secret → home. Each reset is independent: a failing terminal reset must
-    not leave the previous profile's secrets / HERMES_HOME installed for the next body in this
+    not leave the previous profile's secrets / TINO_HOME installed for the next body in this
     context (a fail-open scope leak on the teardown path). The first failure is re-raised after
     every scope has been released."""
     if scopes is None:
@@ -286,7 +286,7 @@ def _apply_model_switch(
     if agent:
         _commit_agent_switch(sid, session, agent, result, current_model, restore_snapshot)
     # PER-SESSION override so a rebuild of THIS session (/new, resume) re-derives the model.
-    # Deliberately NOT written to process-global env (HERMES_MODEL & co.): the desktop hosts
+    # Deliberately NOT written to process-global env (TINO_MODEL & co.): the desktop hosts
     # every same-profile session in one process, so os.environ would leak the switch to all.
     if pin_session_override and isinstance(session, dict) and not one_turn:
         session["model_override"] = {

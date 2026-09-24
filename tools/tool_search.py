@@ -1,6 +1,6 @@
 """Progressive tool disclosure ("tool search"): MCP/plugin tools and a curated set of
 event-triggered core tools are replaced in the model-visible array by three bridge tools —
-tool_search / tool_describe / tool_call. Invariants: core tools (``toolsets._HERMES_CORE_TOOLS``)
+tool_search / tool_describe / tool_call. Invariants: core tools (``toolsets._TINO_CORE_TOOLS``)
 and session-gated GUI toolsets never defer unless named in ``defer``; ANY deferrable tool
 activates the bridge (the listing scales with budget, not activation); the catalog is
 stateless — rebuilt from the live tool-defs every assembly (a session-keyed one drifts and
@@ -126,13 +126,13 @@ load_config_readonly = functools.partial(_config_from_loader, "load_config_reado
 def _core_tool_names() -> frozenset[str]:
     """Names that never defer by default (lazy: ``toolsets`` imports ``tools.registry``)."""
     try:
-        from toolsets import _HERMES_CORE_TOOLS
-        return frozenset(_HERMES_CORE_TOOLS)
+        from toolsets import _TINO_CORE_TOOLS
+        return frozenset(_TINO_CORE_TOOLS)
     except Exception:
         return frozenset()
 
 
-# Session-gated GUI toolsets: off ``_HERMES_CORE_TOOLS`` so non-GUI clients never pay
+# Session-gated GUI toolsets: off ``_TINO_CORE_TOOLS`` so non-GUI clients never pay
 # their schema; once enabled they stay direct unless the deferral list names them.
 _DIRECT_SURFACE_TOOLSETS = frozenset({"desktop_ui", "project"})
 

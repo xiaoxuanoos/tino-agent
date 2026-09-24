@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Skills Hub CLI — Unified interface for the Hermes Skills Hub."""
+"""Skills Hub CLI — Unified interface for the Tino Skills Hub."""
 
 import json
 import logging
@@ -509,7 +509,7 @@ def _scan_block_message(result, identifier: str) -> str:
     n = len(result.findings)
     findings = f"{n} high-risk pattern(s)" if n else "high-risk patterns"
     hard_block = result.verdict == "dangerous" and result.trust_level in ("community", "trusted")
-    policy = ("Hermes never installs unverified skills with high-risk findings, even with --force."
+    policy = ("Tino never installs unverified skills with high-risk findings, even with --force."
               if hard_block else "Re-run with --force to install anyway.")
     return (f"the security scan found {findings} in '{identifier}' (listed above). "
             f"{policy} Review the findings or ask the author to fix them; to read the skill without "
@@ -778,7 +778,7 @@ def _print_tier1_advisory(skill_dir, console) -> None:
 def do_list(source_filter: str = "all", enabled_only: bool = False,
             console: Optional[Console] = None) -> None:
     """List installed skills (hub / builtin / local). Enabled state comes from the active
-    profile's config — ``-p`` swaps HERMES_HOME at process start, so no profile flag here."""
+    profile's config — ``-p`` swaps TINO_HOME at process start, so no profile flag here."""
     from tools.skills_hub import HubLockFile, ensure_hub_dirs
     from tools.skills_sync import _read_manifest
     from tools.skills_tool import _find_all_skills
@@ -1243,8 +1243,8 @@ def _github_publish(skill_path: Path, skill_name: str, target_repo: str, auth) -
     try:
         resp = call("post", f"{target_repo}/pulls", json={
             "title": f"Add skill: {skill_name}",
-            "body": f"Submitting the `{skill_name}` skill via Hermes Skills Hub.\n\n"
-                    f"This skill was scanned by the Hermes Skills Guard before submission.",
+            "body": f"Submitting the `{skill_name}` skill via Tino Skills Hub.\n\n"
+                    f"This skill was scanned by the Tino Skills Guard before submission.",
             "head": f"{fork_repo.split('/')[0]}:{branch_name}", "base": default_branch})
         if resp.status_code == 201:
             return True, f"PR created: {resp.json().get('html_url', '')}"

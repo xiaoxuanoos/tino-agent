@@ -1,4 +1,4 @@
-"""Configuration management for Hermes Agent: config.yaml / .env loading, saving,
+"""Configuration management for Tino Agent: config.yaml / .env loading, saving,
 validation, migration, and the ``hermes config`` command."""
 
 # Stale-module bridge — must run before ANY import below can bind a root-level symbol.
@@ -59,11 +59,11 @@ class InvalidUserConfigError(RuntimeError):
 
 
 _PARSE_FAILURE_FALLBACK_MSG = {
-    "last-known-good": "Hermes is running on the settings it loaded before the edit until it is fixed, so recent changes are not applied.",
-    "last-known-good-backup": "Hermes is running on your last good settings until it is fixed, so recent changes are not applied.",
+    "last-known-good": "Tino is running on the settings it loaded before the edit until it is fixed, so recent changes are not applied.",
+    "last-known-good-backup": "Tino is running on your last good settings until it is fixed, so recent changes are not applied.",
     "refuse-write": "Nothing was written, so the existing file is preserved."}
 _PARSE_FAILURE_DEFAULTS_MSG = (
-    "Hermes is running on default settings until it is fixed, so none of your saved settings are applied.")
+    "Tino is running on default settings until it is fixed, so none of your saved settings are applied.")
 _PARSE_FAILURE_REPAIR_MSG = "Open it with `hermes config edit`, fix {where}, then run `hermes config check`."
 
 
@@ -82,7 +82,7 @@ def _yaml_error_details(exc: Exception) -> str:
 
 
 def format_config_parse_failure(config_path: Path, exc: Exception, *, fallback: str = "defaults") -> str:
-    """User copy for an unparseable config.yaml: what happened, what Hermes is doing, how to fix.
+    """User copy for an unparseable config.yaml: what happened, what Tino is doing, how to fix.
     Only the problem line/column is printed; the raw PyYAML text goes to a ``Details:`` line."""
     where = _yaml_error_location(exc)
     at = f" at {where}" if where else ""
@@ -139,13 +139,13 @@ _ENV_VAR_NAME_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 
 # Env var names that influence how the next subprocess executes — never writable through
 # ``save_env_value``: dynamic loader (LD_*/DYLD_*: attacker code loads before main()),
-# interpreter init (PYTHON*, NODE_*: Hermes restarts through them), PATH (fix tool lookup
+# interpreter init (PYTHON*, NODE_*: Tino restarts through them), PATH (fix tool lookup
 # with absolute paths instead), git rewrites (fire on every plugin install/update),
 # implicitly-invoked commands (BROWSER/EDITOR/VISUAL/PAGER = RCE on next $EDITOR), SHELL,
-# and Hermes runtime-location / security-policy flags (config.yaml is the supported surface).
+# and Tino runtime-location / security-policy flags (config.yaml is the supported surface).
 #
-# ``HERMES_*`` overall is NOT blocked — many integration credentials use that prefix
-# (HERMES_LANGFUSE_PUBLIC_KEY, HERMES_SPOTIFY_CLIENT_ID, ...). The denylist is name-by-name so
+# ``TINO_*`` overall is NOT blocked — many integration credentials use that prefix
+# (TINO_LANGFUSE_PUBLIC_KEY, TINO_SPOTIFY_CLIENT_ID, ...). The denylist is name-by-name so
 # it cannot break provider setup wizards. Enforced on *write* only: pre-existing/out-of-band
 # ``.env`` values keep working; the dashboard's writable surface just cannot escalate.
 
@@ -179,18 +179,18 @@ _ENV_VAR_NAME_DENYLIST: frozenset[str] = frozenset({
     "GIT_PROXY_COMMAND", "GIT_TEMPLATE_DIR", "GIT_DIR",
     # Shell init files / interactive hooks — sourced before or during execution
     "BASH_ENV", "ENV", "ZDOTDIR", "PROMPT_COMMAND", "VIMINIT", "EXINIT",
-    # Hermes runtime location
-    "HERMES_HOME", "HERMES_PROFILE", "HERMES_CONFIG", "HERMES_ENV",
-    "HERMES_CONFIG_PATH", "HERMES_ENV_PATH",
+    # Tino runtime location
+    "TINO_HOME", "TINO_PROFILE", "TINO_CONFIG", "TINO_ENV",
+    "TINO_CONFIG_PATH", "TINO_ENV_PATH",
     # MCP catalog trust root; package-manager wrappers may still set it in the process env.
-    "HERMES_OPTIONAL_MCPS",
+    "TINO_OPTIONAL_MCPS",
     # Local ACP subprocess selection (executable/argv authority).
-    "HERMES_COPILOT_ACP_COMMAND", "HERMES_COPILOT_ACP_ARGS",
+    "TINO_COPILOT_ACP_COMMAND", "TINO_COPILOT_ACP_ARGS",
     # Security policy / approval-routing context — set via their dedicated controls only.
-    "HERMES_YOLO_MODE", "HERMES_ACCEPT_HOOKS", "HERMES_REDACT_SECRETS",
-    "HERMES_INTERACTIVE", "HERMES_EXEC_ASK", "HERMES_GATEWAY_SESSION",
-    "HERMES_CRON_SESSION", "HERMES_SINGLE_QUERY_SESSION",
-    "HERMES_SESSION_KEY", "HERMES_SESSION_PLATFORM"})
+    "TINO_YOLO_MODE", "TINO_ACCEPT_HOOKS", "TINO_REDACT_SECRETS",
+    "TINO_INTERACTIVE", "TINO_EXEC_ASK", "TINO_GATEWAY_SESSION",
+    "TINO_CRON_SESSION", "TINO_SINGLE_QUERY_SESSION",
+    "TINO_SESSION_KEY", "TINO_SESSION_PLATFORM"})
 
 
 def _env_var_policy_name(key: str, *, is_windows: Optional[bool] = None) -> str:
@@ -209,7 +209,7 @@ def validate_env_var_name_for_write(key: str) -> None:
         raise ValueError(
             f"Environment variable {key!r} is on the writer denylist. "
             "Names that influence subprocess execution (LD_PRELOAD, PYTHONPATH, PATH, EDITOR, ...) "
-            "or Hermes runtime location and security policy (HERMES_HOME, HERMES_YOLO_MODE, ...) "
+            "or Tino runtime location and security policy (TINO_HOME, TINO_YOLO_MODE, ...) "
             "cannot be persisted via the env writer. If you really need this, edit ~/.hermes/.env "
             "directly.")
 
@@ -266,9 +266,9 @@ _EXTRA_ENV_KEYS = frozenset({
     "IRC_SERVER", "IRC_PORT", "IRC_NICKNAME", "IRC_CHANNEL", "IRC_USE_TLS", "IRC_SERVER_PASSWORD",
     "IRC_NICKSERV_PASSWORD", "TERMINAL_ENV", "TERMINAL_SSH_KEY", "TERMINAL_SSH_PORT",
     # Deprecated (replaced by display.tool_progress) but STILL READ by the gateway as a
-    # back-compat fallback. The boolean HERMES_TOOL_PROGRESS variant is unsupported (its only
+    # back-compat fallback. The boolean TINO_TOOL_PROGRESS variant is unsupported (its only
     # consumer, the v3->4 migration, is below the v12 support floor); doctor flags it as ignored.
-    "HERMES_TOOL_PROGRESS_MODE",
+    "TINO_TOOL_PROGRESS_MODE",
     "WHATSAPP_MODE", "WHATSAPP_ENABLED",
     "MATTERMOST_HOME_CHANNEL", "MATTERMOST_HOME_CHANNEL_NAME", "MATTERMOST_REPLY_MODE",
     "MATRIX_PASSWORD", "MATRIX_ENCRYPTION", "MATRIX_DEVICE_ID", "MATRIX_HOME_ROOM",
@@ -276,12 +276,12 @@ _EXTRA_ENV_KEYS = frozenset({
     "MATRIX_RECOVERY_KEY",
     # Langfuse observability plugin tuning keys + standard SDK vars (activation is via
     # plugins.enabled; credentials gate the plugin at runtime).
-    "HERMES_LANGFUSE_ENV", "HERMES_LANGFUSE_RELEASE", "HERMES_LANGFUSE_SAMPLE_RATE",
-    "HERMES_LANGFUSE_MAX_CHARS", "HERMES_LANGFUSE_CAPTURE", "HERMES_LANGFUSE_DEBUG",
+    "TINO_LANGFUSE_ENV", "TINO_LANGFUSE_RELEASE", "TINO_LANGFUSE_SAMPLE_RATE",
+    "TINO_LANGFUSE_MAX_CHARS", "TINO_LANGFUSE_CAPTURE", "TINO_LANGFUSE_DEBUG",
     "LANGFUSE_PUBLIC_KEY", "LANGFUSE_SECRET_KEY", "LANGFUSE_BASE_URL",
     # ACP (Agent Client Protocol) keys — profile-isolable so profiles can use different backends.
-    "HERMES_ACP_AUTH_METHOD", "HERMES_ACP_AUTO_APPROVE", "HERMES_COPILOT_ACP_COMMAND",
-    "HERMES_COPILOT_ACP_ARGS", "COPILOT_CLI_PATH", "COPILOT_ACP_BASE_URL"})
+    "TINO_ACP_AUTH_METHOD", "TINO_ACP_AUTO_APPROVE", "TINO_COPILOT_ACP_COMMAND",
+    "TINO_COPILOT_ACP_ARGS", "COPILOT_CLI_PATH", "COPILOT_ACP_BASE_URL"})
 
 
 # ---- Managed mode (NixOS declarative config) ----
@@ -291,21 +291,21 @@ _NIX_MANAGED_SYSTEMS = {"nixos", "home-manager"}
 # Only the NixOS module ever wrote a bare "true" or an empty marker.
 _LEGACY_MANAGED_SYSTEM = "nixos"
 # Nix store root; identifies `nix run` / `nix profile install` installs (which don't set
-# HERMES_MANAGED). Module-level so tests can patch it without touching /nix/store.
+# TINO_MANAGED). Module-level so tests can patch it without touching /nix/store.
 _NIX_STORE = Path("/nix/store")
 # Homebrew is no longer a supported distribution: these markers fall through to git/unknown
 # detection instead of blocking config writes.
 _IGNORED_MANAGED_VALUES = frozenset({"brew", "homebrew"})
-# Explicit opt-out (``HERMES_MANAGED=false``): without this a bool-shaped value became a package
+# Explicit opt-out (``TINO_MANAGED=false``): without this a bool-shaped value became a package
 # manager literally named "false" and is_managed() blocked `hermes update` (#12864).
 _MANAGED_FALSE_VALUES = frozenset({"false", "0", "no", "off"})
 
 
 def get_managed_system() -> Optional[str]:
     """Return the package manager owning this install, if any.
-    Signals: HERMES_MANAGED env var (systemd service) or a ``.managed`` marker file in
-    HERMES_HOME (NixOS activation script — interactive shells don't see the service env)."""
-    marker = os.getenv("HERMES_MANAGED", "").strip().lower() or None
+    Signals: TINO_MANAGED env var (systemd service) or a ``.managed`` marker file in
+    TINO_HOME (NixOS activation script — interactive shells don't see the service env)."""
+    marker = os.getenv("TINO_MANAGED", "").strip().lower() or None
     managed_marker = get_hermes_home() / ".managed"
     if marker is None and managed_marker.exists():
         try:
@@ -320,14 +320,14 @@ def get_managed_system() -> Optional[str]:
 
 
 def is_managed() -> bool:
-    """Check if Hermes is running in package-manager-managed mode."""
+    """Check if Tino is running in package-manager-managed mode."""
     return get_managed_system() is not None
 
 
 # Nix installs arrive by several routes (nix run, nix profile, system flake, home-manager) and
 # the running process cannot tell which, so the text names the routes instead of one command.
 _NIX_UPDATE_MSG = (
-    "Update Hermes through the Nix source that installed it "
+    "Update Tino through the Nix source that installed it "
     "(e.g. nix profile upgrade, or update your flake input and rebuild with nixos-rebuild or home-manager switch)"
 )
 
@@ -352,10 +352,10 @@ def _install_method_stamp(path: Path) -> Optional[str]:
 
 
 def detect_install_method(project_root: Optional[Path] = None) -> str:
-    """Detect how Hermes was installed: apt/docker/nix/nixos/home-manager/git/unknown.
+    """Detect how Tino was installed: apt/docker/nix/nixos/home-manager/git/unknown.
     Order: code-scoped ``<install tree>/.install_method`` stamp (authoritative) -> legacy
-    ``$HERMES_HOME/.install_method`` -> managed marker -> /nix/store path -> .git dir -> unknown.
-    The stamp lives next to the code because HERMES_HOME is shared data: a container and a host
+    ``$TINO_HOME/.install_method`` -> managed marker -> /nix/store path -> .git dir -> unknown.
+    The stamp lives next to the code because TINO_HOME is shared data: a container and a host
     install can bind-mount the same home, so a home-scoped ``docker`` stamp would make the host
     ``hermes update`` refuse to run. A legacy ``docker`` value is therefore ignored unless we are
     really inside a container, and being in a container alone never implies 'docker'.
@@ -366,7 +366,7 @@ def detect_install_method(project_root: Optional[Path] = None) -> str:
     ``/opt/hermes`` at build time. An unsupported manual install dropped into a container (no stamp) falls
     through to the ``.git`` checks and behaves like any off-path install. See issue #34397.
     """
-    # The stamp is a property of the running code tree (parent of hermes_cli/), NOT of $HERMES_HOME,
+    # The stamp is a property of the running code tree (parent of hermes_cli/), NOT of $TINO_HOME,
     # so it survives two installs sharing a home.
     root = project_root if project_root is not None else get_project_root()
     method = _install_method_stamp(root / ".install_method")
@@ -437,11 +437,11 @@ def recommended_update_command() -> str:
 
 # Shared by ``cmd_update`` and ``_cmd_update_check`` (hermes_cli/main.py) so the wording never
 # forks. The published image excludes ``.git``, so the git update path can never succeed there
-# and the generic "reinstall via install.sh" fallback would install a NEW host-side Hermes.
+# and the generic "reinstall via install.sh" fallback would install a NEW host-side Tino.
 _DOCKER_UPDATE_MESSAGE = """\
 ✗ ``hermes update`` doesn't apply inside the Docker container.
 
-Hermes Agent runs as a published image (nousresearch/hermes-agent), not a
+Tino Agent runs as a published image (nousresearch/hermes-agent), not a
 git checkout — the container has no working tree to pull into.  Update by
 pulling a fresh image and restarting your container instead:
 
@@ -458,7 +458,7 @@ Notes:
     won't move your container — pull the newer tag you actually want, or
     switch to ``:latest`` / ``:main`` for rolling updates.  See available
     tags at https://hub.docker.com/r/nousresearch/hermes-agent/tags
-  • Your config and session history live under ``$HERMES_HOME`` (``/opt/data``
+  • Your config and session history live under ``$TINO_HOME`` (``/opt/data``
     in the container, typically bind-mounted from the host) and persist
     across image upgrades — re-pulling doesn't lose any state.
   • Running a fork?  Build your own image with this repo's ``Dockerfile``
@@ -470,12 +470,12 @@ def format_docker_update_message() -> str:
     return _DOCKER_UPDATE_MESSAGE
 
 
-def format_managed_message(action: str = "modify this Hermes installation") -> str:
+def format_managed_message(action: str = "modify this Tino installation") -> str:
     """Build a user-facing error for managed installs."""
     managed_system = get_managed_system() or "a package manager"
     return (
-        f"Cannot {action}: this Hermes installation is managed by {managed_system}.\n"
-        "Use your package manager to upgrade or reinstall Hermes.")
+        f"Cannot {action}: this Tino installation is managed by {managed_system}.\n"
+        "Use your package manager to upgrade or reinstall Tino.")
 
 
 def managed_error(action: str = "modify configuration"):
@@ -484,12 +484,12 @@ def managed_error(action: str = "modify configuration"):
 
 
 def get_container_exec_info() -> Optional[dict]:
-    """Read container mode metadata from HERMES_HOME/.container-mode.
+    """Read container mode metadata from TINO_HOME/.container-mode.
     Written by the NixOS activation script when container.enable = true; tells the host CLI to
     exec into the container instead of running locally. None when container mode is off, when
-    already inside the container, or when HERMES_DEV=1 is set. Only FileNotFoundError is
+    already inside the container, or when TINO_DEV=1 is set. Only FileNotFoundError is
     swallowed; other errors (permissions, malformed data) propagate."""
-    if os.environ.get("HERMES_DEV") == "1":
+    if os.environ.get("TINO_DEV") == "1":
         return None
 
     from hermes_constants import is_container
@@ -514,7 +514,7 @@ def get_container_exec_info() -> Optional[dict]:
         "hermes_bin": info.get("hermes_bin", "/data/current-package/bin/hermes")}
 
 
-# ---- Config paths / HERMES_HOME skeleton ----
+# ---- Config paths / TINO_HOME skeleton ----
 
 def get_config_path() -> Path:
     """Get the main config file path."""
@@ -526,8 +526,8 @@ def require_parseable_user_config(*, ignore_user_config: bool = False) -> None:
     Interactive surfaces keep ``load_config()``'s recovery behavior so the operator can repair
     the file; a one-shot run has no such chance, and defaults there could silently pick a hosted
     provider and spend against ``.env`` credentials. Missing/empty files stay valid first-run
-    states; ``--ignore-user-config`` / HERMES_IGNORE_USER_CONFIG=1 remain authoritative."""
-    if ignore_user_config or os.environ.get("HERMES_IGNORE_USER_CONFIG") == "1":
+    states; ``--ignore-user-config`` / TINO_IGNORE_USER_CONFIG=1 remain authoritative."""
+    if ignore_user_config or os.environ.get("TINO_IGNORE_USER_CONFIG") == "1":
         return
 
     config_path = get_config_path()
@@ -547,7 +547,7 @@ def require_parseable_user_config(*, ignore_user_config: bool = False) -> None:
     backup_path = backup_config(config_path, "corrupt")
     where = _yaml_error_location(parse_error)
     message = (
-        f"Hermes stopped because your settings file ({config_path}) has a formatting error"
+        f"Tino stopped because your settings file ({config_path}) has a formatting error"
         f"{f' at {where}' if where else ''}. Fix it with `hermes config edit` and check with "
         "`hermes config check`, or add --ignore-user-config to run once with default settings.")
     if backup_path is not None:
@@ -568,11 +568,11 @@ def get_project_root() -> Path:
 
 
 def _resolve_hermes_uid_gid() -> tuple[Optional[int], Optional[int]]:
-    """Read HERMES_UID / HERMES_GID (set by Docker deployments); (None, None) if unset/invalid/Windows.
-    The entrypoint chowns HERMES_HOME once, but subdirs created at runtime (``profiles/<name>/``)
+    """Read TINO_UID / TINO_GID (set by Docker deployments); (None, None) if unset/invalid/Windows.
+    The entrypoint chowns TINO_HOME once, but subdirs created at runtime (``profiles/<name>/``)
     need the same chown or they land root:root and block later uid-mapped workers.
 
-    Docker containers running Hermes commonly set these to map the in-container user to a host user so
+    Docker containers running Tino commonly set these to map the in-container user to a host user so
     volume-mounted state files end up with the right ownership. See #34107.
     """
     if sys.platform == "win32":
@@ -584,11 +584,11 @@ def _resolve_hermes_uid_gid() -> tuple[Optional[int], Optional[int]]:
         except (TypeError, ValueError):
             return None
 
-    return _env_int("HERMES_UID"), _env_int("HERMES_GID")
+    return _env_int("TINO_UID"), _env_int("TINO_GID")
 
 
 def _chown_to_hermes_uid(path) -> None:
-    """Chown ``path`` to ``HERMES_UID:HERMES_GID`` when set; EPERM/ENOENT are non-fatal (the
+    """Chown ``path`` to ``TINO_UID:TINO_GID`` when set; EPERM/ENOENT are non-fatal (the
     entrypoint's startup chown -R fixes ownership on the next restart).
 
     Used by :func:`_secure_dir` to keep ownership consistent across all directories created by
@@ -604,21 +604,21 @@ def _chown_to_hermes_uid(path) -> None:
 
 
 def _secure_dir(path):
-    """chmod a directory owner-only (0700) and apply HERMES_UID/GID ownership. No-op when managed;
-    in a container only an explicit HERMES_HOME_MODE is applied. HERMES_HOME_MODE (e.g. 0701)
-    overrides the mode so a web server can traverse HERMES_HOME to a served subdirectory without
+    """chmod a directory owner-only (0700) and apply TINO_UID/GID ownership. No-op when managed;
+    in a container only an explicit TINO_HOME_MODE is applied. TINO_HOME_MODE (e.g. 0701)
+    overrides the mode so a web server can traverse TINO_HOME to a served subdirectory without
     directory listings.
 
-    Also applies ``HERMES_UID``/``HERMES_GID``-based ownership when those env vars are set (#34107 — Docker
+    Also applies ``TINO_UID``/``TINO_GID``-based ownership when those env vars are set (#34107 — Docker
     deployments need this so profile subdirs created at runtime by kanban workers don't land as root:root
     and block subsequent uid-mapped workers).
     """
     if is_managed():
         return
-    explicit_mode = os.environ.get("HERMES_HOME_MODE", "").strip()
+    explicit_mode = os.environ.get("TINO_HOME_MODE", "").strip()
     # Same skip as _secure_file: a bind-mounted data dir is often shared with sibling containers
     # running as other UIDs (web UI, permissions fixers); forcing 0700 on it locks them out on every
-    # start (#10757). An explicit HERMES_HOME_MODE is the operator's choice and is still applied.
+    # start (#10757). An explicit TINO_HOME_MODE is the operator's choice and is still applied.
     if _is_container() and not explicit_mode:
         _chown_to_hermes_uid(path)
         return
@@ -634,10 +634,10 @@ def _secure_dir(path):
 
 
 def _is_container() -> bool:
-    """Detect Docker/Podman/LXC (or HERMES_CONTAINER / HERMES_SKIP_CHMOD opt-out).
+    """Detect Docker/Podman/LXC (or TINO_CONTAINER / TINO_SKIP_CHMOD opt-out).
     Volume-mounted config is not forced to 0o600 in containers: gateway and dashboard may run
     as different UIDs, or the mount itself needs broader permissions."""
-    if (os.environ.get("HERMES_CONTAINER") or os.environ.get("HERMES_SKIP_CHMOD")
+    if (os.environ.get("TINO_CONTAINER") or os.environ.get("TINO_SKIP_CHMOD")
             or os.path.exists("/.dockerenv")):
         return True
     try:
@@ -696,8 +696,8 @@ def _ensure_default_soul_md(home: Path) -> None:
 
 # Home paths whose directory skeleton was created this process. Only successful passes are
 # recorded, so a raised managed-mode/missing-profile error keeps re-checking on later loads.
-_HERMES_HOME_ENSURED: set = set()
-_HERMES_HOME_SUBDIRS = (
+_TINO_HOME_ENSURED: set = set()
+_TINO_HOME_SUBDIRS = (
     "cron", "sessions", "logs", "logs/curator", "memories",
     "pairing", "hooks", "image_cache", "audio_cache", "skills")
 
@@ -713,10 +713,10 @@ def ensure_hermes_home():
     # empty shell cannot skip the deleted-profile guard.
     from hermes_constants import assert_named_profile_home_live
     assert_named_profile_home_live(home)
-    if key in _HERMES_HOME_ENSURED and home.is_dir():
+    if key in _TINO_HOME_ENSURED and home.is_dir():
         return
     from hermes_cli.config_home import initialize_home
-    initialize_home(home, _HERMES_HOME_SUBDIRS, _HERMES_HOME_ENSURED)
+    initialize_home(home, _TINO_HOME_SUBDIRS, _TINO_HOME_ENSURED)
 
 
 # ---- Config loading/saving ----
@@ -1207,7 +1207,7 @@ def _validate_timezone(config: Dict[str, Any], issues: List[ConfigIssue]) -> Non
     tz = config.get("timezone")
     hint = ("Use an IANA zone name such as America/New_York or Asia/Tokyo (see "
             "`timedatectl list-timezones`). With an invalid value the agent clock and cron "
-            "schedules silently fall back to server-local time. HERMES_TIMEZONE overrides "
+            "schedules silently fall back to server-local time. TINO_TIMEZONE overrides "
             "this key when set.")
     if tz is not None and not isinstance(tz, str):
         _issue(issues, "error", f"timezone must be an IANA zone name string, got {tz!r}", hint)
@@ -1328,7 +1328,7 @@ def validate_config_structure(config: Optional[Dict[str, Any]] = None) -> List["
 
     if cp and not config.get("model"):
         _issue(issues, "warning",
-               "custom_providers defined but no 'model' section — Hermes won't know which provider to use",
+               "custom_providers defined but no 'model' section — Tino won't know which provider to use",
                "Add a model section:\n  model:\n    provider: custom\n    default: your-model-name\n"
                "    base_url: https://...")
 
@@ -1941,7 +1941,7 @@ def _canonicalize_config(config: Dict[str, Any]) -> Dict[str, Any]:
 
 
 # Sentinel for an unlimited turn budget. ``sys.maxsize`` survives the str->int round-trip through
-# the HERMES_MAX_ITERATIONS env bridge, works in every ``<``/``>=``/``max - used`` comparison in
+# the TINO_MAX_ITERATIONS env bridge, works in every ``<``/``>=``/``max - used`` comparison in
 # the iteration budget without an "unlimited" special case, and is unreachable in practice.
 TURN_LIMIT_UNLIMITED = sys.maxsize
 
@@ -2187,7 +2187,7 @@ def terminal_config_env_var_for_key(key: str) -> Optional[str]:
 
 
 def _is_ssh_remote_tilde_cwd(backend: str, cwd: str) -> bool:
-    """Whether the remote SSH shell must expand *cwd* itself: ``~`` expanded on the Hermes host
+    """Whether the remote SSH shell must expand *cwd* itself: ``~`` expanded on the Tino host
     would name the host/container home instead of the SSH user's."""
     return (backend or "").strip().lower() == "ssh" and (cwd == "~" or cwd.startswith("~/"))
 
@@ -2708,10 +2708,10 @@ def save_env_value(key: str, value: str):
 def custom_endpoint_key_env(identity: str) -> str:
     """Env var name holding a custom endpoint's API key.
     ``identity`` is the endpoint's own id (Desktop endpoint id, or ``host:port`` for CLI setup),
-    so two endpoints on one host get separate slots. The fixed ``HERMES_CUSTOM_`` prefix keeps the
+    so two endpoints on one host get separate slots. The fixed ``TINO_CUSTOM_`` prefix keeps the
     name POSIX-valid when the slug starts with a digit (``save_env_value`` rejects those)."""
     slug = re.sub(r"[^A-Z0-9]+", "_", str(identity or "").upper()).strip("_")
-    return f"HERMES_CUSTOM_{slug}_API_KEY" if slug else "HERMES_CUSTOM_API_KEY"
+    return f"TINO_CUSTOM_{slug}_API_KEY" if slug else "TINO_CUSTOM_API_KEY"
 
 
 def remove_env_value(key: str) -> bool:
@@ -2772,7 +2772,7 @@ def save_env_value_secure(key: str, value: str) -> Dict[str, Any]:
 
 def reload_env() -> int:
     """Re-read ~/.hermes/.env into os.environ; returns count of vars changed.
-    Removes deleted vars only when known to Hermes (OPTIONAL_ENV_VARS and _EXTRA_ENV_KEYS) so
+    Removes deleted vars only when known to Tino (OPTIONAL_ENV_VARS and _EXTRA_ENV_KEYS) so
     unrelated environment is never clobbered."""
     env_vars = load_env()
     count = 0
@@ -2819,7 +2819,7 @@ def get_env_value(key: str) -> Optional[str]:
 
 
 def get_env_value_prefer_dotenv(key: str) -> Optional[str]:
-    """Resolve a Hermes-managed credential preferring ``~/.hermes/.env`` over ``os.environ``, so a
+    """Resolve a Tino-managed credential preferring ``~/.hermes/.env`` over ``os.environ``, so a
     deliberate .env edit beats a stale value inherited from the parent shell."""
     return load_env().get(key) or _scoped_environ_get(key)
 
@@ -2915,14 +2915,14 @@ def _show_model_section(config: Dict[str, Any]) -> None:
     print(f"  Model:        {redact_config_value(config.get('model', 'not set'))}")
     cfg_max_turns = config.get('agent', {}).get('max_turns', DEFAULT_CONFIG['agent']['max_turns'])
     print(f"  Max turns:    {cfg_max_turns}")
-    # Read the .env FILE directly so a stale HERMES_MAX_ITERATIONS ghost is caught even when the
+    # Read the .env FILE directly so a stale TINO_MAX_ITERATIONS ghost is caught even when the
     # gateway bridge already overrode os.environ.
     try:
-        env_ghost = load_env().get("HERMES_MAX_ITERATIONS")
+        env_ghost = load_env().get("TINO_MAX_ITERATIONS")
     except Exception:
         env_ghost = None
     if env_ghost is not None and str(env_ghost).strip() != str(cfg_max_turns).strip():
-        print(color(f"                ⚠ .env has stale HERMES_MAX_ITERATIONS={env_ghost} "
+        print(color(f"                ⚠ .env has stale TINO_MAX_ITERATIONS={env_ghost} "
                     f"(run 'hermes doctor --fix' to remove)", Colors.YELLOW))
 
 
@@ -3035,7 +3035,7 @@ def show_config():
 
     print()
     print(color("┌─────────────────────────────────────────────────────────┐", Colors.CYAN))
-    print(color("│              ☤ Hermes Configuration                    │", Colors.CYAN))
+    print(color("│              ☤ Tino Configuration                    │", Colors.CYAN))
     print(color("└─────────────────────────────────────────────────────────┘", Colors.CYAN))
     _show_managed_banner()
 
@@ -3137,7 +3137,7 @@ def _model_assignment_text(value: Any) -> str:
 def resolve_cron_model_drift_defaults(
     config: Any, *, environ: Optional[Dict[str, str]] = None) -> Tuple[str, str]:
     """Resolve the global ``(provider, model)`` cron compares against snapshots.
-    Mirrors the scheduler's precedence: a truthy configured model wins over ``HERMES_MODEL``; the
+    Mirrors the scheduler's precedence: a truthy configured model wins over ``TINO_MODEL``; the
     environment is only a fallback. Per-job and cron fleet defaults are handled by the caller
     because they cover an axis rather than changing the global assignment."""
     env = os.environ if environ is None else environ
@@ -3147,7 +3147,7 @@ def resolve_cron_model_drift_defaults(
         provider = _model_assignment_text(model_config.get("provider"))
         model_config = model_config.get("default") or model_config.get("model") or model_config.get("name")
     configured_model = _model_assignment_text(model_config)
-    return provider, configured_model or _model_assignment_text(env.get("HERMES_MODEL", ""))
+    return provider, configured_model or _model_assignment_text(env.get("TINO_MODEL", ""))
 
 
 def cron_model_drift_axes(
@@ -3637,7 +3637,7 @@ def _write_user_config(config_path: Path, user_config: Dict[str, Any]) -> None:
 def _print_unknown_key_notice(key: str, suggestion: Optional[str]) -> None:
     print(color(
         f"⚠ '{key}' is not a recognized config key — it was saved anyway, "
-        "but Hermes may not read it.", Colors.YELLOW))
+        "but Tino may not read it.", Colors.YELLOW))
     if suggestion:
         print(color(f"  Did you mean: {suggestion}", Colors.YELLOW))
     # The env bridge covers custom TOP-LEVEL keys only; an unseeded nested path (``stt.provider``)
@@ -3691,7 +3691,7 @@ def set_config_value(key: str, value: str, force: bool = False):
     if is_env_setting_key(key):
         # Every UPPER_SNAKE name is an environment setting: same file the platform setup flows and
         # /sethome write, and the only one os.getenv readers see. config.yaml never gets one from
-        # here, --force included (#111848). The env writer's denylist (HERMES_YOLO_MODE, PATH, ...)
+        # here, --force included (#111848). The env writer's denylist (TINO_YOLO_MODE, PATH, ...)
         # therefore also refuses the config.yaml detour that used to bridge those into os.environ.
         try:
             save_env_setting(key, value)
@@ -3825,7 +3825,7 @@ def get_config_value(key: str, *, as_json: bool = False, raw: bool = False):
         is_known, suggestion = _validate_config_key(key)
         if not is_known:
             print(color(
-                f"⚠ '{key}' is not a recognized config key — Hermes may not read it; the value "
+                f"⚠ '{key}' is not a recognized config key — Tino may not read it; the value "
                 "printed above comes from your config file.", Colors.YELLOW), file=sys.stderr)
             if suggestion:
                 print(color(f"  Did you mean: {suggestion}", Colors.YELLOW), file=sys.stderr)
@@ -4141,7 +4141,7 @@ def _install_method_project_root(project_root: Optional[Path] = None) -> Path:
 
     This is the parent of ``hermes_cli/`` — i.e. the git checkout for source
     installs, ``/opt/hermes`` inside the published image. It is a property of
-    the running interpreter, NOT of ``$HERMES_HOME``, which is why a
+    the running interpreter, NOT of ``$TINO_HOME``, which is why a
     code-scoped stamp here is immune to two installs sharing one data
     directory.
     """
@@ -4153,7 +4153,7 @@ def stamp_install_method(method: str, project_root: Optional[Path] = None) -> No
     """Write the install method next to the running code (code-scoped stamp).
 
     The stamp lives in the install tree (``<install tree>/.install_method``),
-    not in ``$HERMES_HOME``, so that two installs sharing one data directory
+    not in ``$TINO_HOME``, so that two installs sharing one data directory
     do not overwrite each other's marker. See ``detect_install_method`` for
     the full rationale.
 

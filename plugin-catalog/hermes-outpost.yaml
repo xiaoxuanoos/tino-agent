@@ -1,7 +1,7 @@
 name: hermes-outpost
 repo: https://github.com/keeltrace/hermes-outpost
 sha: 9764b4fd0fb7f7923b8c5796b0e17036046858f0
-description: Dispatch durable tasks to independent Hermes agents on configured SSH-reachable machines.
+description: Dispatch durable tasks to independent Tino agents on configured SSH-reachable machines.
 maintainer: keeltrace
 tier: community
 category: automation

@@ -2,7 +2,7 @@
 
 Runs commands in Vercel cloud sandboxes through the shared ``BaseEnvironment``
 shell contract. With persistence enabled, task-scoped snapshot ids are stored
-under ``HERMES_HOME`` and new sandboxes are restored from them on task reuse.
+under ``TINO_HOME`` and new sandboxes are restored from them on task reuse.
 """
 
 from __future__ import annotations
@@ -41,7 +41,7 @@ _RUNNING_WAIT_TIMEOUT = timedelta(seconds=30)
 
 def _ensure_vercel_sdk() -> None:
     """Lazy-install vercel SDK on demand. Idempotent."""
-    # The SDK (>=0.7) ships default-on telemetry; Hermes policy is opt-in only, so disable it
+    # The SDK (>=0.7) ships default-on telemetry; Tino policy is opt-in only, so disable it
     # before the SDK is imported. setdefault: an explicit user value is never overridden.
     os.environ.setdefault("VERCEL_TELEMETRY_DISABLED", "1")
     ensure_lazy_dep("terminal.vercel")

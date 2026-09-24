@@ -1,0 +1,24 @@
+# Single-user cloud staging only. The dashboard is reachable through an SSH
+# tunnel, not from the public internet. Do not use this for public registration.
+name: tino-agent-staging
+
+services:
+  agent:
+    # Published only from the separately owned Tino repository. No upstream
+    # Nous image and no build from a potentially dirty host checkout.
+    image: ${TINO_IMAGE:?Set TINO_IMAGE to the Tino GHCR image tag}
+    container_name: tino-agent-staging
+    restart: unless-stopped
+    network_mode: host
+    environment:
+      TINO_DASHBOARD: "1"
+      TINO_DASHBOARD_HOST: "127.0.0.1"
+      TINO_DASHBOARD_PORT: "9119"
+      TINO_UID: "10000"
+      TINO_GID: "10000"
+    volumes:
+      - tino_data:/opt/data
+    command: ["gateway", "run"]
+
+volumes:
+  tino_data:

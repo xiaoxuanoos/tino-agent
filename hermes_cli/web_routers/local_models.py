@@ -331,20 +331,45 @@ def download_file(url: str, dest: Path, job: Dict[str, Any], *, base_done: int =
     errors: list[Exception] = []
 
     def pump(r, f) -> None:
-        for chunk in iter(lambda: r.read(_CHUNK), b""):
+        while True:
+            chunk = r.read(_CHUNK)
+            if not chunk:
+                break
             f.write(chunk)
             with progress_lock:
                 file_done[0] += len(chunk)
                 job["done_bytes"] = base_done + file_done[0]
 
     def fetch_range(start: int, end: int) -> None:
-        try:
-            req = urllib.request.Request(url, headers={"Range": f"bytes={start}-{end}"})
-            with urllib.request.urlopen(req, timeout=120) as r, open(tmp, "r+b") as f:
-                f.seek(start)
-                pump(r, f)
-        except Exception as exc:  # noqa: BLE001
-            errors.append(exc)
+        # CDN/TLS streams occasionally die midway through a range. Resume
+        # only the missing suffix; a later successful request must not count
+        # previously written bytes twice or stage a hole-filled GGUF.
+        pos = start
+        for attempt in range(5):
+            try:
+                req = urllib.request.Request(url, headers={"Range": f"bytes={pos}-{end}"})
+                with urllib.request.urlopen(req, timeout=120) as r, open(tmp, "r+b") as f:
+                    content_range = r.headers.get("Content-Range", "")
+                    if r.status != 206 or not content_range.startswith(f"bytes {pos}-"):
+                        raise RuntimeError(f"model host did not honor byte range at {pos}")
+                    f.seek(pos)
+                    while pos <= end:
+                        chunk = r.read(min(_CHUNK, end - pos + 1))
+                        if not chunk:
+                            break
+                        f.write(chunk)
+                        pos += len(chunk)
+                        with progress_lock:
+                            file_done[0] += len(chunk)
+                            job["done_bytes"] = base_done + file_done[0]
+                if pos > end:
+                    return
+                raise RuntimeError(f"model download stream ended early at byte {pos}")
+            except Exception as exc:  # noqa: BLE001
+                if attempt == 4:
+                    errors.append(exc)
+                    return
+                time.sleep(min(3.0, 0.5 * (attempt + 1)))
 
     try:
         # Probe and preallocation take real seconds on a 20+ GB file — narrate them, or the pane shows a dead '— of X GB'.
@@ -782,7 +807,7 @@ def _terminate_state_pid() -> None:
 
     if not stop_recorded_orphan():
         raise HTTPException(status_code=409, detail=(
-            "Another Hermes process owns this server, or its ownership could not be verified"))
+            "Another Tino process owns this server, or its ownership could not be verified"))
 
 
 def _stop_server() -> None:
@@ -924,7 +949,7 @@ async def local_models_download_browsed(body: BrowsedDownloadBody):
 @router.post("/api/local-models/sideload")
 async def local_models_sideload(body: SideloadBody):
     """Register a GGUF already on this machine: link it into the managed models dir (copy only when linking is
-    impossible) and bounce the router. The original stays put; delete-from-Hermes removes only our link."""
+    impossible) and bounce the router. The original stays put; delete-from-Tino removes only our link."""
     src = Path(body.path)
     if not src.is_file() or src.suffix.lower() != ".gguf":
         raise HTTPException(status_code=422, detail="Pick a .gguf model file")

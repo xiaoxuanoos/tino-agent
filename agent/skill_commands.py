@@ -133,14 +133,14 @@ def _resolve_skill_commands_platform() -> Optional[str]:
     """
     try:
         from gateway.session_context import get_session_env
-        resolved_platform = os.getenv("HERMES_PLATFORM") or get_session_env("HERMES_SESSION_PLATFORM")
+        resolved_platform = os.getenv("TINO_PLATFORM") or get_session_env("TINO_SESSION_PLATFORM")
     except Exception:
-        resolved_platform = os.getenv("HERMES_PLATFORM")
+        resolved_platform = os.getenv("TINO_PLATFORM")
     return resolved_platform or None
 
 
 def _resolve_skill_commands_home() -> str:
-    """Effective Hermes home the scan is scoped to (profiles carry their own
+    """Effective Tino home the scan is scoped to (profiles carry their own
     ``skills.external_dirs``, so a profile switch must invalidate the cache).
 
     A gateway session can switch between profiles that each carry their own ``skills.external_dirs`` (via
@@ -374,7 +374,7 @@ def _scan_skill_md(skill_md: Path, disabled: set, seen_names: set, commands: Dic
     # A collision with a core command (name or alias) skips auto-registration; the skill stays
     # loadable via /skill <name>. The same predicate feeds the /skills + palette notes.
     if skill_command_collision_note(name) is not None:
-        logger.warning("Skill %r generates slash command '/%s' which collides with a core Hermes command; "
+        logger.warning("Skill %r generates slash command '/%s' which collides with a core Tino command; "
                        "skipping auto-registration. Use '/skill %s' instead.", name, cmd_name, name)
         return
     # Dedup on the slug too: "git_helper" and "git-helper" normalize the same.
@@ -659,7 +659,7 @@ def build_auto_load_prompt(
 
     *home_override* makes home resolution EXPLICIT (same seam as ``build_skills_system_prompt``): the config,
     the disabled list and the ``<home>/skills`` lookup all resolve under that home, so a gateway build thread
-    that lost the HERMES_HOME ContextVar cannot pin the launch profile's skills into another profile's prompt.
+    that lost the TINO_HOME ContextVar cannot pin the launch profile's skills into another profile's prompt.
     """
     from hermes_constants import reset_hermes_home_override, set_hermes_home_override
     home_token = set_hermes_home_override(str(home_override)) if home_override is not None else None

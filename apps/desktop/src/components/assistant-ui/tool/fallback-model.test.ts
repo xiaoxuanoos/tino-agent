@@ -188,16 +188,16 @@ describe('buildToolView web-search query', () => {
   it('keeps the query separate from structured search results', () => {
     const view = buildToolView(
       part({
-        args: { query: 'Hermes Agent Desktop tool calls' },
-        result: { web: [{ snippet: 'Desktop docs', title: 'Hermes docs', url: 'https://example.com/docs' }] },
+        args: { query: 'Tino Agent Desktop tool calls' },
+        result: { web: [{ snippet: 'Desktop docs', title: 'Tino docs', url: 'https://example.com/docs' }] },
         toolName: 'web_search'
       }),
       ''
     )
 
-    expect(view.searchQuery).toBe('Hermes Agent Desktop tool calls')
+    expect(view.searchQuery).toBe('Tino Agent Desktop tool calls')
     expect(view.searchHits).toEqual([
-      { snippet: 'Desktop docs', title: 'Hermes docs', url: 'https://example.com/docs' }
+      { snippet: 'Desktop docs', title: 'Tino docs', url: 'https://example.com/docs' }
     ])
   })
 })
@@ -207,7 +207,7 @@ describe('buildToolView browser_navigate title', () => {
     const view = buildToolView(
       part({
         toolName: 'browser_navigate',
-        args: { url: 'https://hermes-agent.nousresearch.com/docs' },
+        args: { url: 'website/docs' },
         result: { success: false, error: 'Command timed out after 60 seconds' }
       }),
       ''
@@ -221,8 +221,8 @@ describe('buildToolView browser_navigate title', () => {
     const view = buildToolView(
       part({
         toolName: 'browser_navigate',
-        args: { url: 'https://hermes-agent.nousresearch.com/docs' },
-        result: { success: true, url: 'https://hermes-agent.nousresearch.com/docs', title: 'Docs' }
+        args: { url: 'website/docs' },
+        result: { success: true, url: 'website/docs', title: 'Docs' }
       }),
       ''
     )

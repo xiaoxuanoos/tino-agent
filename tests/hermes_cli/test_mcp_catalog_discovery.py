@@ -15,7 +15,7 @@ def catalog_client(tmp_path, monkeypatch):
     other = home / "profiles" / "b"
     other.mkdir(parents=True)
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("TINO_HOME", str(home))
     monkeypatch.setenv("PATH", "")
     for directory, servers in ((home, {"demo": {"command": "unused", "enabled": False}}),
                                (other, {"demo": {"command": "unused", "enabled": True},
@@ -32,7 +32,7 @@ def catalog_client(tmp_path, monkeypatch):
             "manifest_version": 1, "name": name, "description": "Fixture entry",
             "transport": {"type": "stdio", "command": "must-not-run"}, "suggest": suggest,
         }), encoding="utf-8")
-    monkeypatch.setenv("HERMES_OPTIONAL_MCPS", str(catalog))
+    monkeypatch.setenv("TINO_OPTIONAL_MCPS", str(catalog))
 
     from agent import secret_scope
     from tui_gateway import launch_profile_policy

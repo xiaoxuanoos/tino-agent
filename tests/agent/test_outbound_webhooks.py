@@ -324,7 +324,7 @@ class TestPayload:
         fired (#92674): ``profile`` follows the bound home at fire time."""
         from hermes_constants import reset_hermes_home_override, set_hermes_home_override
 
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("TINO_HOME", str(tmp_path))
         profile_home = tmp_path / "profiles" / "b"
         profile_home.mkdir(parents=True)
         token = set_hermes_home_override(profile_home)
@@ -358,7 +358,7 @@ class TestRegistration:
         assert second == []
 
     def test_safe_mode_skips_registration(self, monkeypatch):
-        monkeypatch.setenv("HERMES_SAFE_MODE", "1")
+        monkeypatch.setenv("TINO_SAFE_MODE", "1")
         cfg = _cfg(
             {"url": "https://example.com/hook", "events": ["on_session_end"]}
         )
@@ -396,7 +396,7 @@ class TestForceReloadHomeScoping:
         cfg = _cfg({"url": _url(http_server), "events": ["on_session_end"]})
         monkeypatch.setattr("hermes_cli.config.load_config", lambda: cfg)
 
-        monkeypatch.setenv("HERMES_HOME", "/tmp/profile-b-webhook")
+        monkeypatch.setenv("TINO_HOME", "/tmp/profile-b-webhook")
         mgr_b = plugins.PluginManager()
         plugins._plugin_manager = mgr_b
         outbound_webhooks.register_from_config(cfg)
@@ -458,12 +458,12 @@ class TestDelivery:
         assert payload["extra"]["completed"] is True
         assert payload["extra"]["model"] == "test-model"
 
-        assert req["headers"]["X-Hermes-Event"] == "on_session_end"
-        assert req["headers"]["X-Hermes-Delivery"]
+        assert req["headers"]["X-Tino-Event"] == "on_session_end"
+        assert req["headers"]["X-Tino-Delivery"]
         expected = hmac.new(
             secret.encode(), req["body"], hashlib.sha256
         ).hexdigest()
-        assert req["headers"]["X-Hermes-Signature-256"] == f"sha256={expected}"
+        assert req["headers"]["X-Tino-Signature-256"] == f"sha256={expected}"
 
     def test_unsigned_delivery_has_no_signature_header(self, http_server):
         cfg = _cfg({"url": _url(http_server), "events": ["on_session_end"]})
@@ -475,7 +475,7 @@ class TestDelivery:
         assert outbound_webhooks.flush()
 
         assert len(http_server.captured) == 1
-        assert "X-Hermes-Signature-256" not in http_server.captured[0]["headers"]
+        assert "X-Tino-Signature-256" not in http_server.captured[0]["headers"]
 
     def test_matcher_filters_tool_events(self, http_server):
         cfg = _cfg(
@@ -542,7 +542,7 @@ class TestDelivery:
         assert http_server.captured[0]["path"] == "/hook"
 
     def test_delivery_id_matches_header_and_body(self, http_server):
-        """The X-Hermes-Delivery header and the signed body's delivery_id
+        """The X-Tino-Delivery header and the signed body's delivery_id
         must be the same value, or receiver-side dedupe breaks."""
         cfg = _cfg(
             {"url": _url(http_server), "events": ["on_session_end"],
@@ -557,7 +557,7 @@ class TestDelivery:
 
         req = http_server.captured[0]
         payload = json.loads(req["body"])
-        assert payload["delivery_id"] == req["headers"]["X-Hermes-Delivery"]
+        assert payload["delivery_id"] == req["headers"]["X-Tino-Delivery"]
 
     def test_connection_error_does_not_raise(self):
         target = outbound_webhooks.WebhookTarget(

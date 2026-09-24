@@ -138,7 +138,7 @@ class TestSubprocessEnvironment:
 
     def test_subprocess_env_strips_parent_python_import_paths(self, monkeypatch):
         """#83427/#84841/#86006/#86104: the browser-use CLI runs under its
-        own Python — inherited PYTHONPATH/PYTHONHOME pointing at Hermes's
+        own Python — inherited PYTHONPATH/PYTHONHOME pointing at Tino's
         venv make it import wrong-ABI C-extensions (pydantic_core) and
         crash. Both must be stripped; unrelated vars survive."""
         import sys
@@ -230,9 +230,9 @@ class TestToolSurfaceSwap:
         assert entry.toolset == "browser-use"
 
     def test_browser_exec_in_browser_toolsets(self):
-        from toolsets import TOOLSETS, _HERMES_CORE_TOOLS
+        from toolsets import TOOLSETS, _TINO_CORE_TOOLS
 
-        assert "browser_exec" in _HERMES_CORE_TOOLS
+        assert "browser_exec" in _TINO_CORE_TOOLS
         assert "browser_exec" in TOOLSETS["browser"]["tools"]
         assert "browser_exec" in TOOLSETS["coding"]["tools"]
 
@@ -683,7 +683,7 @@ class TestOwnTabPreamble:
             bt_session, "_get_session_info",
             lambda key: {"cdp_url": "wss://browser.example/cdp/" + key},
         )
-        cli = _fake_cli(tmp_path, 'cat > /dev/null\necho "sentinel:${_HERMES_BU_PRIVATE_BROWSER:-unset}"\n')
+        cli = _fake_cli(tmp_path, 'cat > /dev/null\necho "sentinel:${_TINO_BU_PRIVATE_BROWSER:-unset}"\n')
         monkeypatch.setattr(bu_cli, "_find_cli", lambda: [cli])
         result = json.loads(bu_cli.browser_exec("print(1)", session="r7k2"))
         assert "sentinel:unset" in result["output"]
@@ -1013,15 +1013,15 @@ class TestBrowserExec:
 
 
 class TestFindCliManagedBin:
-    """MANAGED-FIRST: _find_cli probes $HERMES_HOME/bin before PATH and
-    ~/.local/bin, so the Hermes-installed copy always wins."""
+    """MANAGED-FIRST: _find_cli probes $TINO_HOME/bin before PATH and
+    ~/.local/bin, so the Tino-installed copy always wins."""
 
     @pytest.fixture(autouse=True)
     def _hermetic_home(self, tmp_path, monkeypatch):
         """Pin HOME so the ~/.local/bin probe can't leak the host's real
         user-level installs into these real-PATH-probing tests."""
         monkeypatch.setenv("HOME", str(tmp_path / "userhome"))
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path / "home"))
+        monkeypatch.setenv("TINO_HOME", str(tmp_path / "home"))
         monkeypatch.setenv("PATH", str(tmp_path / "empty"))
 
     def test_managed_bin_browser_use_found(self, tmp_path, monkeypatch):
@@ -1055,7 +1055,7 @@ class TestFindCliManagedBin:
         assert bu_cli._find_cli_unpatched() == [str(cli)]
 
     def test_managed_bin_precedes_user_local_bin(self, tmp_path, monkeypatch):
-        """MANAGED-FIRST: Hermes' managed copy wins over a user-level side
+        """MANAGED-FIRST: Tino' managed copy wins over a user-level side
         install — every backend selection provisions/updates the managed
         copy, so resolution must land on the binary we control (no version
         drift from stray `uv tool install` runs)."""
@@ -1099,9 +1099,9 @@ class TestInstallCli:
     def test_path_install_does_not_short_circuit(self, tmp_path, monkeypatch):
         """MANAGED-FIRST: a browser-use on PATH is a user-level side install
         and must NOT satisfy install_cli() — only the managed copy does,
-        otherwise resolution stays pinned to a binary Hermes can't update."""
+        otherwise resolution stays pinned to a binary Tino can't update."""
         cli = _fake_cli(tmp_path, "")
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path / "home"))
+        monkeypatch.setenv("TINO_HOME", str(tmp_path / "home"))
         monkeypatch.setattr(bu_cli.shutil, "which", lambda name, path=None: cli if name == "browser-use" and path is None else None)
         import sys as _sys
         import types as _types
@@ -1120,14 +1120,14 @@ class TestInstallCli:
         cli = bin_dir / "browser-use"
         cli.write_text("#!/bin/sh\n", encoding="utf-8")
         cli.chmod(cli.stat().st_mode | stat.S_IXUSR)
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path / "home"))
+        monkeypatch.setenv("TINO_HOME", str(tmp_path / "home"))
         monkeypatch.setenv("PATH", str(tmp_path / "empty"))
         ok, msg = bu_cli.install_cli()
         assert ok is True
         assert "already installed" in msg
 
     def test_no_uv_anywhere_fails_with_guidance(self, tmp_path, monkeypatch):
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path / "home"))
+        monkeypatch.setenv("TINO_HOME", str(tmp_path / "home"))
         monkeypatch.setenv("PATH", str(tmp_path / "empty"))
         import sys as _sys
         import types as _types
@@ -1142,7 +1142,7 @@ class TestInstallCli:
         home = tmp_path / "home"
         bin_dir = home / "bin"
         bin_dir.mkdir(parents=True)
-        monkeypatch.setenv("HERMES_HOME", str(home))
+        monkeypatch.setenv("TINO_HOME", str(home))
         monkeypatch.setenv("PATH", str(tmp_path / "empty"))
         # install_cli verifies via _find_cli(), which the tests/tools conftest
         # pins to None — restore the real resolver for this test.
@@ -1168,7 +1168,7 @@ class TestInstallCli:
 
     def test_failed_install_surfaces_stderr_tail(self, tmp_path, monkeypatch):
         home = tmp_path / "home"
-        monkeypatch.setenv("HERMES_HOME", str(home))
+        monkeypatch.setenv("TINO_HOME", str(home))
         monkeypatch.setenv("PATH", str(tmp_path / "empty"))
         uv = tmp_path / "uv"
         uv.write_text('#!/bin/sh\necho "no network" >&2\nexit 1\n', encoding="utf-8")
@@ -1185,7 +1185,7 @@ class TestInstallCli:
 
 class TestDefaultDowngradeNotice:
     def _isolate(self, tmp_path, monkeypatch):
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path / "home"))
+        monkeypatch.setenv("TINO_HOME", str(tmp_path / "home"))
         monkeypatch.setattr("hermes_cli.config.read_raw_config", lambda: {})
 
     def test_notice_when_default_and_cli_missing(self, tmp_path, monkeypatch):
@@ -1207,7 +1207,7 @@ class TestDefaultDowngradeNotice:
         assert bu_cli.default_downgrade_notice() is None
 
     def test_no_notice_on_explicit_backend(self, tmp_path, monkeypatch):
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path / "home"))
+        monkeypatch.setenv("TINO_HOME", str(tmp_path / "home"))
         monkeypatch.setattr(
             "hermes_cli.config.read_raw_config",
             lambda: {"browser": {"backend": bu_cli.BACKEND_DISABLED}},
@@ -1217,7 +1217,7 @@ class TestDefaultDowngradeNotice:
 
 
 class TestLightpandaBackendResolution:
-    """browser.engine: lightpanda in Browser Use mode — Hermes spawns
+    """browser.engine: lightpanda in Browser Use mode — Tino spawns
     ``lightpanda serve`` through the same _get_session_info machinery and
     exports its endpoint, but only when nothing with higher precedence
     (BU_CDP_* env, a CDP override, a cloud provider) claimed the session."""
@@ -1413,7 +1413,7 @@ class TestLightpandaStatusLine:
         return buf.getvalue()
 
     def test_status_reports_lightpanda_in_use(self, monkeypatch):
-        out = self._status(monkeypatch, used=True, reason="Browser Use mode: Hermes spawns `lightpanda serve` per session")
+        out = self._status(monkeypatch, used=True, reason="Browser Use mode: Tino spawns `lightpanda serve` per session")
         assert "Engine: Lightpanda" in out
         assert "spawns `lightpanda serve`" in out
         assert "Binary: /opt/lightpanda" in out

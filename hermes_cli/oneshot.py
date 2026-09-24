@@ -2,7 +2,7 @@
 
 Toolsets = explicit --toolsets, else the user's "cli" toolsets from `hermes tools`. Rules /
 memory / AGENTS.md / preloaded skills = same as a normal chat turn. Approvals are auto-bypassed
-(HERMES_YOLO_MODE=1). Model/provider mirror `hermes chat`: both optional; only --model → auto-detect
+(TINO_YOLO_MODE=1). Model/provider mirror `hermes chat`: both optional; only --model → auto-detect
 the provider; only --provider → error (ambiguous).
 """
 
@@ -249,7 +249,7 @@ def run_oneshot(
 ) -> int:
     """Execute a single prompt and print only the final content block.
 
-    Model/provider fall back to ``HERMES_INFERENCE_MODEL`` and config.yaml. ``usage_file`` gets a
+    Model/provider fall back to ``TINO_INFERENCE_MODEL`` and config.yaml. ``usage_file`` gets a
     JSON usage report even when the run fails. ``resume`` is a session id (already normalized by
     the CLI layer: latest/title/--continue resolution) whose transcript is loaded and continued
     by this turn. Returns the exit code; the caller owns process termination.
@@ -260,10 +260,10 @@ def run_oneshot(
 
     # --provider without --model is ambiguous (the provider may not host the configured model, and
     # picking its catalog default hides the mismatch). Validate BEFORE the stderr redirect.
-    env_model_early = os.getenv("HERMES_INFERENCE_MODEL", "").strip()
+    env_model_early = os.getenv("TINO_INFERENCE_MODEL", "").strip()
     if provider and not ((model or "").strip() or env_model_early):
         sys.stderr.write(
-            "hermes -z: --provider requires --model (or HERMES_INFERENCE_MODEL). "
+            "hermes -z: --provider requires --model (or TINO_INFERENCE_MODEL). "
             "Pass both explicitly, or neither to use your configured defaults.\n"
         )
         return 2
@@ -275,11 +275,11 @@ def run_oneshot(
     use_config_toolsets = _normalize_toolsets(toolsets) is None
 
     # Non-interactive by definition — an approval prompt would hang forever.
-    os.environ["HERMES_YOLO_MODE"] = "1"
-    os.environ["HERMES_ACCEPT_HOOKS"] = "1"
+    os.environ["TINO_YOLO_MODE"] = "1"
+    os.environ["TINO_ACCEPT_HOOKS"] = "1"
     # Same finite-chat marker as `hermes chat -q` (cli.py): the session-source resolver uses it to drop an
     # inherited tui/desktop transport label, and delegate dispatch to route detached results inline.
-    os.environ["HERMES_SINGLE_QUERY_SESSION"] = "1"
+    os.environ["TINO_SINGLE_QUERY_SESSION"] = "1"
 
     # Nothing here drains process_registry.completion_queue (only cli.py's process_loop and the
     # gateway watchers do), so left unbound delegate_task would be forced background and every
@@ -388,7 +388,7 @@ def _resolve_model_and_provider(cfg: dict, model: Optional[str], provider: Optio
     from hermes_cli.models import detect_provider_for_model
 
     model_cfg = cfg.get("model") or {}
-    env_model = os.getenv("HERMES_INFERENCE_MODEL", "").strip()
+    env_model = os.getenv("TINO_INFERENCE_MODEL", "").strip()
     explicit_model = (model or "").strip() or env_model
     choice = _ModelChoice(explicit_model or _configured_model(model_cfg), (provider or "").strip() or None)
     if choice.provider is not None or not explicit_model:
@@ -406,7 +406,7 @@ def _resolve_model_and_provider(cfg: dict, model: Optional[str], provider: Optio
         cfg_provider = ""
         if isinstance(model_cfg, dict):
             cfg_provider = str(model_cfg.get("provider") or "").strip().lower()
-        current_provider = cfg_provider or os.getenv("HERMES_INFERENCE_PROVIDER", "").strip().lower() or "auto"
+        current_provider = cfg_provider or os.getenv("TINO_INFERENCE_PROVIDER", "").strip().lower() or "auto"
         # Same owner as HermesCLI startup: a provider-qualified string (``custom:<name>:<model>``,
         # ``<provider>/<model>``) selects that provider before auto-detection can hand the unsplit
         # string to the configured default (#73943).
@@ -588,8 +588,8 @@ def _run_agent(
             ephemeral_system_prompt=skills_prompt,
             reasoning_config=reasoning_config,
             # The only interactive callback wired: no user sits at a terminal. Sudo prompts gate on
-            # HERMES_INTERACTIVE (never set), hook approval via HERMES_ACCEPT_HOOKS=1, dangerous
-            # commands via HERMES_YOLO_MODE=1, skill secret capture degrades gracefully.
+            # TINO_INTERACTIVE (never set), hook approval via TINO_ACCEPT_HOOKS=1, dangerous
+            # commands via TINO_YOLO_MODE=1, skill secret capture degrades gracefully.
             clarify_callback=_oneshot_clarify_callback,
         )
         # Belt-and-braces: no streaming display callbacks may bypass our stdout capture.

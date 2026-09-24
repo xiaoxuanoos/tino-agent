@@ -1,7 +1,7 @@
 """#70337/#87331/#90495: the ZIP swap must preserve the gitignored build outputs.
 
 The GitHub source ZIP carries only source; the BUILT desktop app
-(release/win-unpacked/Hermes.exe), its renderer bundle (dist/), its own
+(release/win-unpacked/Tino.exe), its renderer bundle (dist/), its own
 node_modules and the dashboard assets (hermes_cli/web_dist/) exist only in
 the live tree. Swapping `apps` / `hermes_cli` without grafting them deletes
 them — and the dirty-tree guard must admit their ``!!`` status lines, or the
@@ -22,11 +22,11 @@ def test_staged_apps_swap_preserves_live_release_dir(tmp_path, monkeypatch):
         _stage_replacement,
     )
 
-    # live tree: apps/desktop/release/win-unpacked/Hermes.exe + old source
+    # live tree: apps/desktop/release/win-unpacked/Tino.exe + old source
     root = tmp_path / "install"
     live_apps = root / "apps" / "desktop"
     (live_apps / "release" / "win-unpacked").mkdir(parents=True)
-    (live_apps / "release" / "win-unpacked" / "Hermes.exe").write_bytes(b"MZbuilt")
+    (live_apps / "release" / "win-unpacked" / "Tino.exe").write_bytes(b"MZbuilt")
     (live_apps / "electron").mkdir()
     (live_apps / "electron" / "main.ts").write_text("old source", encoding="utf-8")
 
@@ -55,7 +55,7 @@ def test_staged_apps_swap_preserves_live_release_dir(tmp_path, monkeypatch):
     assert (root / "apps" / "desktop" / "electron" / "main.ts").read_text(encoding="utf-8") == (
         "new source"
     )
-    exe = root / "apps" / "desktop" / "release" / "win-unpacked" / "Hermes.exe"
+    exe = root / "apps" / "desktop" / "release" / "win-unpacked" / "Tino.exe"
     assert exe.exists() and exe.read_bytes() == b"MZbuilt"
 
 
@@ -68,7 +68,7 @@ def test_zip_swap_keeps_every_nested_build_output_and_the_guard_admits_them(tmp_
 
     root = tmp_path / "install"
     outputs = {
-        "apps/desktop/release/win-unpacked/Hermes.exe": b"MZbuilt",
+        "apps/desktop/release/win-unpacked/Tino.exe": b"MZbuilt",
         "apps/desktop/node_modules/electron/index.js": b"electron",
         "apps/desktop/dist/index.html": b"live renderer",
         "hermes_cli/web_dist/index.html": b"<dashboard>",
@@ -133,7 +133,7 @@ def test_guard_admits_a_real_installs_ignored_set_and_blocks_only_what_the_swap_
                    check=True)
     for ignored in (".bytecode-fingerprint", ".hermes-bootstrap-complete", ".install_method",
                     "hermes_agent.egg-info/PKG-INFO", "hermes_cli/__pycache__/main.pyc", "__pycache__/x.pyc",
-                    "apps/desktop/release/win-unpacked/Hermes.exe", "apps/desktop/dist/index.html",
+                    "apps/desktop/release/win-unpacked/Tino.exe", "apps/desktop/dist/index.html",
                     "apps/desktop/build/icon.ico", "apps/desktop/node_modules/electron/index.js",
                     "hermes_cli/web_dist/index.html", "ui-tui/dist/entry.js", "ui-tui/node_modules/x/index.js",
                     "ui-tui/packages/hermes-ink/dist/index.js", "web/node_modules/x/index.js",

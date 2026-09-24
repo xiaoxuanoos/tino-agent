@@ -48,13 +48,13 @@ _TERMUX_INSTALL_ALL_FALLBACK_NOTES = (
 def _is_kanban_worker_env_gate(item: dict) -> bool:
     """Return True when Kanban is unavailable only because this is not a worker process."""
     tools = item.get("tools") or []
-    return (item.get("name") == "kanban" and not os.environ.get("HERMES_KANBAN_TASK")
+    return (item.get("name") == "kanban" and not os.environ.get("TINO_KANBAN_TASK")
             and bool(tools) and all(str(tool).startswith("kanban_") for tool in tools))
 
 
 def _doctor_tool_availability_detail(toolset: str) -> str:
     """Optional explanatory suffix for toolsets whose doctor status needs context."""
-    if toolset == "kanban" and not os.environ.get("HERMES_KANBAN_TASK"):
+    if toolset == "kanban" and not os.environ.get("TINO_KANBAN_TASK"):
         return "(runtime-gated; loaded only for dispatcher-spawned workers)"
     return ""
 
@@ -273,12 +273,12 @@ def _check_terminal_backend(should_fix: bool, f: Finding) -> None:
 def _check_agent_browser(should_fix: bool) -> bool:
     """agent-browser resolution; returns True when browser tools will find a usable install.
 
-    Mirrors ``tools.browser_tool_install._find_agent_browser``'s own cascade (lazy npx or a global/Hermes-managed
+    Mirrors ``tools.browser_tool_install._find_agent_browser``'s own cascade (lazy npx or a global/Tino-managed
     install) so doctor can't diverge from the tools; validate=False keeps it a cheap, side-effect-free check.
     """
     try:
         # agent-browser is no longer a root package.json dependency (#43564) — it resolves lazily via npx
-        # (or a global/Hermes-managed install) at first use.
+        # (or a global/Tino-managed install) at first use.
         from tools.browser_tool_install import _find_agent_browser, _is_npx_agent_browser_sentinel
         resolved = _find_agent_browser(validate=False)
     except Exception:
@@ -416,7 +416,7 @@ def _check_npm_audit(should_fix: bool, f: Finding) -> None:
 
     PROJECT_ROOT is audited with --workspaces=false so the apps/* glob (Electron, node-pty, ...) is never
     resolved for a routine check; web and ui-tui via --workspace. The WhatsApp bridge may live under a writable
-    HERMES_HOME mirror rather than the (possibly read-only) Docker install tree, hence the shared resolver.
+    TINO_HOME mirror rather than the (possibly read-only) Docker install tree, hence the shared resolver.
     """
     from hermes_cli.doctor import PROJECT_ROOT
     npm_bin = _safe_which("npm")
@@ -425,7 +425,7 @@ def _check_npm_audit(should_fix: bool, f: Finding) -> None:
             # Each entry: (cwd, label, extra_audit_args) PROJECT_ROOT is audited with --workspaces=false so
             # that the apps/* glob (which pulls in Electron, node-pty, etc.) is never resolved for a routine
             # security check. The web and ui-tui workspaces are audited separately via --workspace flags.
-            # See #38772. The WhatsApp bridge may live under a writable HERMES_HOME mirror instead of the
+            # See #38772. The WhatsApp bridge may live under a writable TINO_HOME mirror instead of the
             # (possibly read-only) install tree in Docker — resolve it through the shared helper so we audit
             # the dir that actually holds node_modules. See #49561.
             from gateway.platforms.whatsapp_common import resolve_whatsapp_bridge_dir

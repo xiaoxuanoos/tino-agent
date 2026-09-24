@@ -16,10 +16,10 @@ def owners(request, tmp_path, monkeypatch):
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
     root = tmp_path / ".hermes"
     root.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(root))
+    monkeypatch.setenv("TINO_HOME", str(root))
     managed = tmp_path / "managed"
     managed.mkdir()
-    monkeypatch.setenv("HERMES_MANAGED_DIR", str(managed))
+    monkeypatch.setenv("TINO_MANAGED_DIR", str(managed))
     (root / "config.yaml").write_text('display: {suppress_warning_notifications: true}')
     mode = request.param
     if mode == "managed":

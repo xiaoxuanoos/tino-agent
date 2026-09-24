@@ -1,7 +1,7 @@
 """Hindsight memory plugin — MemoryProvider with knowledge graph, entity resolution
 and multi-strategy retrieval; cloud (API key), local_external, or local_embedded.
 
-Config: $HERMES_HOME/hindsight/config.json (profile-scoped), else ~/.hindsight/
+Config: $TINO_HOME/hindsight/config.json (profile-scoped), else ~/.hindsight/
 config.json (legacy, shared), else env: HINDSIGHT_API_KEY / BANK_ID / BUDGET /
 API_URL / MODE / TIMEOUT / IDLE_TIMEOUT / RETAIN_TAGS / RETAIN_OBSERVATION_SCOPES /
 RETAIN_SOURCE / RETAIN_USER_PREFIX / RETAIN_ASSISTANT_PREFIX, and
@@ -49,7 +49,7 @@ from .settings import (
 logger = logging.getLogger(__name__)
 
 _LOCAL_MODES = {"local", "local_embedded"}
-_RETAIN_CONTEXT_DEFAULT = "conversation between Hermes Agent and the User"
+_RETAIN_CONTEXT_DEFAULT = "conversation between Tino Agent and the User"
 
 
 def _ensure_client_dependency() -> None:
@@ -256,7 +256,7 @@ REFLECT_SCHEMA = {
 
 
 def _load_config() -> dict:
-    """$HERMES_HOME/hindsight/config.json (profile-scoped), else ~/.hindsight/config.json
+    """$TINO_HOME/hindsight/config.json (profile-scoped), else ~/.hindsight/config.json
     (legacy, shared), else environment variables."""
     for path in (get_hermes_home() / "hindsight" / "config.json", Path.home() / ".hindsight" / "config.json"):
         # A corrupt (or empty) file falls through to the next source, as before the dedup.
@@ -281,7 +281,7 @@ def _load_config() -> dict:
 
 
 def _event_timestamp() -> str:
-    """Configured Hermes event time with an explicit UTC offset."""
+    """Configured Tino event time with an explicit UTC offset."""
     event_time = _hermes_now()
     # hermes_time.now() is aware; guard a replacement clock emitting offset-less dates.
     if event_time.tzinfo is None or event_time.utcoffset() is None:
@@ -402,7 +402,7 @@ class HindsightMemoryProvider(MemoryProvider):
         return "" if available else _local_runtime_hint(reason).strip()
 
     def save_config(self, values, hermes_home):
-        """Merge *values* into $HERMES_HOME/hindsight/config.json."""
+        """Merge *values* into $TINO_HOME/hindsight/config.json."""
         from utils import atomic_json_write
         config_path = Path(hermes_home) / "hindsight" / "config.json"
         atomic_json_write(config_path, {**read_json_or_empty(config_path), **values}, mode=0o600)
@@ -450,7 +450,7 @@ class HindsightMemoryProvider(MemoryProvider):
             {"key": "retain_async","description": "Process retain asynchronously on the Hindsight server", "default": True},
             {"key": "prefetch_waits_for_retain", "description": "Have the background next-turn prefetch wait for the just-completed retain to become recall-visible on the server (local queue drain + async operation completion) before recalling, so recall includes the just-completed turn (runs off the reply path, adds no response latency)", "default": True},
             {"key": "prefetch_retain_drain_timeout", "description": "Max seconds the background prefetch waits for the retain to become recall-visible (queue drain + server-side completion) before recalling anyway", "default": 10.0},
-            {"key": "retain_context", "description": "Context label for retained memories", "default": "conversation between Hermes Agent and the User"},
+            {"key": "retain_context", "description": "Context label for retained memories", "default": "conversation between Tino Agent and the User"},
             {"key": "recall_max_tokens", "description": "Maximum tokens for recall results", "default": 4096},
             {"key": "recall_max_input_chars", "description": "Maximum input query length for auto-recall", "default": 800},
             {"key": "recall_prompt_preamble", "description": "Custom preamble for recalled memories in context"},
@@ -810,11 +810,11 @@ class HindsightMemoryProvider(MemoryProvider):
         if hasattr(os, "geteuid") and os.geteuid() == 0:
             msg = ("Hindsight local_embedded mode cannot run as root "
                    "(PostgreSQL initdb refuses root). Skipping the embedded "
-                   "memory daemon. Run Hermes as a non-root user, or switch "
+                   "memory daemon. Run Tino as a non-root user, or switch "
                    "to cloud / local_external mode via 'hermes memory setup'.")
             logger.warning(msg)
             # Surface to the terminal too — a daemon that never starts would otherwise fail silently and
-            # the user would only see Hermes get sluggish (issue #13125). This is an automatic
+            # the user would only see Tino get sluggish (issue #13125). This is an automatic
             # startup diagnostic: it goes through the agent's gated warning sink when wired,
             # otherwise through the shared render boundary; the log line above never does.
             with contextlib.suppress(Exception):

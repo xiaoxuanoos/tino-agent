@@ -39,6 +39,12 @@ describe("resolvePageTitle", () => {
     expect(resolvePageTitle("/files", t, [])).toBe("Files");
   });
 
+  it("localizes literal route titles for the Chinese workspace", () => {
+    const chinese = { app: { nav: { chat: "对话" } } } as Translations;
+    expect(resolvePageTitle("/system", chinese, [])).toBe("系统");
+    expect(resolvePageTitle("/files", chinese, [])).toBe("文件");
+  });
+
   it("prefers plugin tab labels", () => {
     expect(
       resolvePageTitle("/kanban", t, [{ path: "/kanban", label: "Kanban" }]),

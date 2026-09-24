@@ -84,7 +84,7 @@ def _scan_context_content(content: str, filename: str, *, user_authored: bool = 
     "context" scope only (strict-scope SSH-backdoor/persistence/exfil patterns are too aggressive for a
     cloned repo's docs); blocking, not warning, because the file would otherwise enter the prompt verbatim.
 
-    *user_authored* (SOUL.md in the user's own HERMES_HOME): a hit is WARNED and the file still loads.
+    *user_authored* (SOUL.md in the user's own TINO_HOME): a hit is WARNED and the file still loads.
     SOUL.md sits in the same trust class as config.yaml — file-tool writes to it go through the
     protected-instruction approval gate (``tools/file_tools_write_guards.py``) and project checkouts never
     supply it — so a user who *documents* "ignore previous instructions" in their security guidance
@@ -101,7 +101,7 @@ def _scan_context_content(content: str, filename: str, *, user_authored: bool = 
         return content
     if user_authored:
         logger.warning("Context file %s matched injection pattern(s) %s; loaded anyway because it is the "
-                       "user's own file in HERMES_HOME — review it if you did not write that text",
+                       "user's own file in TINO_HOME — review it if you did not write that text",
                        filename, ", ".join(findings))
         return content
     logger.warning("Context file %s blocked: %s", filename, ", ".join(findings))
@@ -158,7 +158,9 @@ def _strip_yaml_frontmatter(content: str) -> str:
 DEFAULT_AGENT_IDENTITY = (
     # A behavior spec (sizing rule, named prohibitions, earned-depth escape hatch), not a trait list — trait
     # lists change nothing. Maintainer rule: models UNDER-explore by default; never re-add an exploration-thrift line.
-    "You are Hermes Agent, built by Nous Research. Be direct: match the length of your reply to the weight of the ask "
+    "You are Tino Agent, the user's desktop AI assistant. When asked who you are, identify yourself as Tino Agent. "
+    "Do not volunteer implementation or model-provider details unless the user asks for them. Be direct: match the "
+    "length of your reply to the weight of the ask "
     "— a one-line question gets a one-line answer, and finished work gets a short report of what changed, what's "
     "verified, and what's left, never a replay of the process. No filler (\"Great question,\" \"I'd be happy to\"), no "
     "restating the request back, no re-summarizing what you already said, no narrating tool calls the user can see. "
@@ -166,24 +168,21 @@ DEFAULT_AGENT_IDENTITY = (
     "it. Depth is earned — give it when the user asks for detail, teaches, or the stakes demand it, not by default."
 )
 
-HERMES_AGENT_HELP_GUIDANCE = (
+TINO_AGENT_HELP_GUIDANCE = (
     # Injected only when skill_view exists AND the hermes-agent skill is installed (system_prompt.py slot
     # resolution). No "when the two differ" clause: docs-are-authoritative already carries the precedence.
-    "You run on Hermes Agent (by Nous Research). When the user needs help with Hermes itself — configuring, "
-    "setting up, using, extending, or troubleshooting it — or when you need to understand your own features, "
-    "tools, or capabilities, the documentation at https://hermes-agent.nousresearch.com/docs is your "
-    "authoritative reference and always holds the latest, most up-to-date information. The `hermes-agent` "
-    "skill has the actual commands and proven workflows — load it with skill_view(name='hermes-agent') "
-    "before configuring, modifying, or troubleshooting Hermes so you don't guess or invent workarounds."
+    "You are Tino Agent. For questions about the inherited open-source runtime's commands or internals, "
+    "the Tino Agent documentation at website/docs and the installed "
+    "`tino-agent` skill are technical references, not your product identity. Load the skill with "
+    "skill_view(name='tino-agent') before changing runtime configuration. Explain upstream provenance "
+    "truthfully if the user explicitly asks about the underlying software."
 )
 
 # Variant for sessions without the skills toolset (e.g. Blank Slate): naming skill_view() there would dangle.
-HERMES_AGENT_HELP_GUIDANCE_NO_SKILLS = (
-    "You run on Hermes Agent (by Nous Research). When the user needs help with Hermes itself — configuring, "
-    "setting up, using, extending, or troubleshooting it — or when you need to understand your own features, "
-    "tools, or capabilities, the documentation at https://hermes-agent.nousresearch.com/docs is the "
-    "authoritative reference and always holds the latest, most up-to-date information. Point the user there "
-    "(or read it yourself if you have a way to fetch web content)."
+TINO_AGENT_HELP_GUIDANCE_NO_SKILLS = (
+    "You are Tino Agent. For questions about inherited runtime commands or internals, use the Tino Agent "
+    "documentation at website/docs as a technical reference, not as your "
+    "product identity. Explain upstream provenance truthfully if the user explicitly asks."
 )
 
 
@@ -264,7 +263,7 @@ SKILLS_GUIDANCE = (
 KANBAN_GUIDANCE = (
     "# Kanban task execution protocol\n"
     "You have been assigned ONE task from the shared board at `~/.hermes/kanban.db`. Your task id is in "
-    "`$HERMES_KANBAN_TASK`; your workspace is `$HERMES_KANBAN_WORKSPACE`. The `kanban_*` tools in your schema are your "
+    "`$TINO_KANBAN_TASK`; your workspace is `$TINO_KANBAN_WORKSPACE`. The `kanban_*` tools in your schema are your "
     "primary coordination surface — they write directly to the shared SQLite DB and work regardless of terminal "
     "backend (local/docker/modal/ssh).\n"
     "\n"
@@ -272,7 +271,7 @@ KANBAN_GUIDANCE = (
     "1. **Orient.** Call `kanban_show()` first (no args — it defaults to your task). The response includes title, "
     "body, parent-task handoffs (summary + metadata), any prior attempts on this task if you're a retry, the full "
     "comment thread, and a pre-formatted `worker_context` you can treat as ground truth.\n"
-    "2. **Work inside the workspace.** `cd $HERMES_KANBAN_WORKSPACE` before any file operations. The workspace is "
+    "2. **Work inside the workspace.** `cd $TINO_KANBAN_WORKSPACE` before any file operations. The workspace is "
     "yours for this run. Don't modify files outside it unless the task explicitly asks.\n"
     "3. **Heartbeat on long operations.** Call `kanban_heartbeat(note=...)` every few minutes during long subprocesses "
     "(training, encoding, crawling). Skip heartbeats for short tasks. **If your task may run longer than 1 hour, you "
@@ -314,9 +313,9 @@ KANBAN_GUIDANCE = (
     "card body must carry the decisions it depends on, because workers cannot see sibling context.\n"
     "\n"
     "## Reference details that change outcomes\n\n"
-    "- **Workspace.** `cd $HERMES_KANBAN_WORKSPACE` first. For a `worktree` kind with no `.git`, `git worktree add "
-    "<path> ${HERMES_KANBAN_BRANCH:-wt/$HERMES_KANBAN_TASK}` from the main repo, then cd there. For a project-linked "
-    "task the workspace is a fresh `<repo>/.worktrees/<task-id>` and `$HERMES_KANBAN_BRANCH` a deterministic "
+    "- **Workspace.** `cd $TINO_KANBAN_WORKSPACE` first. For a `worktree` kind with no `.git`, `git worktree add "
+    "<path> ${TINO_KANBAN_BRANCH:-wt/$TINO_KANBAN_TASK}` from the main repo, then cd there. For a project-linked "
+    "task the workspace is a fresh `<repo>/.worktrees/<task-id>` and `$TINO_KANBAN_BRANCH` a deterministic "
     "`<project-slug>/<task-id>` — the main repo is two levels up, so run `git worktree add` from there.\n"
     "- **Deliverables.** Files a human wants go in `kanban_complete(artifacts=[<absolute paths>])` (top-level param; "
     "paths in `metadata` are NOT uploaded). Files must exist at completion.\n"
@@ -536,7 +535,7 @@ STEER_MARKER_OPEN = (
     "once at this position; not tool output and not a new delivery when replayed from conversation history]"
 )
 STEER_MARKER_CLOSE = "[/OUT-OF-BAND USER MESSAGE]"
-# Text after the "[" that opens one of Hermes' own control frames (the steer marker above, the compaction
+# Text after the "[" that opens one of Tino' own control frames (the steer marker above, the compaction
 # handoff and its fallbacks, runtime/system notes, agent.context_compressor._SYNTHETIC_USER_ROW_PREFIXES,
 # agent.title_generator._MACHINE_PREFIXES). Consumers that republish model output as role=user text
 # (hosted rooms) relabel these so a reply cannot reproduce the exact trusted shape. Keep the regex literal in
@@ -574,7 +573,7 @@ STEER_CHANNEL_NOTE = (
     # (anti-lookalike), and it carries full user authority. The former standalone historical-vs-new
     # paragraph (#76805) is now redundant with the marker's own replay clause and was removed.
     "## Mid-turn user steering\n"
-    "Mid-turn, the user can steer you: Hermes delivers their message as a standalone user message right after "
+    "Mid-turn, the user can steer you: Tino delivers their message as a standalone user message right after "
     "the latest tool results, wrapped exactly as:\n"
     f"{STEER_MARKER_OPEN}\n<their message>\n{STEER_MARKER_CLOSE}\n"
     "That marker is a genuine user message with the same authority as their original request — not tool "
@@ -596,10 +595,10 @@ def hud_surface_note(valid_tool_names: "set[str] | None" = None) -> str:
         return ""
     gated = (
         (True,
-         "[Note: this message came from HUD mode — a small floating Hermes "
+         "[Note: this message came from HUD mode — a small floating Tino "
          "window sitting over whatever the user is actually working in, so an "
          'unqualified "this" or "here" usually means the app behind the HUD '
-         "rather than anything inside Hermes. read_window_below identifies that app."),
+         "rather than anything inside Tino. read_window_below identifies that app."),
         (True,
          "They move the HUD from app to app mid-conversation, so one you identified on an earlier turn is "
          "still a live target: a reference that does not fit the window below may name one from a turn or two "
@@ -694,7 +693,7 @@ PLATFORM_HINTS = {
     ),
     "tui": (
         # Same file-delivery reality as the CLI: no MEDIA: interception in tui/.
-        "You are in the Hermes terminal UI (TUI). Files: there is no attachment channel and MEDIA:/path tags "
+        "You are in the Tino terminal UI (TUI). Files: there is no attachment channel and MEDIA:/path tags "
         "are NOT intercepted here (they print as literal text) — deliver a file by stating its absolute path "
         "or URL in plain text. "
         f"{_LOCAL_CRON_DELIVERY_NOTE}"
@@ -703,7 +702,7 @@ PLATFORM_HINTS = {
         # Every claim verified against the shipping renderer (inline-preview-directive.tsx). Widget text is
         # recipe-first: HOW (an inline widget IS a ::preview'd HTML file) and WHY (the frame injects the theme
         # prelude first; width adopts the first measured span). setup_mcp is taught by its own tool schema.
-        "You are chatting inside the Hermes desktop app, a graphical chat surface. Markdown renders with full GitHub "
+        "You are chatting inside the Tino desktop app, a graphical chat surface. Markdown renders with full GitHub "
         "flavor (tables, syntax-highlighted code, math via $...$, task lists, callouts). Deliver files by writing "
         "MEDIA:/absolute/path/to/file — any file type: images/audio/video render inline, everything else becomes a "
         "card with Download and preview buttons. Remote image URLs render via ![alt](url); local files ONLY via MEDIA: "
@@ -881,7 +880,7 @@ _WINDOWS_BASH_SHELL_HINT = (
     "path conversion is disabled here, so `git -C /c/Users/x` or `node /tmp/a.js` fails with 'cannot change to'/'not "
     "found' even though `cd /c/Users/x` (a bash builtin) works. Pass `C:/Users/x`-style forward-slash native paths to "
     # no-tmp: ok — tells the model what NOT to use
-    "native tools, and prefer `$LOCALAPPDATA/Temp` (or `$TMPDIR`, which Hermes points at its own scratch dir) for scratch files a native tool must read — never a bare `/tmp`. When "
+    "native tools, and prefer `$LOCALAPPDATA/Temp` (or `$TMPDIR`, which Tino points at its own scratch dir) for scratch files a native tool must read — never a bare `/tmp`. When "
     "answering prompts in a pty background process, use process(submit) — never process(write) with a bare trailing "
     "newline: Enter on a Windows PTY is a carriage return, and a lone `\\n"
     "` is not delivered as a line terminator, so the child's prompt silently never returns. When a CLI offers a "
@@ -998,7 +997,7 @@ def _local_host_hints() -> list[str]:
     except OSError:
         pass
     # The model reaches for the system temp dir by reflex (tmpfs on most Linux hosts, fills RAM);
-    # naming Hermes' scratch dir here is what makes the TMPDIR export a habit rather than a hidden default.
+    # naming Tino' scratch dir here is what makes the TMPDIR export a habit rather than a hidden default.
     try:
         host_lines.append(f"Scratch directory: {get_scratch_dir()} (TMPDIR points here; write temporary files "
                           "and probes there, never under the system temp dir; entries are pruned after 72h)")
@@ -1021,8 +1020,8 @@ def _remote_backend_hint(backend: str) -> str:
     probe = _probe_remote_backend(backend)
     if probe:
         return lead + (
-            f"this {backend} environment — NOT on the machine where Hermes itself is running. The host OS, "
-            f"home, and cwd of the Hermes process are irrelevant; only the following backend state matters:\n{probe}"
+            f"this {backend} environment — NOT on the machine where Tino itself is running. The host OS, "
+            f"home, and cwd of the Tino process are irrelevant; only the following backend state matters:\n{probe}"
         )
     description = (
         _BACKEND_FALLBACK_DESCRIPTIONS.get(backend)
@@ -1030,7 +1029,7 @@ def _remote_backend_hint(backend: str) -> str:
         or f"a {backend} environment (likely Linux)"
     )
     return lead + (
-        f"{description} — NOT on the machine where Hermes itself runs. The backend probe didn't respond at "
+        f"{description} — NOT on the machine where Tino itself runs. The backend probe didn't respond at "
         f"prompt-build time, so the sandbox's current user, $HOME, and working directory are unknown from here. "
         f"If you need them, probe directly with a terminal call like `uname -a && whoami && pwd`."
     )
@@ -1047,9 +1046,9 @@ def _config_readonly(what: str) -> dict:
 
 
 def _embedder_environment_hint() -> str:
-    """Embedder-supplied environment description: HERMES_ENVIRONMENT_HINT (container ENV)
+    """Embedder-supplied environment description: TINO_ENVIRONMENT_HINT (container ENV)
     wins over config.yaml ``agent.environment_hint``. Read once at prompt-build time."""
-    return (os.getenv("HERMES_ENVIRONMENT_HINT") or "").strip() or str(
+    return (os.getenv("TINO_ENVIRONMENT_HINT") or "").strip() or str(
         (_config_readonly("agent.environment_hint").get("agent", {}) or {}).get("environment_hint", "")).strip()
 
 
@@ -1065,8 +1064,8 @@ def build_environment_hints() -> str:
 
 
 # Marks the runtime block after project prose for persisted-prompt cwd validation.
-RUNTIME_ENVIRONMENT_HEADING = "# Hermes runtime environment"
-RUNTIME_ENVIRONMENT_END = "<!-- End Hermes runtime environment -->"
+RUNTIME_ENVIRONMENT_HEADING = "# Tino runtime environment"
+RUNTIME_ENVIRONMENT_END = "<!-- End Tino runtime environment -->"
 
 CONTEXT_FILE_MAX_CHARS = 20_000
 CONTEXT_TRUNCATE_HEAD_RATIO = 0.7
@@ -1239,12 +1238,12 @@ def _skill_should_show(
 
 def _current_session_platform_hint() -> str:
     """Active platform without importing the gateway package on CLI startup."""
-    platform = os.environ.get("HERMES_PLATFORM") or os.environ.get("HERMES_SESSION_PLATFORM")
+    platform = os.environ.get("TINO_PLATFORM") or os.environ.get("TINO_SESSION_PLATFORM")
     if platform:
         return platform
     get_session_env = getattr(sys.modules.get("gateway.session_context"), "get_session_env", None)
     try:
-        return (get_session_env("HERMES_SESSION_PLATFORM") if get_session_env else "") or ""
+        return (get_session_env("TINO_SESSION_PLATFORM") if get_session_env else "") or ""
     except Exception:
         return ""
 
@@ -1257,7 +1256,7 @@ def build_skills_system_prompt(
 
     External dirs (``skills.external_dirs``) are read-only and lose name collisions to local skills.
     ``compact_categories`` (coding posture) demotes categories to a names-only line — nothing is ever hidden.
-    ``skills_dir_override`` makes home resolution EXPLICIT: a build thread that never bound the HERMES_HOME
+    ``skills_dir_override`` makes home resolution EXPLICIT: a build thread that never bound the TINO_HOME
     ContextVar would otherwise leak the default profile's skills into a bot's prompt.
     """
     _home_token = None
@@ -1512,13 +1511,13 @@ def _truncate_content(
 
 
 def load_soul_md(context_length: Optional[int] = None, home_override: "Path | None" = None) -> Optional[str]:
-    """SOUL.md from HERMES_HOME (identity slot #1), or None.
+    """SOUL.md from TINO_HOME (identity slot #1), or None.
 
     Callers must pass ``skip_soul=True`` to ``build_context_files_prompt`` so it isn't injected twice.
-    ``home_override`` pins the profile home (a thread that lost the HERMES_HOME ContextVar reads the wrong one).
+    ``home_override`` pins the profile home (a thread that lost the TINO_HOME ContextVar reads the wrong one).
 
     ``home_override`` scopes the read to an explicit profile home (the agent knows its own home from its
-    session_db path). Without it, resolution is ambient — which on a thread that lost the HERMES_HOME
+    session_db path). Without it, resolution is ambient — which on a thread that lost the TINO_HOME
     ContextVar falls back to the launch home and reads the wrong profile's SOUL.md (#50233, same class as
     the skills-index leak fixed in #86313).
     """
@@ -1526,7 +1525,7 @@ def load_soul_md(context_length: Optional[int] = None, home_override: "Path | No
         from hermes_cli.config import ensure_hermes_home
         ensure_hermes_home()
     except Exception as e:
-        logger.debug("Could not ensure HERMES_HOME before loading SOUL.md: %s", e)
+        logger.debug("Could not ensure TINO_HOME before loading SOUL.md: %s", e)
     soul_path = (Path(home_override) if home_override is not None else get_hermes_home()) / "SOUL.md"
     if not soul_path.exists():
         return None
@@ -1654,11 +1653,11 @@ def discover_context_files(cwd_path: Path) -> list[tuple[str, str, Path, str]]:
 
 
 def _project_context_suppressed(cwd: Optional[str], cwd_path: Path, allow_install_tree_fallback: bool) -> bool:
-    """A FALLBACK-picked cwd inside the Hermes install tree must not gain system-prompt authority (the desktop
+    """A FALLBACK-picked cwd inside the Tino install tree must not gain system-prompt authority (the desktop
     default would load this repo's contributor AGENTS.md). An explicitly configured cwd is honored verbatim —
-    the Hermes tree is a legitimate workspace when the user deliberately points a session at it — and
+    the Tino tree is a legitimate workspace when the user deliberately points a session at it — and
     CLI-style surfaces pass allow_install_tree_fallback=True because their launch dir IS the user's shell cwd
-    (developing Hermes in-tree). See #64590."""
+    (developing Tino in-tree). See #64590."""
     from agent.runtime_cwd import _is_install_tree
     return cwd is None and not allow_install_tree_fallback and _is_install_tree(cwd_path)
 
@@ -1723,12 +1722,12 @@ def build_context_files_prompt(
 
     Only ONE project context type loads, first found wins: .hermes.md/HERMES.md (walk to git root) →
     AGENTS.md chain (git root → cwd) → CLAUDE.md (cwd) → .cursorrules + .cursor/rules/*.mdc (cwd). SOUL.md
-    from HERMES_HOME is independent and always included unless *skip_soul* (already the identity slot).
+    from TINO_HOME is independent and always included unless *skip_soul* (already the identity slot).
     """
     cwd_path = Path(cwd if cwd is not None else os.getcwd()).resolve()
     if _project_context_suppressed(cwd, cwd_path, allow_install_tree_fallback):
         logger.warning(
-            "skipping project-context discovery: working-directory resolution fell back to the Hermes "
+            "skipping project-context discovery: working-directory resolution fell back to the Tino "
             "install tree (%s) — set terminal.cwd to your project directory", cwd_path,
         )
         sections = []

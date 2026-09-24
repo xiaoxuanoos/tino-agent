@@ -1,7 +1,7 @@
 // IPC surface for local filesystem operations the renderer's project/file
 // surfaces use: directory reads, reveal/open in the OS file manager, plugin
 // roots + git installs, rename/write/trash. Extracted from main.ts; path
-// hardening, HERMES_HOME resolution, and the git binary stay injected.
+// hardening, TINO_HOME resolution, and the git binary stay injected.
 import fs from 'node:fs'
 import path from 'node:path'
 
@@ -77,8 +77,8 @@ export function registerFsIpc({
     }
   })
 
-  // The LOCAL Desktop runtime-plugin root: `<HERMES_HOME>/desktop-plugins`,
-  // resolved from the main-process HERMES_HOME (see resolveHermesHome) — NOT from
+  // The LOCAL Desktop runtime-plugin root: `<TINO_HOME>/desktop-plugins`,
+  // resolved from the main-process TINO_HOME (see resolveHermesHome) — NOT from
   // the connected backend. A remote backend reports its own `hermes_home` over
   // the gateway, which is a path on the REMOTE box; deriving the plugin dir from
   // it yields `undefined/desktop-plugins` (or a non-existent remote path) and the
@@ -118,9 +118,9 @@ export function registerFsIpc({
     return reconcileUnifiedDesktopHalves(hermesHome, root)
   })
 
-  // The LOCAL logs root (`<HERMES_HOME>/logs`, profile-aware) — the error
+  // The LOCAL logs root (`<TINO_HOME>/logs`, profile-aware) — the error
   // card's "Open Logs" action reveals agent.log/gateway.log without the user
-  // knowing where HERMES_HOME lives. Same Electron-local resolution as the
+  // knowing where TINO_HOME lives. Same Electron-local resolution as the
   // plugin roots: valid in every connection mode, created on demand.
   ipcMain.handle('hermes:fs:logsRoot', async () => localPluginsRoot('logs'))
 

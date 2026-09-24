@@ -127,7 +127,7 @@ class TestTelegramYamlConfigLoading:
         hermes_home = self._write_config(
             tmp_path, "telegram:\n  extra:\n    reply_to_mode: \"off\"\n"
         )
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        monkeypatch.setenv("TINO_HOME", str(hermes_home))
         monkeypatch.delenv("TELEGRAM_REPLY_TO_MODE", raising=False)
 
         load_gateway_config()
@@ -141,7 +141,7 @@ class TestTelegramYamlConfigLoading:
             tmp_path,
             "telegram:\n  reply_to_mode: all\n  extra:\n    reply_to_mode: \"off\"\n",
         )
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        monkeypatch.setenv("TINO_HOME", str(hermes_home))
         monkeypatch.delenv("TELEGRAM_REPLY_TO_MODE", raising=False)
 
         load_gateway_config()
@@ -153,7 +153,7 @@ class TestDMTopicFallbackReplyToMode:
     """Tests for reply_to_mode enforcement on DM topic fallback paths.
 
     Regression tests for https://github.com/NousResearch/hermes-agent/issues/23994:
-    reply_to_mode 'off' was ignored when sending via Hermes-created DM topic
+    reply_to_mode 'off' was ignored when sending via Tino-created DM topic
     lanes (telegram_dm_topic_reply_fallback metadata), causing quote bubbles
     despite the user setting reply_to_mode: 'off'.
     """
@@ -216,8 +216,8 @@ class TestDMTopicSyntheticSendRouting:
     are injected as synthetic events with no reply anchor. The DM-topic
     fallback's no-anchor branch routed them via Telegram's native
     ``direct_messages_topic_id`` (or dropped the thread entirely), landing the
-    response in a different chat lane than the Hermes topic the session runs
-    in. The no-anchor branch must prefer the Hermes topic's
+    response in a different chat lane than the Tino topic the session runs
+    in. The no-anchor branch must prefer the Tino topic's
     ``message_thread_id`` whenever it resolves.
     """
 

@@ -14,19 +14,19 @@ ROOT = Path(__file__).parents[2]
 
 def _run_hermes(home: Path, *args: str, marker: bool = False) -> subprocess.CompletedProcess[str]:
     env = os.environ.copy()
-    env["HERMES_HOME"] = str(home)
-    env["HERMES_KANBAN_HOME"] = str(home)
+    env["TINO_HOME"] = str(home)
+    env["TINO_KANBAN_HOME"] = str(home)
     for name in (
-        "HERMES_KANBAN_BOARD",
-        "HERMES_KANBAN_DB",
-        "HERMES_KANBAN_WORKSPACES_ROOT",
+        "TINO_KANBAN_BOARD",
+        "TINO_KANBAN_DB",
+        "TINO_KANBAN_WORKSPACES_ROOT",
     ):
         env.pop(name, None)
     env["PYTHONPATH"] = str(ROOT) + os.pathsep + env.get("PYTHONPATH", "")
     if marker:
-        env["HERMES_DELEGATED_CHILD_CONTEXT"] = "1"
+        env["TINO_DELEGATED_CHILD_CONTEXT"] = "1"
     else:
-        env.pop("HERMES_DELEGATED_CHILD_CONTEXT", None)
+        env.pop("TINO_DELEGATED_CHILD_CONTEXT", None)
     return subprocess.run(
         [sys.executable, "-m", "hermes_cli.main", *args],
         cwd=ROOT,

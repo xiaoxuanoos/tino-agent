@@ -254,8 +254,8 @@ print(json.dumps({"host_send": host_send, "cron": cron,
 '''
     env = dict(os.environ)
     env.update({
-        "HERMES_HOME": str(home),
-        "HERMES_KANBAN_TASK": "fixture",
+        "TINO_HOME": str(home),
+        "TINO_KANBAN_TASK": "fixture",
         "PYTHONPATH": os.getcwd(),
     })
     completed = subprocess.run(

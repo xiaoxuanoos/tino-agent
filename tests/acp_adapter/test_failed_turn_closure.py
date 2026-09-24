@@ -87,8 +87,8 @@ class _RecordingConn:
 
 @pytest.fixture
 def acp(tmp_path, monkeypatch):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
-    monkeypatch.setenv("HERMES_DISABLE_PLUGINS", "1")
+    monkeypatch.setenv("TINO_HOME", str(tmp_path))
+    monkeypatch.setenv("TINO_DISABLE_PLUGINS", "1")
     monkeypatch.setenv("NO_PROXY", "127.0.0.1,localhost")
     provider = _LoopbackProvider()
 
@@ -141,7 +141,7 @@ _NEW_REQUEST = "What is the capital of France?"
 def test_acp_refusal_closes_the_turn_and_is_not_replayed_into_the_next_prompt(acp):
     """Turn 1: HTTP-200 ``content_filter`` refusal. Turn 2: unrelated request.
 
-    Invariant: the durable tail after a failed turn is a Hermes-authored assistant row (never
+    Invariant: the durable tail after a failed turn is a Tino-authored assistant row (never
     provider text), and the next prompt reaches the provider as its own user row.
     """
     from agent.turn_failure_copy import FAILED_TURN_NOTICE
@@ -193,7 +193,7 @@ def test_failed_turn_boundary_is_idempotent_on_the_durable_tail_and_skips_contex
     from agent.turn_failure_copy import PARTIAL_FAILED_TURN_NOTICE
     from hermes_state import SessionDB
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("TINO_HOME", str(tmp_path))
     db = SessionDB(tmp_path / "state.db")
     sid = "s1"
     db.create_session(session_id=sid, source="acp", model="m")

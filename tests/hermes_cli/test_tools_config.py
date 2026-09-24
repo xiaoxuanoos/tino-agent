@@ -194,7 +194,7 @@ def test_discord_toolsets_do_not_leak_to_other_platforms():
 
 
 def test_toolset_has_keys_for_vision_accepts_codex_auth(tmp_path, monkeypatch):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("TINO_HOME", str(tmp_path))
     (tmp_path / "auth.json").write_text(
         '{"active_provider":"openai-codex","providers":{"openai-codex":{"tokens":{"access_token": "codex-...oken","refresh_token": "codex-...oken"}}}}'
     )
@@ -406,7 +406,7 @@ class TestAgentBrowserPostSetup:
 
     agent-browser is no longer a root package.json dependency (there's no
     local `npm install` step anymore); it resolves at runtime via
-    tools.browser_tool_install._find_agent_browser (PATH -> Homebrew/Hermes-managed
+    tools.browser_tool_install._find_agent_browser (PATH -> Homebrew/Tino-managed
     node -> local .bin -> npx). This class exercises the Chromium-install
     branch of _run_post_setup, which now delegates to that same resolution
     cascade instead of hand-rolling its own node_modules/.bin/agent-browser
@@ -531,7 +531,7 @@ class TestAgentBrowserPostSetup:
         ]
 
     def test_installs_chromium_via_npx_resolved_only_through_extended_path(self):
-        """Hermes-managed-Node-only setups: npx resolves via
+        """Tino-managed-Node-only setups: npx resolves via
         _find_agent_browser's extended-PATH fallback, not a bare PATH lookup.
         The install command must use that same resolved npx, not silently
         hand subprocess.run a None argument from a bare shutil.which('npx')
@@ -707,7 +707,7 @@ class TestBrowserUseCliInstalledForAllNonCamofoxBackends:
     def test_ensure_helper_always_delegates_to_install_cli(self):
         """MANAGED-FIRST: a browser-use on PATH must not short-circuit the
         helper — install_cli() owns the managed-copy check and provisions
-        $HERMES_HOME/bin when only side installs exist."""
+        $TINO_HOME/bin when only side installs exist."""
         with patch(
             "hermes_cli.tools_config_post_setup.shutil.which", return_value="/usr/bin/browser-use"
         ), patch(
@@ -893,7 +893,7 @@ def test_kanban_checklist_reports_and_persists_explicit_removal():
 
 def test_vision_picker_custom_endpoint(tmp_path, monkeypatch):
     """Custom endpoint writes base_url+model to config and the key to env."""
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("TINO_HOME", str(tmp_path))
     import hermes_cli.tools_config as tc
     import hermes_cli.tools_config_providers as tcp
     from hermes_cli.config import load_config

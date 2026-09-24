@@ -22,7 +22,7 @@ vi.mock('@/hermes', async importOriginal => ({
   getStatus: vi.fn(() => Promise.resolve({})),
   getUsageAnalytics: vi.fn(() => Promise.resolve({})),
   restartGateway: vi.fn(),
-  updateHermes: vi.fn()
+  updateTino: vi.fn()
 }))
 vi.mock('@/lib/session-export', () => ({ exportSession: vi.fn() }))
 vi.mock('./maintenance', () => ({ MaintenancePanel: () => null }))

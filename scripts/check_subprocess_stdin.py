@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Check that subprocess calls in TUI-context code specify stdin=.
 
-When Hermes runs in TUI mode, the gateway child process communicates with
+When Tino runs in TUI mode, the gateway child process communicates with
 the Node.js parent over a JSON-RPC protocol on stdin. Subprocess calls that
 inherit this fd can cause the gateway to exit with stdin EOF during tool
 execution (issue #14036, PR #39257).
@@ -40,7 +40,7 @@ TUI_CONTEXT_DIRS = [
 
 # User plugin roots — scanned at runtime if they exist.  Plugins load from
 # ``get_hermes_home() / "plugins"`` (user) and ``./.hermes/plugins/`` (project,
-# gated behind ``HERMES_ENABLE_PROJECT_PLUGINS``) — see
+# gated behind ``TINO_ENABLE_PROJECT_PLUGINS``) — see
 # ``hermes_cli/plugins.py:10-12``.  The guard only checked the bundled
 # ``plugins/`` dir, missing user-installed code that spawns subprocesses
 # (gap reported in #67639).
@@ -240,7 +240,7 @@ def main() -> int:
     # ./.hermes/plugins/, where code like ori/hooks.py can spawn
     # subprocesses with inherited stdin — #67639).
     plugin_roots: list[Path] = [get_hermes_home() / "plugins"]
-    if os.environ.get("HERMES_ENABLE_PROJECT_PLUGINS"):
+    if os.environ.get("TINO_ENABLE_PROJECT_PLUGINS"):
         plugin_roots.append(Path.cwd() / ".hermes" / "plugins")
     seen_roots: set[Path] = set()
     for plugin_root in plugin_roots:

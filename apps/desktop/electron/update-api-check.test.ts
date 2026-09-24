@@ -16,10 +16,12 @@ import { test } from 'vitest'
 import {
   branchTipApiUrl,
   cacheIsFresh,
+  canHealMissingBranch,
   describeUpdateCheckFailure,
   githubRepoSlug,
   parseCompare,
   rateLimitFromHeaders,
+  sourceCheckoutIsClean,
   UPDATE_CHECK_FAILURE_TTL_MS,
   UPDATE_CHECK_TTL_MS
 } from './update-api-check'
@@ -27,6 +29,19 @@ import {
 const SHA_A = 'a'.repeat(40)
 const SHA_B = 'b'.repeat(40)
 const HOUR = 60 * 60 * 1000
+
+test('a custom checkout with local changes never switches to an absent upstream branch', () => {
+  const clean = { code: 0, stdout: '' }
+  const dirty = { code: 0, stdout: ' M custom-page.tsx\n' }
+  const failed = { code: 1, stdout: '' }
+
+  assert.equal(sourceCheckoutIsClean(clean), true)
+  assert.equal(sourceCheckoutIsClean(dirty), false)
+  assert.equal(sourceCheckoutIsClean(failed), false)
+  assert.equal(canHealMissingBranch(clean, { code: 0 }), true)
+  assert.equal(canHealMissingBranch(dirty, { code: 0 }), false)
+  assert.equal(canHealMissingBranch(clean, { code: 1 }), false)
+})
 
 test('cache serves a passive check for 24h, but not once HEAD or the branch changes', () => {
   const cached = { fetchedAt: 0, currentSha: SHA_A, branch: 'main', status: { behind: 0 } }

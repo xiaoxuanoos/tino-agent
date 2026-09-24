@@ -1,7 +1,7 @@
 name: blinkenbar
 repo: https://github.com/cygnostik/Hermes-Plugin-Blinkenlights
 sha: 144876ab41205c68e4dfe621bdad6cb4fcc5e1b0
-description: Dense, animated supercomputer light banks driven by system telemetry and live agent activity in Hermes Desktop.
+description: Dense, animated supercomputer light banks driven by system telemetry and live agent activity in Tino Desktop.
 maintainer: cygnostik
 tier: community
 category: desktop

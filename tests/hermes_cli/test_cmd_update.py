@@ -154,10 +154,10 @@ class TestCmdUpdateNpmLockfileCache:
             "_npm_lockfile_changed",
             side_effect=lambda root: cache_roots.append(root) or False,
         ):
-            monkeypatch.setenv("HERMES_HOME", str(shared_root))
+            monkeypatch.setenv("TINO_HOME", str(shared_root))
             update_cmd._update_node_dependencies()
 
-            monkeypatch.setenv("HERMES_HOME", str(named_profile))
+            monkeypatch.setenv("TINO_HOME", str(named_profile))
             update_cmd._update_node_dependencies()
 
         assert cache_roots == [shared_root, shared_root]
@@ -199,7 +199,7 @@ class TestCmdUpdateTermuxUvBootstrap:
 
         pkg_uv = "/data/data/com.termux/files/usr/bin/uv"
         monkeypatch.setattr(hm, "_is_termux_env", lambda env=None: True)
-        # Production resolve_uv only checks $HERMES_HOME/bin/uv; model an empty
+        # Production resolve_uv only checks $TINO_HOME/bin/uv; model an empty
         # managed dir so the PATH probe is what surfaces the packaged uv.
         monkeypatch.setattr("hermes_cli.managed_uv.resolve_uv", lambda: None)
         monkeypatch.setattr("shutil.which", lambda name: pkg_uv if name == "uv" else None)
@@ -325,7 +325,7 @@ class TestRepairCurrentCheckoutRuntimeRepair:
 
     def test_restores_optional_dependencies_after_runtime_repair(self, monkeypatch):
         """A SQLite venv replacement passes the core-import probe, yet the swapped-in venv was
-        built from uv.lock alone: the captured lazy backends and Hermes Tools deps must be
+        built from uv.lock alone: the captured lazy backends and Tino Tools deps must be
         restored into it, once each, with the repaired installer prefix."""
         restored, lazy_features, tool_dependencies, markers = self._run(monkeypatch, repaired=True)
         assert restored == [
@@ -1213,7 +1213,7 @@ class TestNodeRuntimeNpmResolution:
 
         desktop_dir = PROJECT_ROOT / "apps" / "desktop"
         (desktop_dir / "package.json").write_text("{}", encoding="utf-8")
-        packaged_exe = desktop_dir / "release" / "win-unpacked" / "Hermes.exe"
+        packaged_exe = desktop_dir / "release" / "win-unpacked" / "Tino.exe"
         build_ok = subprocess.CompletedProcess([], 0, stdout="", stderr="")
 
         with (
@@ -1243,7 +1243,7 @@ class TestNodeRuntimeNpmResolution:
         """The Windows ZIP fallback keeps Desktop intact when replacing ``apps/``.
 
         Contract updated for the #70337/#87331 release-dir graft: the built
-        desktop app (release/win-unpacked/Hermes.exe) is preserved THROUGH
+        desktop app (release/win-unpacked/Tino.exe) is preserved THROUGH
         the swap — previously this test pinned the old repair shape (exe
         deleted by the swap, then rebuilt from scratch). The rebuild hook
         still runs (mocked _desktop_build_needed=True), but it now finds
@@ -1257,7 +1257,7 @@ class TestNodeRuntimeNpmResolution:
         project_root = tmp_path / "hermes-agent"
         (project_root / ".git").mkdir(parents=True)
         desktop_dir = project_root / "apps" / "desktop"
-        packaged_exe = desktop_dir / "release" / "win-unpacked" / "Hermes.exe"
+        packaged_exe = desktop_dir / "release" / "win-unpacked" / "Tino.exe"
         packaged_exe.parent.mkdir(parents=True)
         packaged_exe.write_bytes(b"desktop")
 
@@ -1702,7 +1702,7 @@ class TestGitTrampolineSelfHeal:
         run.assert_not_called()
 
     def test_portable_git_candidates_check_shared_root_first(self, tmp_path, monkeypatch):
-        # Profile-scoped layout: HERMES_HOME = <root>/profiles/foo, but the
+        # Profile-scoped layout: TINO_HOME = <root>/profiles/foo, but the
         # PortableGit tree lives under the SHARED root (monerostar review on
         # #88136). The candidate list must check get_default_hermes_root()
         # before the profile home.

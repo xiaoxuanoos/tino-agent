@@ -41,7 +41,7 @@ def _token_status(source: str, source_label: str, creds: Dict[str, Any]) -> Dict
 
 
 def _anthropic_oauth_status() -> Dict[str, Any]:
-    """Status for the "Anthropic API Key" card: Hermes-managed PKCE file first, then the
+    """Status for the "Anthropic API Key" card: Tino-managed PKCE file first, then the
     registry-ordered env vars (process env — where Bitwarden-sourced secrets land — then .env).
 
     Claude Code's ``~/.claude/.credentials.json`` is deliberately NOT read here; it has its own
@@ -53,7 +53,7 @@ def _anthropic_oauth_status() -> Dict[str, Any]:
     except Exception:
         hermes_creds = None
     if hermes_creds and hermes_creds.get("accessToken"):
-        return _token_status("hermes_pkce", f"Hermes PKCE ({_get_hermes_oauth_file()})", hermes_creds)
+        return _token_status("hermes_pkce", f"Tino PKCE ({_get_hermes_oauth_file()})", hermes_creds)
 
     env_var_order: tuple = ("ANTHROPIC_API_KEY", "ANTHROPIC_TOKEN", "CLAUDE_CODE_OAUTH_TOKEN")
     try:
@@ -87,7 +87,7 @@ def _claude_code_only_status() -> Dict[str, Any]:
 
 def _copilot_acp_status() -> Dict[str, Any]:
     """Status for copilot-acp. ``logged_in`` only on positive evidence (env token or known on-disk
-    store); the CLI may hold its session in an OS keychain Hermes can't read, so the unverified
+    store); the CLI may hold its session in an OS keychain Tino can't read, so the unverified
     state reads "managed by the Copilot CLI" — never signed out."""
     try:
         from hermes_cli.auth import get_external_process_provider_status
@@ -111,7 +111,7 @@ def _copilot_acp_status() -> Dict[str, Any]:
 
 def _external_process_cli_command(provider_id: str, default: str) -> str:
     """Render an external-process provider's sign-in command with the CLI actually configured
-    (``HERMES_COPILOT_ACP_COMMAND`` / ``COPILOT_CLI_PATH``); others get ``default`` untouched."""
+    (``TINO_COPILOT_ACP_COMMAND`` / ``COPILOT_CLI_PATH``); others get ``default`` untouched."""
     try:
         from hermes_cli.auth import PROVIDER_REGISTRY, get_external_process_provider_status
         pconfig = PROVIDER_REGISTRY.get(provider_id)
@@ -151,7 +151,7 @@ _OAUTH_PROVIDER_CATALOG: tuple[Dict[str, Any], ...] = (
     # Device code works in remote shells/containers without a reachable 127.0.0.1 callback.
     {"id": "xai-oauth", "name": "xAI Grok OAuth (SuperGrok / Premium+)", "flow": "device_code",
      "cli_command": "hermes auth add xai-oauth",
-     "docs_url": "https://hermes-agent.nousresearch.com/docs/guides/xai-grok-oauth", "status_fn": None},
+     "docs_url": "website/docs/guides/xai-grok-oauth", "status_fn": None},
     # `copilot login` is the non-interactive subcommand; `copilot /login` is not valid
     # (slash-commands only exist inside an interactive session).
     {"id": "copilot-acp", "name": "GitHub Copilot (ACP)", "flow": "external", "cli_command": "copilot login",

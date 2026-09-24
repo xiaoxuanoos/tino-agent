@@ -312,7 +312,7 @@ def _register_child(
     if owner_session_id is None:
         with _quiet(None):
             from gateway.session_context import get_session_env
-            owner_session_id = get_session_env("HERMES_UI_SESSION_ID", "") or None
+            owner_session_id = get_session_env("TINO_UI_SESSION_ID", "") or None
     if owner_session_id and (owner_transport is None or owner_session_record is None):
         owner_transport, owner_session_record = _capture_gateway_steer_authority(owner_session_id)
     _raw_depth = getattr(child, "_delegate_depth", 1)
@@ -451,7 +451,7 @@ def _validate_child_output_schema(
     _retry_result = None
     try:
         # Same identity as the main child turn: this runs on the parent worker's thread, and an
-        # unmarked turn is misread as the dispatcher-owned worker by every HERMES_KANBAN_* gate.
+        # unmarked turn is misread as the dispatcher-owned worker by every TINO_KANBAN_* gate.
         from agent.delegation_context import delegated_child_context
         with delegated_child_context(str(getattr(child, "session_id", "") or "")):
             _retry_result = child.run_conversation(

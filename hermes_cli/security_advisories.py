@@ -1,4 +1,4 @@
-"""Security advisory checker for Hermes Agent.
+"""Security advisory checker for Tino Agent.
 
 Cheap (one ``importlib.metadata.version()`` call per advisory package, safe on every CLI startup)
 and silent unless a compromised package is actually installed.
@@ -30,7 +30,7 @@ class Advisory:
     """``id`` is lowercase-hyphen, stable and never reused (it is what acks key on). ``remediation``
     is ordered: uninstall command first, then credential audit/rotation guidance. Steps may use
     ``{hermes_home}``; ``full_remediation_text`` fills it with ``display_hermes_home()`` at render
-    time so a profile / HERMES_HOME user is sent to their own .env.
+    time so a profile / TINO_HOME user is sent to their own .env.
     """
 
     id: str

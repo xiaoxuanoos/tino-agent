@@ -45,7 +45,7 @@ _CHECKPOINT_PATH_AT_IMPORT = CHECKPOINT_PATH
 
 def _checkpoint_path() -> Path:
     """Active profile's checkpoint file at call time: the patched ``CHECKPOINT_PATH`` when a test
-    changed it, else live profile-scoped HERMES_HOME — the multiplexed gateway serves every
+    changed it, else live profile-scoped TINO_HOME — the multiplexed gateway serves every
     profile from one process, so the import-time constant would pin every profile's process
     checkpoint to the launch home."""
     return CHECKPOINT_PATH if CHECKPOINT_PATH != _CHECKPOINT_PATH_AT_IMPORT else get_hermes_home() / "processes.json"
@@ -261,14 +261,14 @@ def _systemd_run_user_scope_available() -> bool:
 
 
 def _is_supervised_gateway_process() -> bool:
-    """Whether this process is the live, supervised Hermes gateway itself.
-    Supervisor markers and ``_HERMES_GATEWAY`` are inherited by every descendant (and
+    """Whether this process is the live, supervised Tino gateway itself.
+    Supervisor markers and ``_TINO_GATEWAY`` are inherited by every descendant (and
     importing ``gateway.run`` sets the latter), so also require ownership of the live
     gateway PID file — scopes are for the gateway, not terminal children or CLIs.
-    Reads the launch marker (``HERMES_SUPERVISED_CHILD`` included), not the restart-route
+    Reads the launch marker (``TINO_SUPERVISED_CHILD`` included), not the restart-route
     probe: a Windows Scheduled-Task gateway sets only that marker, and the self-kill guards
     gated here must protect it too (#113667)."""
-    if os.environ.get("_HERMES_GATEWAY") != "1":
+    if os.environ.get("_TINO_GATEWAY") != "1":
         return False
     try:
         from gateway.restart import is_supervised_gateway_launch
@@ -952,7 +952,7 @@ class ProcessRegistry(ProcessCheckpointMixin):
         return ProcessSession(
             id=f"proc_{uuid.uuid4().hex[:12]}", command=command, task_id=task_id,
             owner_task_id=owner_task_id or task_id, session_key=session_key, cwd=cwd,
-            parent_session_id=get_session_env("HERMES_SESSION_ID", ""),
+            parent_session_id=get_session_env("TINO_SESSION_ID", ""),
             started_at=time.time(), **extra)
 
     @staticmethod
@@ -2066,7 +2066,7 @@ class ProcessRegistry(ProcessCheckpointMixin):
         kill the process — output keeps buffering and the tab can be reopened from the
         status stack. Errors when no UI close sink is wired."""
         if self.on_close is None:
-            return {"status": "error", "error": "close_terminal is only available in the Hermes desktop app."}
+            return {"status": "error", "error": "close_terminal is only available in the Tino desktop app."}
         # The session may already be finished (or pruned) — the tab can still
         # linger and be closed, so a missing session is not an error here.
         try:

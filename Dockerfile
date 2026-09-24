@@ -327,7 +327,7 @@ RUN mkdir -p /opt/hermes/bin && \
 # That makes support triage from container bug reports impossible:
 # we can't tell which commit the user is actually running.
 #
-# Fix: write the commit SHA passed via the HERMES_GIT_SHA build-arg to
+# Fix: write the commit SHA passed via the TINO_GIT_SHA build-arg to
 # /opt/hermes/.hermes_build_sha at build time, and have
 # hermes_cli/build_info.py read it at runtime.  Both `hermes dump` and
 # banner.get_git_banner_state() try the baked SHA first, then fall back
@@ -339,12 +339,15 @@ RUN mkdir -p /opt/hermes/bin && \
 # (.github/workflows/docker.yml) passes ${{ github.sha }} so
 # every published image has it.
 ARG HERMES_GIT_SHA=
+ARG TINO_GIT_SHA=
+ARG TINO_IMAGE_NAME=nousresearch/hermes-agent
 RUN set -eu; \
-    if [ -n "${HERMES_GIT_SHA}" ]; then \
-        printf '%s\n' "${HERMES_GIT_SHA}" > /opt/hermes/.hermes_build_sha; \
+    effective_sha="${TINO_GIT_SHA:-${HERMES_GIT_SHA}}"; \
+    if [ -n "${effective_sha}" ]; then \
+        printf '%s\n' "${effective_sha}" > /opt/hermes/.hermes_build_sha; \
     fi; \
     mkdir -p /etc/hermes; \
-    HERMES_GIT_SHA="${HERMES_GIT_SHA}" python3 -c 'import json, os, pathlib, tomllib; project = tomllib.loads(pathlib.Path("/opt/hermes/pyproject.toml").read_text(encoding="utf-8"))["project"]; marker = pathlib.Path("/etc/hermes/image-provenance.json"); marker.write_text(json.dumps({"schema": 1, "deployment_kind": "image", "manager": "docker", "image": "nousresearch/hermes-agent", "version": project["version"], "revision": os.environ.get("HERMES_GIT_SHA") or None}, sort_keys=True, separators=(",", ":")) + "\n", encoding="utf-8"); marker.chmod(0o444)'
+    TINO_GIT_SHA="${effective_sha}" TINO_IMAGE_NAME="${TINO_IMAGE_NAME}" python3 -c 'import json, os, pathlib, tomllib; project = tomllib.loads(pathlib.Path("/opt/hermes/pyproject.toml").read_text(encoding="utf-8"))["project"]; marker = pathlib.Path("/etc/hermes/image-provenance.json"); marker.write_text(json.dumps({"schema": 1, "deployment_kind": "image", "manager": "docker", "image": os.environ["TINO_IMAGE_NAME"], "version": project["version"], "revision": os.environ.get("TINO_GIT_SHA") or None}, sort_keys=True, separators=(",", ":")) + "\n", encoding="utf-8"); marker.chmod(0o444)'
 
 # ---------- s6-overlay service wiring ----------
 # Static services declared at build time: main-hermes + dashboard.

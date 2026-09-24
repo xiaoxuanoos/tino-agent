@@ -1,5 +1,5 @@
 #!/bin/bash
-# repro.sh -- reproduce desktop-update paths against a sandboxed HERMES_HOME.
+# repro.sh -- reproduce desktop-update paths against a sandboxed TINO_HOME.
 #
 # Nothing here touches your real ~/.hermes or checkout. Each mode builds (or
 # reuses) a disposable install under $TMPDIR and drives the REAL code path --
@@ -7,7 +7,7 @@
 #
 #   repro.sh shim          shim UI only: success event after 6s
 #   repro.sh shim-fail     shim UI only: error event after 6s
-#   repro.sh fresh         fresh install into a sandbox HERMES_HOME
+#   repro.sh fresh         fresh install into a sandbox TINO_HOME
 #                          (scripts/install.sh, the literal user path)
 #   repro.sh behind [N]    sandbox install rewound N commits (default 25),
 #                          then the posix orchestrator drives it forward --
@@ -31,7 +31,7 @@ set -euo pipefail
 MODE="${1:-help}"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
-SANDBOX="${HERMES_UPDATE_REPRO_HOME:-/tmp/hermes-update-repro}"
+SANDBOX="${TINO_UPDATE_REPRO_HOME:-/tmp/hermes-update-repro}"
 SANDBOX_ROOT="$SANDBOX/hermes-agent"
 
 say() { printf '\n\033[1m== %s ==\033[0m\n' "$1"; }
@@ -47,16 +47,16 @@ ensure_sandbox_install() {
   # The literal user path: install.sh against a clone of THIS checkout, so
   # the repro reproduces what you're about to ship, not origin/main.
   git clone --quiet "$REPO_ROOT" "$SANDBOX_ROOT"
-  HERMES_HOME="$SANDBOX" bash "$SANDBOX_ROOT/scripts/install.sh" --non-interactive --skip-setup --hermes-home "$SANDBOX"
+  TINO_HOME="$SANDBOX" bash "$SANDBOX_ROOT/scripts/install.sh" --non-interactive --skip-setup --hermes-home "$SANDBOX"
 }
 
 case "$MODE" in
   shim)
-    HERMES_SELFTEST_HOLD_SECONDS="${HERMES_SELFTEST_HOLD_SECONDS:-6}" \
+    TINO_SELFTEST_HOLD_SECONDS="${TINO_SELFTEST_HOLD_SECONDS:-6}" \
       bash "$SCRIPT_DIR/posix.sh" --self-test-ui
     ;;
   shim-fail)
-    HERMES_SELFTEST_FAIL=1 HERMES_SELFTEST_HOLD_SECONDS="${HERMES_SELFTEST_HOLD_SECONDS:-6}" \
+    TINO_SELFTEST_FAIL=1 TINO_SELFTEST_HOLD_SECONDS="${TINO_SELFTEST_HOLD_SECONDS:-6}" \
       bash "$SCRIPT_DIR/posix.sh" --self-test-ui
     ;;
   fresh)
@@ -73,7 +73,7 @@ case "$MODE" in
     git -C "$SANDBOX_ROOT" reset --hard --quiet "HEAD~$N"
     say "sandbox now at: $(git -C "$SANDBOX_ROOT" log --oneline -1)"
     say "driving the orchestrator (watch the shim; log: $SANDBOX/logs/desktop-update-handoff.log)"
-    HERMES_HOME="$SANDBOX" bash "$SCRIPT_DIR/posix.sh" \
+    TINO_HOME="$SANDBOX" bash "$SCRIPT_DIR/posix.sh" \
       --install-root "$SANDBOX_ROOT" --branch main --desktop-pid 0 || true
     say "result file:"
     cat "$SANDBOX/.hermes-update-result.json" 2>/dev/null || echo "(none written)"
@@ -84,7 +84,7 @@ case "$MODE" in
     ensure_sandbox_install
     say "breaking the sandbox venv, then driving the orchestrator"
     mv "$SANDBOX_ROOT/venv" "$SANDBOX_ROOT/venv.hidden"
-    HERMES_HOME="$SANDBOX" bash "$SCRIPT_DIR/posix.sh" \
+    TINO_HOME="$SANDBOX" bash "$SCRIPT_DIR/posix.sh" \
       --install-root "$SANDBOX_ROOT" --branch main --desktop-pid 0 || true
     mv "$SANDBOX_ROOT/venv.hidden" "$SANDBOX_ROOT/venv"
     say "result file (expect ok:false, exit 3):"
@@ -107,7 +107,7 @@ case "$MODE" in
     }
     decide() { bash "$SCRIPT_DIR/posix.sh" --self-test-gate --install-root "$G/hermes-agent" "$@" | cut -d: -f1; }
 
-    expect "appimage (not under unpacked)"      skew     "$(decide --relaunch-target /opt/Hermes/hermes)"
+    expect "appimage (not under unpacked)"      skew     "$(decide --relaunch-target /opt/Tino/hermes)"
     expect "sibling-prefix dir not fooled"      skew     "$(decide --relaunch-target "$UNPACKED-evil/hermes")"
     expect "no chrome-sandbox (namespace)"      relaunch "$(decide --relaunch-target "$UNPACKED/hermes")"
 
@@ -159,20 +159,20 @@ case "$MODE" in
     if [ "$(uname)" != "Darwin" ]; then
       bash "$SCRIPT_DIR/posix.sh" --no-ui --desktop-pid 0 --install-root "$L/hermes-agent" \
         --relaunch-target "$UNPACKED/hermes" >/dev/null 2>&1 || true
-      expect_msg "instant-exit relaunch downgrades to manual" "d['ok']==True and d['manual']==True and 'Reopen Hermes' in d['message']"
+      expect_msg "instant-exit relaunch downgrades to manual" "d['ok']==True and d['manual']==True and 'Reopen Tino' in d['message']"
     else
       # mac: a SUPPLIED target that is missing is a REJECTED launch and
       # must downgrade to manual — never a clean "Update complete."
       bash "$SCRIPT_DIR/posix.sh" --no-ui --desktop-pid 0 --install-root "$L/hermes-agent" \
         --relaunch-target "$L/NoSuch.app" >/dev/null 2>&1 || true
-      expect_msg "missing bundle downgrades to manual" "d['ok']==True and d['manual']==True and 'Reopen Hermes' in d['message']"
+      expect_msg "missing bundle downgrades to manual" "d['ok']==True and d['manual']==True and 'Reopen Tino' in d['message']"
     fi
 
     # 2. gated skew: success result carries the skew message (the manual
     #    event's payload), never a bare "Update complete."
     stub_install
     bash "$SCRIPT_DIR/posix.sh" --no-ui --desktop-pid 0 --install-root "$L/hermes-agent" \
-      --relaunch-target /opt/Hermes/hermes >/dev/null 2>&1 || true
+      --relaunch-target /opt/Tino/hermes >/dev/null 2>&1 || true
     if [ "$(uname)" != "Darwin" ]; then
       expect_msg "skew outcome surfaces in result message" "d['ok']==True and d['manual']==True and 'was not changed' in d['message']"
     fi

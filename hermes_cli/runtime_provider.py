@@ -380,11 +380,11 @@ def _nous_entry_key_usable(entry: Any, min_ttl: int) -> bool:
 
 
 def _nous_min_key_ttl() -> int:
-    return max(60, env_int("HERMES_NOUS_MIN_KEY_TTL_SECONDS", 1800))
+    return max(60, env_int("TINO_NOUS_MIN_KEY_TTL_SECONDS", 1800))
 
 
 def _resolve_nous_creds() -> Dict[str, Any]:
-    return resolve_nous_runtime_credentials(timeout_seconds=float(get_secret_str("HERMES_NOUS_TIMEOUT_SECONDS", "15")))
+    return resolve_nous_runtime_credentials(timeout_seconds=float(get_secret_str("TINO_NOUS_TIMEOUT_SECONDS", "15")))
 
 
 def _finalize_base_url(provider: str, api_mode: str, base_url: str) -> str:
@@ -449,7 +449,7 @@ def _get_model_config() -> Dict[str, Any]:
 
 
 def resolve_requested_provider(requested: Optional[str] = None) -> str:
-    """Provider request from explicit arg, then config, then ``HERMES_INFERENCE_PROVIDER``, else
+    """Provider request from explicit arg, then config, then ``TINO_INFERENCE_PROVIDER``, else
     "auto". Config beats the env so chat uses the endpoint the user last saved, not a stale
     shell/.env override."""
     if requested and requested.strip():
@@ -457,7 +457,7 @@ def resolve_requested_provider(requested: Optional[str] = None) -> str:
     cfg_provider = _get_model_config().get("provider")
     if isinstance(cfg_provider, str) and cfg_provider.strip():
         return cfg_provider.strip().lower()
-    return get_secret_str("HERMES_INFERENCE_PROVIDER", "").strip().lower() or "auto"
+    return get_secret_str("TINO_INFERENCE_PROVIDER", "").strip().lower() or "auto"
 
 
 # ── extracted collaborators (re-exported; see module docstring) ────────────────────────────
@@ -498,9 +498,9 @@ def _pool_entry_mode_and_url(provider, entry, model_cfg, effective_model, base_u
         api_mode, default_url = _POOL_ENTRY_SIMPLE_MODES[provider]
         if provider == "openai-codex":
             # Pool entries retain the canonical ChatGPT URL, but the profile-wide
-            # HERMES_CODEX_BASE_URL override must apply consistently to every
+            # TINO_CODEX_BASE_URL override must apply consistently to every
             # credential source, including pooled OAuth credentials.
-            override_url = get_secret_str("HERMES_CODEX_BASE_URL", "").strip().rstrip("/")
+            override_url = get_secret_str("TINO_CODEX_BASE_URL", "").strip().rstrip("/")
             if override_url:
                 return api_mode, override_url
             # model.base_url is the secondary proxy override (same rule as the generic tail below:

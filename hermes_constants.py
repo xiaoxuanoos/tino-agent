@@ -1,4 +1,4 @@
-"""Shared constants for Hermes Agent.
+"""Shared constants for Tino Agent.
 
 Import-safe, stdlib-only — importable from anywhere without circular-import risk.
 """
@@ -15,7 +15,7 @@ from pathlib import Path
 
 _profile_fallback_warned: bool = False
 _UNSET = object()
-_HERMES_HOME_OVERRIDE: ContextVar[str | object] = ContextVar("_HERMES_HOME_OVERRIDE", default=_UNSET)
+_TINO_HOME_OVERRIDE: ContextVar[str | object] = ContextVar("_TINO_HOME_OVERRIDE", default=_UNSET)
 
 # TUI busy-indicator styles (CLI /indicator, TUI gateway config, /help registry).
 # Keep in sync with INDICATOR_STYLES / DEFAULT_INDICATOR_STYLE in ui-tui/src/app/interfaces.ts.
@@ -24,32 +24,32 @@ DEFAULT_INDICATOR_STYLE: str = "kaomoji"
 
 
 def set_hermes_home_override(path: str | Path | None) -> Token:
-    """Set a context-local Hermes home override and return its reset token.
+    """Set a context-local Tino home override and return its reset token.
 
     Deliberately does not mutate ``os.environ`` (shared by every thread in the process).
     """
     value: str | object = _UNSET if path is None else str(path)
-    return _HERMES_HOME_OVERRIDE.set(value)
+    return _TINO_HOME_OVERRIDE.set(value)
 
 
 def reset_hermes_home_override(token: Token) -> None:
-    """Restore the previous context-local Hermes home override."""
-    _HERMES_HOME_OVERRIDE.reset(token)
+    """Restore the previous context-local Tino home override."""
+    _TINO_HOME_OVERRIDE.reset(token)
 
 
 def get_hermes_home_override() -> str | None:
-    """Return the active context-local Hermes home override, if any."""
-    override = _HERMES_HOME_OVERRIDE.get()
+    """Return the active context-local Tino home override, if any."""
+    override = _TINO_HOME_OVERRIDE.get()
     return str(override) if override is not _UNSET and override else None
 
 
 def _expand_hermes_home(path: str) -> Path:
-    """Expand environment and user-home syntax in a Hermes home path."""
+    """Expand environment and user-home syntax in a Tino home path."""
     return Path(os.path.expanduser(os.path.expandvars(path)))
 
 
 def _get_platform_default_hermes_home() -> Path:
-    """Return the platform-native default Hermes home path."""
+    """Return the platform-native default Tino home path."""
     if sys.platform == "win32":
         local_appdata = os.environ.get("LOCALAPPDATA", "").strip()
         base = Path(local_appdata) if local_appdata else Path.home() / "AppData" / "Local"
@@ -60,7 +60,7 @@ def _get_platform_default_hermes_home() -> Path:
 def sudo_invoker_default_home() -> Path | None:
     """The invoking user's native ``~/.hermes`` when this process is root under ``sudo``, else None.
 
-    sudo strips HERMES_HOME and sets HOME=/root, so the process's own default is root's; the profile
+    sudo strips TINO_HOME and sets HOME=/root, so the process's own default is root's; the profile
     store and the system service being operated on belong to SUDO_USER.
     """
     if not hasattr(os, "geteuid") or os.geteuid() != 0:
@@ -77,7 +77,7 @@ def sudo_invoker_default_home() -> Path | None:
 
 
 def _warn_profile_fallback_once() -> None:
-    """Warn once when HERMES_HOME is unset but a non-default profile is sticky-active (wrong fallback)."""
+    """Warn once when TINO_HOME is unset but a non-default profile is sticky-active (wrong fallback)."""
     global _profile_fallback_warned
     if _profile_fallback_warned:
         return
@@ -92,11 +92,11 @@ def _warn_profile_fallback_once() -> None:
         # Direct stderr, not logging: runs at import time (often before logging is
         # configured) and root-logger propagation would double-emit.
         msg = (
-            f"[HERMES_HOME fallback] HERMES_HOME is unset but active "
+            f"[TINO_HOME fallback] TINO_HOME is unset but active "
             f"profile is {active!r}. Falling back to {fallback_home}, which "
             f"is the DEFAULT profile — not {active!r}. Any data this "
             f"process writes will land in the wrong profile. The "
-            f"subprocess spawner should pass HERMES_HOME explicitly "
+            f"subprocess spawner should pass TINO_HOME explicitly "
             f"(see issue #18594)."
         )
         with contextlib.suppress(Exception):
@@ -105,11 +105,11 @@ def _warn_profile_fallback_once() -> None:
 
 
 def get_hermes_home() -> Path:
-    """Hermes home: context-local override → ``HERMES_HOME`` env var → platform default."""
+    """Tino home: context-local override → ``TINO_HOME`` env var → platform default."""
     override = get_hermes_home_override()
     if override:
         return _expand_hermes_home(override)
-    if not os.environ.get("HERMES_HOME", "").strip():
+    if not os.environ.get("TINO_HOME", "").strip():
         _warn_profile_fallback_once()
     return get_process_hermes_home()
 
@@ -123,7 +123,7 @@ _HOME_KEY_CACHE: dict[str, str] = {}
 
 
 def hermes_home_key(path: str | Path | None = None) -> str:
-    """Stable registry key for a Hermes home/profile dir.
+    """Stable registry key for a Tino home/profile dir.
 
     ``strict=False`` so profiles whose directories don't exist yet still get a key.
 
@@ -154,31 +154,31 @@ def reset_hermes_home_key_cache() -> None:
 
 
 def get_process_hermes_home() -> Path:
-    """Hermes home of the running process, ignoring task overrides.
+    """Tino home of the running process, ignoring task overrides.
 
     For process-level assets (theme YAML, dashboard plugin manifests) that must stay visible while a
     request is scoped to another profile (e.g. embedded ``/chat`` under ``--open-profile``).
     """
-    val = os.environ.get("HERMES_HOME", "").strip()
+    val = os.environ.get("TINO_HOME", "").strip()
     return _expand_hermes_home(val) if val else _get_platform_default_hermes_home()
 
 
-# Hermes-managed runtime downloads at the root of a home (GGUF models, llama.cpp runtimes,
+# Tino-managed runtime downloads at the root of a home (GGUF models, llama.cpp runtimes,
 # managed Node): re-downloadable on demand and routinely tens to hundreds of GB. Shared by
 # ``hermes backup`` (excludes them) and ``profile create --clone-all`` (skips them from the
 # default profile) so the two lists cannot drift apart.
 LOCAL_RUNTIME_ROOT_DIRS: frozenset[str] = frozenset({"models", "runtimes", "node"})
 
-# get_default_hermes_root() memo keyed on (native home, expanded HERMES_HOME) so it stays
+# get_default_hermes_root() memo keyed on (native home, expanded TINO_HOME) so it stays
 # fresh when a test or plugin mutates either input; saves ~80us/call at 31+ sites.
 _default_hermes_root_memo: "tuple[str, str, Path] | None" = None
 
 
 def get_default_hermes_root() -> Path:
-    """Root Hermes dir for profile-level ops: ``<root>`` when ``HERMES_HOME=<root>/profiles/<name>``."""
+    """Root Tino dir for profile-level ops: ``<root>`` when ``TINO_HOME=<root>/profiles/<name>``."""
     global _default_hermes_root_memo
     native_home = _get_platform_default_hermes_home()
-    env_home = os.environ.get("HERMES_HOME", "").strip()
+    env_home = os.environ.get("TINO_HOME", "").strip()
     env_path = _expand_hermes_home(env_home) if env_home else None
     memo_key = (str(native_home), str(env_path) if env_path is not None else "")
     memo = _default_hermes_root_memo
@@ -188,7 +188,7 @@ def get_default_hermes_root() -> Path:
     if env_path is not None:
         try:
             env_path.resolve().relative_to(native_home.resolve())  # under ~/.hermes (normal or profile mode)
-        except ValueError:  # Docker/custom root: <root>/profiles/<name> -> <root>, else HERMES_HOME itself
+        except ValueError:  # Docker/custom root: <root>/profiles/<name> -> <root>, else TINO_HOME itself
             result = env_path.parent.parent if env_path.parent.name == "profiles" else env_path
     _default_hermes_root_memo = (*memo_key, result)
     return result
@@ -196,14 +196,14 @@ def get_default_hermes_root() -> Path:
 
 # Tombstone lives beside the profile dir (not inside) so a stale mkdir or rmtree cannot erase it.
 _DELETED_PROFILES_DIR = ".deleted"
-# Files marking a real Hermes home; arbitrary dirs with a ``profiles`` segment lack them.
-_HERMES_HOME_MARKERS = ("config.yaml", ".env", "state.db")
+# Files marking a real Tino home; arbitrary dirs with a ``profiles`` segment lack them.
+_TINO_HOME_MARKERS = ("config.yaml", ".env", "state.db")
 
 
 def _is_hermes_profiles_root(profiles_dir: Path) -> bool:
     """True when *profiles_dir* is provably ``<hermes-home>/profiles``.
 
-    Accepts the classic ``~/.hermes`` layout, a root carrying Hermes-home marker files, a
+    Accepts the classic ``~/.hermes`` layout, a root carrying Tino-home marker files, a
     ``profiles/.deleted`` tombstone dir (only ``profile delete`` creates it), or the default root.
     """
     root = profiles_dir.parent
@@ -211,7 +211,7 @@ def _is_hermes_profiles_root(profiles_dir: Path) -> bool:
         return True
     try:
         if (profiles_dir / _DELETED_PROFILES_DIR).is_dir() or any(
-            (root / marker).exists() for marker in _HERMES_HOME_MARKERS
+            (root / marker).exists() for marker in _TINO_HOME_MARKERS
         ):
             return True
     except OSError:
@@ -225,7 +225,7 @@ def _is_hermes_profiles_root(profiles_dir: Path) -> bool:
 def named_profile_home(path: str | Path) -> Path | None:
     """Return ``<root>/profiles/<name>`` when *path* is that home or under it.
 
-    Requires ``<name>`` not to start with ``.`` and the ``profiles`` parent to be a real Hermes home;
+    Requires ``<name>`` not to start with ``.`` and the ``profiles`` parent to be a real Tino home;
     a default home whose path merely contains a ``profiles`` segment is not a named profile.
     """
     current = Path(path)
@@ -241,7 +241,7 @@ def named_profile_home(path: str | Path) -> Path | None:
 def profile_name_for_home(path: str | Path | None) -> str | None:
     """Return the canonical profile id owning *path*, or ``None`` when it is not a profile home.
 
-    The default home is the Hermes root itself, so its basename is an installation detail (``.hermes``
+    The default home is the Tino root itself, so its basename is an installation detail (``.hermes``
     on POSIX and commonly ``hermes`` on Windows), not the profile id ``default``.
     """
     if path is None or not str(path).strip():
@@ -326,7 +326,7 @@ def _packaged_dir(env_var: str, default: Path | None, subdir: str) -> Path:
     """Resolve a package-manager-relocatable directory.
 
     Order: *env_var* (Nix wrapper / explicit override) → caller ``default`` (source checkout) →
-    ``<HERMES_HOME>/<subdir>``.
+    ``<TINO_HOME>/<subdir>``.
     """
     override = os.getenv(env_var, "").strip()
     return Path(override) if override else default if default is not None else get_hermes_home() / subdir
@@ -334,21 +334,21 @@ def _packaged_dir(env_var: str, default: Path | None, subdir: str) -> Path:
 
 def get_optional_skills_dir(default: Path | None = None) -> Path:
     """Return the optional-skills directory, honoring package-manager wrappers."""
-    return _packaged_dir("HERMES_OPTIONAL_SKILLS", default, "optional-skills")
+    return _packaged_dir("TINO_OPTIONAL_SKILLS", default, "optional-skills")
 
 
 def get_optional_mcps_dir(default: Path | None = None) -> Path:
-    """Return the optional-mcps directory, honoring package-manager wrappers (``HERMES_OPTIONAL_MCPS``)."""
-    return _packaged_dir("HERMES_OPTIONAL_MCPS", default, "optional-mcps")
+    """Return the optional-mcps directory, honoring package-manager wrappers (``TINO_OPTIONAL_MCPS``)."""
+    return _packaged_dir("TINO_OPTIONAL_MCPS", default, "optional-mcps")
 
 
 def get_bundled_skills_dir(default: Path | None = None) -> Path:
-    """Return the bundled skills directory, honoring package-manager wrappers (``HERMES_BUNDLED_SKILLS``)."""
-    return _packaged_dir("HERMES_BUNDLED_SKILLS", default, "skills")
+    """Return the bundled skills directory, honoring package-manager wrappers (``TINO_BUNDLED_SKILLS``)."""
+    return _packaged_dir("TINO_BUNDLED_SKILLS", default, "skills")
 
 
 def get_hermes_dir(new_subpath: str, old_name: str, *, home: Path | None = None) -> Path:
-    """Resolve a Hermes subdirectory, honouring a populated legacy ``<old_name>/`` (no migration).
+    """Resolve a Tino subdirectory, honouring a populated legacy ``<old_name>/`` (no migration).
 
     An empty legacy dir does NOT count (install scaffolds, manual mkdir) so it cannot shadow the new path.
 
@@ -363,7 +363,7 @@ def get_hermes_dir(new_subpath: str, old_name: str, *, home: Path | None = None)
 
 
 def iter_hermes_node_dirs(home: Path | None = None) -> list[Path]:
-    """Hermes-managed Node dirs in lookup order; both Windows and POSIX shapes so migrated installs work.
+    """Tino-managed Node dirs in lookup order; both Windows and POSIX shapes so migrated installs work.
 
     Keep in sync with hermesManagedNodePathEntries() in apps/desktop/electron/backend-env.ts.
     """
@@ -416,12 +416,12 @@ def _run_version_probe(argv: list[str], **kwargs):
 
 
 def _version_probe_ok(path: str) -> bool:
-    """True when ``<path> --version`` exits 0 under the Hermes-managed Node PATH."""
+    """True when ``<path> --version`` exits 0 under the Tino-managed Node PATH."""
     result = _run_version_probe([path, "--version"], env=with_hermes_node_path())
     return result is not None and result.returncode == 0
 
 
-_HERMES_NODE_TARGET_MAJOR = int(os.environ.get("HERMES_NODE_TARGET_MAJOR", "22"))
+_TINO_NODE_TARGET_MAJOR = int(os.environ.get("TINO_NODE_TARGET_MAJOR", "22"))
 _managed_node_heal_attempted = False
 _NODE_BOOTSTRAP_SCRIPT = Path(__file__).resolve().parent / "scripts" / "lib" / "node-bootstrap.sh"
 
@@ -445,7 +445,7 @@ def node_tool_runnable(path: str | None) -> bool:
 
 
 def hermes_managed_node_tree_present(home: Path | None = None) -> bool:
-    """Return True when any Hermes-managed node/npm/npx shim exists on disk."""
+    """Return True when any Tino-managed node/npm/npx shim exists on disk."""
     names = [n for c in ("node", "npm", "npx") for n in _candidate_node_command_names(c)]
     return next(_iter_managed_node_candidates(names, home), None) is not None
 
@@ -470,7 +470,7 @@ def managed_node_tree_in_use(home: Path | None = None) -> bool:
     """True when a running process executes from the managed Node tree.
 
     Windows locks running executables against delete/overwrite, so the updater must not rewrite
-    ``%HERMES_HOME%\\node`` while the desktop app holds it (``[WinError 5]`` on ``npm.cmd``).
+    ``%TINO_HOME%\\node`` while the desktop app holds it (``[WinError 5]`` on ``npm.cmd``).
 
     Always ``False`` on POSIX, which has no equivalent lock semantics. See #80926.
     """
@@ -518,7 +518,7 @@ def _print_managed_node_in_use_notice() -> None:
         return
     _managed_node_in_use_notice_printed = True
     print(
-        "→ Hermes-managed Node.js is in use by a running app; deferring its "
+        "→ Tino-managed Node.js is in use by a running app; deferring its "
         "upgrade until the app is closed (re-run `hermes update` afterwards).", flush=True,
     )
 
@@ -542,11 +542,11 @@ def _stage_windows_node_zip(home: Path, node_arch: str) -> Path | None:
     import uuid
     import zipfile
 
-    index_url = f"https://nodejs.org/dist/latest-v{_HERMES_NODE_TARGET_MAJOR}.x/"
+    index_url = f"https://nodejs.org/dist/latest-v{_TINO_NODE_TARGET_MAJOR}.x/"
     index_bytes = _fetch_url(index_url, 60)
     if index_bytes is None:
         return None
-    pattern = rf"node-v{_HERMES_NODE_TARGET_MAJOR}\.\d+\.\d+-win-{node_arch}\.zip"
+    pattern = rf"node-v{_TINO_NODE_TARGET_MAJOR}\.\d+\.\d+-win-{node_arch}\.zip"
     match = re.search(pattern, index_bytes.decode("utf-8", errors="replace"))
     if not match:
         return None
@@ -606,7 +606,7 @@ def _swap_node_tree(target: Path, staged: Path) -> bool | None:
 
 
 def _heal_managed_node_windows(home: Path | None = None) -> bool | None:
-    """Redownload the portable Node zip into ``%HERMES_HOME%\\node`` on Windows.
+    """Redownload the portable Node zip into ``%TINO_HOME%\\node`` on Windows.
 
     ``True`` on success, ``False`` on genuine failure (offline, bad archive), ``None`` when the
     tree is in use and the heal is deferred — callers must not record the once-per-process attempt
@@ -655,7 +655,7 @@ def _run_node_bootstrap(func: str, *, timeout: int, **extra_env: str) -> bool:
     try:
         result = subprocess.run(
             ["bash", "-c", f'source "{_NODE_BOOTSTRAP_SCRIPT}" && {func}'],
-            env={**os.environ, "HERMES_HOME": str(get_hermes_home()), **extra_env},
+            env={**os.environ, "TINO_HOME": str(get_hermes_home()), **extra_env},
             capture_output=True, timeout=timeout, check=False,
         )
     except (OSError, subprocess.SubprocessError):
@@ -664,9 +664,9 @@ def _run_node_bootstrap(func: str, *, timeout: int, **extra_env: str) -> bool:
 
 
 def bootstrap_hermes_managed_node() -> str | None:
-    """Install a Hermes-managed Node tree under ``$HERMES_HOME/node`` and return its npm path.
+    """Install a Tino-managed Node tree under ``$TINO_HOME/node`` and return its npm path.
 
-    Hermes never modifies a user-owned toolchain (system, nvm, brew, Nix) that fails ``engines``.
+    Tino never modifies a user-owned toolchain (system, nvm, brew, Nix) that fails ``engines``.
     """
     existing = find_hermes_node_executable("npm")
     if existing:
@@ -674,15 +674,15 @@ def bootstrap_hermes_managed_node() -> str | None:
     if sys.platform == "win32":
         ok = _heal_managed_node_windows()
     else:
-        # HERMES_NODE_SKIP_LINKS=1 keeps node/npm/npx out of ~/.local/bin: never shadow the user toolchain.
-        ok = _run_node_bootstrap("_nb_install_bundled_node", timeout=600, HERMES_NODE_SKIP_LINKS="1")
+        # TINO_NODE_SKIP_LINKS=1 keeps node/npm/npx out of ~/.local/bin: never shadow the user toolchain.
+        ok = _run_node_bootstrap("_nb_install_bundled_node", timeout=600, TINO_NODE_SKIP_LINKS="1")
     if not ok:
         return None
     return _first_runnable_managed(_candidate_node_command_names("npm"))[0]
 
 
 def heal_hermes_managed_node() -> bool:
-    """Redownload Hermes-managed Node when the tree exists but is broken; at most once per process.
+    """Redownload Tino-managed Node when the tree exists but is broken; at most once per process.
 
     A Windows in-use deferral does NOT record the attempt so a later call can heal once free.
 
@@ -717,12 +717,12 @@ def _managed_node_tree_outdated(home: Path | None = None) -> bool:
         # final releases, so node-gyp cannot build node-pty. Mirrors node_satisfies_build() in install.sh.
         if "-" in version:
             return True
-        return major < _HERMES_NODE_TARGET_MAJOR
+        return major < _TINO_NODE_TARGET_MAJOR
     return False
 
 
 def find_hermes_node_executable(command: str) -> str | None:
-    """Hermes-managed Node/npm path, healing broken/outdated trees; heal failure still returns old Node."""
+    """Tino-managed Node/npm path, healing broken/outdated trees; heal failure still returns old Node."""
     names = _candidate_node_command_names(command)
     resolved, broken_present = _first_runnable_managed(names)
     needs_heal = broken_present or (resolved is not None and _managed_node_tree_outdated())
@@ -762,7 +762,7 @@ def find_node_executable(command: str) -> str | None:
 
 
 def with_hermes_node_path(env: dict[str, str] | None = None) -> dict[str, str]:
-    """Return *env* with Hermes-managed Node directories prepended to PATH."""
+    """Return *env* with Tino-managed Node directories prepended to PATH."""
     merged = dict(os.environ if env is None else env)
     parts = [p for p in merged.get("PATH", "").split(os.pathsep) if p]
     for entry in reversed([str(path) for path in iter_hermes_node_dirs() if path.is_dir()]):
@@ -817,7 +817,7 @@ def _legacy_path_has_content(path: Path) -> bool:
 
 
 def display_hermes_home(home: Path | None = None) -> str:
-    """User-facing ``~/`` display string for HERMES_HOME (``~/.hermes/profiles/coder``).
+    """User-facing ``~/`` display string for TINO_HOME (``~/.hermes/profiles/coder``).
 
     ``home`` overrides the lookup for callers that run before the CLI has applied the sticky
     ``active_profile`` (``get_hermes_home()`` would emit the wrong-profile fallback warning there).
@@ -834,18 +834,18 @@ def profile_cli_selector() -> str:
     """``-p <name> `` (trailing space) pinning copy-pasteable ``hermes ...`` guidance to the
     active NAMED profile, else ``""``: a bare ``hermes`` follows the sticky ``active_profile``
     file, which can name a different database than the one that failed (#105887). A custom
-    home outside the profile tree has no selector (only HERMES_HOME names it)."""
+    home outside the profile tree has no selector (only TINO_HOME names it)."""
     name = profile_name_for_home(get_hermes_home())
     return f"-p {name} " if name and name != "default" else ""
 
 
 def secure_parent_dir(path: Path) -> None:
-    """Chmod ``0o700`` on *path*'s parent, refusing ``/`` and top-level dirs (misresolved HERMES_HOME)."""
+    """Chmod ``0o700`` on *path*'s parent, refusing ``/`` and top-level dirs (misresolved TINO_HOME)."""
     parent = path.parent.resolve()
     if parent == Path("/") or len(parent.parts) < 3:
         return
     # Refuse the install tree: chmod 0700 breaks hermes-user traversal in Docker (UID 10000).
-    # A credential file here means HERMES_HOME misresolved; surface it (caused production lockouts).
+    # A credential file here means TINO_HOME misresolved; surface it (caused production lockouts).
     # See #25821, #93050.
     if parent == _INSTALL_ROOT or _INSTALL_ROOT in parent.parents:
         import logging
@@ -872,8 +872,8 @@ def _norm_home_path(path: str | None) -> str:
 
 
 def _profile_home_path(env: dict[str, str] | None = None) -> str | None:
-    """Return ``{HERMES_HOME}/home`` when the profile-home directory exists."""
-    hermes_home = get_hermes_home_override() or (env or {}).get("HERMES_HOME") or os.getenv("HERMES_HOME")
+    """Return ``{TINO_HOME}/home`` when the profile-home directory exists."""
+    hermes_home = get_hermes_home_override() or (env or {}).get("TINO_HOME") or os.getenv("TINO_HOME")
     if not hermes_home:
         return None
     profile_home = str(_expand_hermes_home(hermes_home) / "home")
@@ -892,7 +892,7 @@ def _env_get(env: dict[str, str], key: str, default: str = "") -> str:
 def _iter_real_home_candidates(env: dict[str, str] | None = None) -> list[str]:
     """Return likely OS-user home candidates in trust order."""
     env = env or {}
-    candidates = [_env_get(env, "HERMES_REAL_HOME"), _env_get(env, "HOME")]
+    candidates = [_env_get(env, "TINO_REAL_HOME"), _env_get(env, "HOME")]
     with contextlib.suppress(Exception):
         import pwd
         candidates.append(pwd.getpwuid(os.getuid()).pw_dir.strip())  # windows-footgun: ok — POSIX-only module inside try/except
@@ -907,10 +907,10 @@ def _iter_real_home_candidates(env: dict[str, str] | None = None) -> list[str]:
 
 
 def get_real_home(env: dict[str, str] | None = None) -> str:
-    """The OS user's real home, avoiding the Hermes profile HOME.
+    """The OS user's real home, avoiding the Tino profile HOME.
 
     ``HOME`` belongs to the OS account and external CLIs keeping credentials under ``~``; a parent
-    already running with ``HOME={HERMES_HOME}/home`` is repaired back when possible.
+    already running with ``HOME={TINO_HOME}/home`` is repaired back when possible.
     """
     profile_home = _profile_home_path(env)
     seen: set[str] = set()
@@ -937,7 +937,7 @@ def get_subprocess_home(env: dict[str, str] | None = None) -> str | None:
     """Subprocess ``HOME`` override, or ``None``.
 
     ``auto``: hosts keep real HOME (repairing a profile-home parent), containers use
-    ``{HERMES_HOME}/home``; ``real``: always real HOME; ``profile``: always the profile home.
+    ``{TINO_HOME}/home``; ``real``: always real HOME; ``profile``: always the profile home.
     """
     env = env or {}
     profile_home = _profile_home_path(env)
@@ -960,23 +960,23 @@ def get_subprocess_home(env: dict[str, str] | None = None) -> str | None:
 
 
 def apply_subprocess_home_env(env: MutableMapping[str, str]) -> None:
-    """Apply Hermes' subprocess HOME contract to *env* in-place: ``HOME``/``HERMES_REAL_HOME``
-    per the home mode, and the temp vars re-pointed at ``env["HERMES_HOME"]``'s scratch dir."""
+    """Apply Tino' subprocess HOME contract to *env* in-place: ``HOME``/``TINO_REAL_HOME``
+    per the home mode, and the temp vars re-pointed at ``env["TINO_HOME"]``'s scratch dir."""
     real_home = get_real_home(env)
     if real_home:
-        env["HERMES_REAL_HOME"] = real_home
+        env["TINO_REAL_HOME"] = real_home
     home = get_subprocess_home(env)
     if home:
         env["HOME"] = home
     apply_scratch_tmp_env(env)
 
 
-# --- Scratch dir: Hermes' own temp space, never the system /tmp ---
+# --- Scratch dir: Tino' own temp space, never the system /tmp ---
 # System temp is tmpfs on most Linux distros and containers, so browser profiles, PTY probes,
-# download spools and every ``tempfile.mkdtemp()`` a Hermes-launched script performs eat RAM
-# and vanish on reboot. ``HERMES_HOME/cache/scratch`` is real storage with a fixed retention.
+# download spools and every ``tempfile.mkdtemp()`` a Tino-launched script performs eat RAM
+# and vanish on reboot. ``TINO_HOME/cache/scratch`` is real storage with a fixed retention.
 SCRATCH_TMP_ENV_VARS = ("TMPDIR", "TMP", "TEMP")
-SCRATCH_DIR_MARKER_ENV = "HERMES_SCRATCH_DIR"
+SCRATCH_DIR_MARKER_ENV = "TINO_SCRATCH_DIR"
 SCRATCH_MAX_AGE_HOURS = 72
 _SCRATCH_PRUNE_STAMP = ".last_prune"
 _SCRATCH_PRUNE_INTERVAL_SECONDS = 3600
@@ -1003,9 +1003,9 @@ def socket_safe_tmpdir() -> str:
 
 
 def get_scratch_dir(home: str | Path | None = None, *, prune: bool = True) -> Path:
-    """``<home>/cache/scratch`` (created, owner-only); *home* defaults to the active Hermes home.
+    """``<home>/cache/scratch`` (created, owner-only); *home* defaults to the active Tino home.
 
-    Every Hermes process and child gets ``TMPDIR``/``TMP``/``TEMP`` pointed here at boot (see
+    Every Tino process and child gets ``TMPDIR``/``TMP``/``TEMP`` pointed here at boot (see
     :func:`export_scratch_tmp_env`), so ``tempfile`` defaults land here without call sites
     knowing. Entries older than ``SCRATCH_MAX_AGE_HOURS`` are pruned at most once per process
     and once per hour across processes (stamp file), so a fan-out of children stays cheap.
@@ -1078,11 +1078,11 @@ def scratch_dir_usage_bytes(scratch: Path | None = None) -> int:
 
 
 def apply_scratch_tmp_env(env: MutableMapping[str, str]) -> bool:
-    """Point ``TMPDIR``/``TMP``/``TEMP`` in *env* at the scratch dir of ``env["HERMES_HOME"]``.
+    """Point ``TMPDIR``/``TMP``/``TEMP`` in *env* at the scratch dir of ``env["TINO_HOME"]``.
 
     A temp var the user (or the OS: macOS ``/var/folders``, Windows ``%TEMP%``) set is
-    respected and nothing changes. A value Hermes itself exported earlier — recognisable
-    because it equals ``HERMES_SCRATCH_DIR`` — is re-derived, so a child running under another
+    respected and nothing changes. A value Tino itself exported earlier — recognisable
+    because it equals ``TINO_SCRATCH_DIR`` — is re-derived, so a child running under another
     profile's home gets that home's scratch dir rather than its parent's. Returns True when
     the vars were (re)written.
     """
@@ -1091,11 +1091,11 @@ def apply_scratch_tmp_env(env: MutableMapping[str, str]) -> bool:
         value = env.get(key, "").strip()
         if value and value != ours:
             return False
-    home = env.get("HERMES_HOME", "").strip()
+    home = env.get("TINO_HOME", "").strip()
     try:
         scratch = str(get_scratch_dir(_expand_hermes_home(home) if home else get_process_hermes_home()))
     except (RuntimeError, OSError):
-        # No HERMES_HOME and no resolvable user home (a child env built from nothing on
+        # No TINO_HOME and no resolvable user home (a child env built from nothing on
         # Windows): there is no scratch dir to point at; the child keeps the OS default.
         return False
     for key in SCRATCH_TMP_ENV_VARS:
@@ -1291,7 +1291,7 @@ def wsl_unc_path_to_posix(path: str) -> str | None:
 
 
 def translate_cwd_for_wsl_backend(cwd: str) -> str:
-    """Map a Windows-host cwd (drive path or ``\\\\wsl.localhost\\`` UNC) to POSIX when Hermes runs in WSL.
+    """Map a Windows-host cwd (drive path or ``\\\\wsl.localhost\\`` UNC) to POSIX when Tino runs in WSL.
 
     No-op off WSL and for paths already POSIX.
     """
@@ -1353,17 +1353,17 @@ def _root_mount_has_marker(path: str, markers: tuple[str, ...]) -> bool:
 
 
 def get_config_path() -> Path:
-    """Return the path to ``config.yaml`` under HERMES_HOME."""
+    """Return the path to ``config.yaml`` under TINO_HOME."""
     return get_hermes_home() / "config.yaml"
 
 
 def get_skills_dir() -> Path:
-    """Return the path to the skills directory under HERMES_HOME."""
+    """Return the path to the skills directory under TINO_HOME."""
     return get_hermes_home() / "skills"
 
 
 def get_env_path() -> Path:
-    """Return the path to the ``.env`` file under HERMES_HOME."""
+    """Return the path to the ``.env`` file under TINO_HOME."""
     return get_hermes_home() / ".env"
 
 
@@ -1484,7 +1484,7 @@ FIRST_PARTY_MODULE_ROOTS = frozenset({
 
 
 def is_first_party_module(name: str | None) -> bool:
-    """True when *name* ships with Hermes (exact first segment; ``startswith`` would claim ``agentops``)."""
+    """True when *name* ships with Tino (exact first segment; ``startswith`` would claim ``agentops``)."""
     root = str(name).split(".")[0] if name else ""
     return bool(root) and (root in FIRST_PARTY_MODULE_ROOTS or root.startswith("hermes_"))
 

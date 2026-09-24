@@ -233,7 +233,7 @@ export function ContribWiring({ children }: { children: ReactNode }) {
     navigate(routeRequest.path)
   }, [navigate, routeRequest])
 
-  // "Restart Hermes" from a toast: recycle the local backend the user is
+  // "Restart Tino" from a toast: recycle the local backend the user is
   // looking at (same IPC the Models page uses), then let the boot hook re-dial.
   // A remote/cloud connection has no local process to recycle — there the
   // only meaningful "restart" is re-dialing the connection.
@@ -247,13 +247,13 @@ export function ContribWiring({ children }: { children: ReactNode }) {
 
     if (backendRestartRequest > 0) {
       if ($connection.get()?.mode === 'remote') {
-        void reconnectGateway().catch(err => notifyError(err, translateNow('notifications.errors.restartHermesFailed')))
+        void reconnectGateway().catch(err => notifyError(err, translateNow('notifications.errors.restartTinoFailed')))
 
         return
       }
 
       void window.hermesDesktop?.recycleBackend?.(normalizeProfileKey($activeGatewayProfile.get())).catch(err =>
-        notifyError(err, translateNow('notifications.errors.restartHermesFailed'))
+        notifyError(err, translateNow('notifications.errors.restartTinoFailed'))
       )
     }
   }, [backendRestartRequest])

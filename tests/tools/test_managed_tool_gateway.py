@@ -84,7 +84,7 @@ def test_resolve_managed_tool_gateway_is_disabled_without_subscription():
 
 def test_read_nous_access_token_refreshes_expiring_cached_token(tmp_path, monkeypatch):
     monkeypatch.delenv("TOOL_GATEWAY_USER_TOKEN", raising=False)
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("TINO_HOME", str(tmp_path))
     expires_at = (datetime.now(timezone.utc) + timedelta(seconds=30)).isoformat()
     (tmp_path / "auth.json").write_text(json.dumps({
         "providers": {
@@ -105,7 +105,7 @@ def test_read_nous_access_token_refreshes_expiring_cached_token(tmp_path, monkey
 
 def test_is_managed_tool_gateway_ready_skips_refresh_for_expired_cached_token(tmp_path, monkeypatch):
     monkeypatch.delenv("TOOL_GATEWAY_USER_TOKEN", raising=False)
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("TINO_HOME", str(tmp_path))
     expired_at = (datetime.now(timezone.utc) - timedelta(seconds=30)).isoformat()
     (tmp_path / "auth.json").write_text(json.dumps({
         "providers": {
@@ -220,8 +220,8 @@ def test_read_nous_provider_state_reads_only_the_profiles_own_store(tmp_path, mo
         "version": 1,
         "providers": {"nous": {"auth_method": "anonymous", "access_token": "root-tok"}},
     }))
-    monkeypatch.setenv("HERMES_HOME", str(profile))
-    monkeypatch.setenv("HERMES_GUEST_ONBOARDING", "1")
+    monkeypatch.setenv("TINO_HOME", str(profile))
+    monkeypatch.setenv("TINO_GUEST_ONBOARDING", "1")
     monkeypatch.delenv("PYTEST_CURRENT_TEST", raising=False)
 
     import hermes_constants

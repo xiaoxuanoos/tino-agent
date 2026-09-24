@@ -1,4 +1,4 @@
-"""ACP session manager — maps ACP sessions to Hermes AIAgent instances.
+"""ACP session manager — maps ACP sessions to Tino AIAgent instances.
 
 Sessions are persisted to the shared SessionDB (``~/.hermes/state.db``) so they
 survive process restarts and appear in ``session_search``; ``load_session`` /
@@ -26,7 +26,7 @@ logger = logging.getLogger(__name__)
 
 def _translate_acp_cwd(cwd: str) -> str:
     """Translate Windows ACP cwd values (``E:\\Projects``, ``\\\\wsl.localhost\\``) to POSIX form
-    when Hermes runs in WSL so agents, tools, and persisted sessions agree; no-op elsewhere."""
+    when Tino runs in WSL so agents, tools, and persisted sessions agree; no-op elsewhere."""
     return translate_cwd_for_wsl_backend(str(cwd))
 
 
@@ -130,7 +130,7 @@ def _first_user_preview(history: List[Dict[str, Any]], default: str) -> str:
 
 @dataclass
 class SessionState:
-    """Tracks per-session state for an ACP-managed Hermes agent."""
+    """Tracks per-session state for an ACP-managed Tino agent."""
 
     session_id: str
     agent: Any  # AIAgent instance
@@ -149,7 +149,7 @@ class SessionState:
 
 
 class SessionManager:
-    """Thread-safe manager for ACP sessions backed by Hermes AIAgent instances.
+    """Thread-safe manager for ACP sessions backed by Tino AIAgent instances.
 
     Sessions are held in-memory for fast access **and** persisted to the shared
     SessionDB so they survive restarts and are searchable via ``session_search``."""
@@ -278,7 +278,7 @@ class SessionManager:
 
     def _get_db(self):
         """Lazily acquire the process-shared SessionDB; ``None`` if unavailable (e.g. import
-        error in a minimal test env). ``HERMES_HOME`` is resolved here, not via the import-time
+        error in a minimal test env). ``TINO_HOME`` is resolved here, not via the import-time
         ``DEFAULT_DB_PATH``, so test fixtures that change the env var later are honoured. The
         registry handle is the one in-process tools (delegation, session_search, goals) also
         acquire, so the ACP server holds ONE writer on state.db instead of two (#100896)."""

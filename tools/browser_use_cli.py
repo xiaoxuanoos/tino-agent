@@ -30,7 +30,7 @@ _SESSION_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$")
 
 # Set on the env dict by the CDP resolvers when the resolved browser is EXCLUSIVE to this named session
 # (per-name provider / named BU cloud / Lightpanda). Popped before the subprocess launches — never exported.
-_PRIVATE_BROWSER_SENTINEL = "_HERMES_BU_PRIVATE_BROWSER"
+_PRIVATE_BROWSER_SENTINEL = "_TINO_BU_PRIVATE_BROWSER"
 
 # Prepended to the model's code for named sessions on SHARED browsers (a /browser connect CDP override): the
 # harness daemon attaches to the first existing page at startup, so two fresh named daemons can land on the
@@ -140,11 +140,11 @@ def _base_subprocess_env() -> dict:
     from tools.browser_tool import _build_browser_env
     env = _build_browser_env()
     # The CLI runs under its own Python (uv tool / uvx); an inherited PYTHONPATH/PYTHONHOME
-    # (Hermes's venv) wins over its site-packages → wrong-ABI C-extensions and a crash.
-    # PYTHONPATH/PYTHONHOME inherited from the agent process point at Hermes's venv site-packages, and a
+    # (Tino's venv) wins over its site-packages → wrong-ABI C-extensions and a crash.
+    # PYTHONPATH/PYTHONHOME inherited from the agent process point at Tino's venv site-packages, and a
     # child interpreter honors them ahead of its own site-packages — so the CLI imports compiled
     # C-extensions (e.g. pydantic_core) built for the wrong interpreter and crashes on ABI mismatch (#83427,
-    # #84841, #86006, #86104). Strip both — the CLI manages its own environment and never needs Hermes's
+    # #84841, #86006, #86104). Strip both — the CLI manages its own environment and never needs Tino's
     # import path.
     env.pop("PYTHONPATH", None)
     env.pop("PYTHONHOME", None)
@@ -245,13 +245,13 @@ def default_downgrade_notice() -> Optional[str]:
 
 
 def _managed_bin_dir() -> str:
-    """$HERMES_HOME/bin — where install.sh puts uv/uvx and install_cli() links browser-use."""
+    """$TINO_HOME/bin — where install.sh puts uv/uvx and install_cli() links browser-use."""
     return str(Path(get_hermes_home()) / "bin")
 
 
 def _find_cli() -> Optional[List[str]]:
-    """Locate the browser-use CLI, or None when it can't be run. MANAGED-FIRST: Hermes' own ``$HERMES_HOME/bin``
-    copy always wins so every session drives one Hermes-controlled binary; PATH and the user-level tool dir
+    """Locate the browser-use CLI, or None when it can't be run. MANAGED-FIRST: Tino' own ``$TINO_HOME/bin``
+    copy always wins so every session drives one Tino-controlled binary; PATH and the user-level tool dir
     (~/.local/bin, or uv's %APPDATA%/uv/bin on Windows — Desktop/TUI workers may start with a minimal PATH
     that omits it) are fallbacks; uvx zero-install (same probe order) is last."""
     if os.name == "nt":
@@ -270,7 +270,7 @@ def _find_cli() -> Optional[List[str]]:
 
 def install_cli(timeout_s: int = 600) -> Tuple[bool, str]:
     """Install the browser-use CLI via ``uv tool install`` (managed uv via ``ensure_uv`` → uv on PATH), linking
-    the binary into ``$HERMES_HOME/bin`` (``UV_TOOL_BIN_DIR``) so ``_find_cli()`` resolves it for every profile.
+    the binary into ``$TINO_HOME/bin`` (``UV_TOOL_BIN_DIR``) so ``_find_cli()`` resolves it for every profile.
     Returns ``(ok, message)``; never raises. MANAGED-FIRST: only the managed copy short-circuits — a browser-use
     on PATH is a user-level side install and must not block provisioning the canonical copy (version drift)."""
     bin_dir = _managed_bin_dir()
@@ -374,7 +374,7 @@ def _backend_cache_key(task_id: Optional[str], session_name: str = "") -> str:
 
 
 def _resolve_lightpanda_cdp(env: dict, task_id: Optional[str], session_name: str = "") -> Optional[str]:
-    """Point the harness at a Hermes-spawned ``lightpanda serve`` (``browser.engine: lightpanda`` and
+    """Point the harness at a Tino-spawned ``lightpanda serve`` (``browser.engine: lightpanda`` and
     nothing of higher precedence claimed the session). Each cache key gets its own process via the
     legacy ``_get_session_info()`` (cache, reaper, atexit): private browser, own-tab preamble skipped."""
     try:
@@ -397,7 +397,7 @@ def _resolve_lightpanda_cdp(env: dict, task_id: Optional[str], session_name: str
 
 
 def _resolve_managed_chromium_cdp(env: dict, task_id: Optional[str], session_name: str = "") -> Optional[str]:
-    """Point the harness at Hermes' packaged Chromium, launched through agent-browser for this cache key —
+    """Point the harness at Tino's packaged Chromium, launched through agent-browser for this cache key —
     the same browser the built-in tools drive. Left alone, the harness discovers the user's INSTALLED
     Chrome on its default profile, which needs the chrome://inspect toggle + an Allow popup per run and
     is blocked outright on Chrome >=136; on a headless box it just reports ``chrome-not-running``.
@@ -435,7 +435,7 @@ def _resolve_backend_cdp(env: dict, task_id: Optional[str], session_name: str = 
     Precedence: (1) ``BU_CDP_WS``/``BU_CDP_URL`` already in env (operator override); (2) ``BROWSER_CDP_URL``
     env / ``browser.cdp_url`` (``/browser connect``); (3) a cloud provider via the legacy ``_get_session_info()``
     so browser_exec shares the SAME session machinery (per-task cache, expiry, reaper, atexit);
-    (4) the local engine — ``browser.engine: lightpanda`` or Hermes' packaged Chromium via agent-browser
+    (4) the local engine — ``browser.engine: lightpanda`` or Tino's packaged Chromium via agent-browser
     (never the harness's own discovery of the user's installed Chrome); (5) BU direct-API configs → None:
     the CLI reaches BU cloud natively (BU_AUTOSPAWN). ``session_name`` (BU_NAME) keys the session cache so
     each name gets its OWN browser — what makes named sessions concurrent-safe.
@@ -755,7 +755,7 @@ def _dynamic_schema_overrides() -> dict:
         props = dict(BROWSER_EXEC_SCHEMA["parameters"]["properties"])
         props["local"] = {
             "type": "boolean", "default": False,
-            "description": ("Drive the user's own local browser (a Hermes-managed copy of their real "
+            "description": ("Drive the user's own local browser (a Tino-managed copy of their real "
                             "default-Chromium profile, logins/cookies included) instead of the configured "
                             "cloud browser backend. Use when the user asks to act as themselves — their "
                             "accounts, their sessions. No-op when the backend is already local. Default false."),

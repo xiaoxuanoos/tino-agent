@@ -16,7 +16,7 @@ import tui_gateway.server as srv
 def test_inherit_launch_model_carries_a_custom_provider_gateway(monkeypatch, tmp_path):
     home = tmp_path / ".hermes"
     home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("TINO_HOME", str(home))
     (home / "config.yaml").write_text(
         "model:\n  provider: my-gateway\n  default: my-finetune\n"
         "providers:\n  my-gateway:\n    api: https://llm.internal.example.com/v1\n    key_env: GW_KEY\n"

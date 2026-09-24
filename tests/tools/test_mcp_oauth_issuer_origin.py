@@ -3,7 +3,7 @@
 Strava's MCP connector advertises ``authorization_servers: ["https://www.strava.com/mcp-issuer"]`` and
 serves ``/.well-known/oauth-authorization-server/mcp-issuer`` with ``issuer: "https://www.strava.com"``.
 The SDK's exact-string issuer check (RFC 8414 §3.3) rejected that document and discovery never completed.
-Hermes accepts exactly this shape — the document fetched from the well-known URL derived from the advertised
+Tino accepts exactly this shape — the document fetched from the well-known URL derived from the advertised
 identifier, naming that identifier's origin — through the real provider flow; every other mismatch is still
 rejected.
 """
@@ -60,11 +60,11 @@ async def _run_flow(tmp_path, monkeypatch, issuer_doc):
     from pydantic import AnyUrl
 
     from tools.mcp_oauth import HermesTokenStorage, _authorization_code_result
-    from tools.mcp_oauth_manager import _HERMES_PROVIDER_CLS, reset_manager_for_tests
+    from tools.mcp_oauth_manager import _TINO_PROVIDER_CLS, reset_manager_for_tests
     from tools.mcp_tool import sdk_httpx
 
     httpx = sdk_httpx()
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("TINO_HOME", str(tmp_path))
     reset_manager_for_tests()
     seen = {}
 
@@ -76,9 +76,9 @@ async def _run_flow(tmp_path, monkeypatch, issuer_doc):
         return _authorization_code_result("code-1", seen["state"], iss=AS_ORIGIN)
 
     storage = HermesTokenStorage("srv")
-    provider = _HERMES_PROVIDER_CLS(
+    provider = _TINO_PROVIDER_CLS(
         server_name="srv", server_url=RESOURCE, storage=storage,
-        client_metadata=OAuthClientMetadata(redirect_uris=[AnyUrl("http://127.0.0.1:1/cb")], client_name="Hermes Agent"),
+        client_metadata=OAuthClientMetadata(redirect_uris=[AnyUrl("http://127.0.0.1:1/cb")], client_name="Tino Agent"),
         redirect_handler=redirect, callback_handler=callback)
     standin = _StandIn(httpx, issuer_doc)
     async with httpx.AsyncClient(auth=provider, transport=httpx.MockTransport(standin)) as client:

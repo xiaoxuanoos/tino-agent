@@ -72,15 +72,28 @@ def test_empty_provider_login_page_shows_supported_auth_paths():
     html = render_login_html()
 
     assert "--insecure" not in html
-    assert "username/password provider" in html
-    assert "OAuth provider" in html
+    assert "邮箱/密码认证" in html
+    assert "Tino Agent" in html
     assert "127.0.0.1" in html
-    assert "SSH tunnel" in html
+    assert "SSH 隧道" in html
     assert "Tailscale" in html
-    assert (
-        'href="https://hermes-agent.nousresearch.com/docs/'
-        'user-guide/features/web-dashboard#authentication-gated-mode"'
-    ) in html
+    assert "portal.nousresearch.com" not in html
+
+
+def test_tino_help_route_does_not_conflict_with_fastapi_docs():
+    # The SPA owns /docs; Swagger used to shadow it and show the upstream
+    # developer title instead of Tino's in-product help.
+    assert web_server.app.docs_url == "/api/docs"
+    assert web_server.app.openapi_url == "/api/openapi.json"
+    assert web_server.app.title == "Tino Agent"
+
+
+def test_tino_login_icon_is_public_but_prefix_lookalikes_are_not():
+    from hermes_cli.dashboard_auth.middleware import _path_is_public
+
+    assert _path_is_public("/tino-icon.svg")
+    assert not _path_is_public("/tino-icon.svg/private")
+    assert not _path_is_public("/tino-icon.svg-copy")
 
 
 # ---------------------------------------------------------------------------
@@ -335,7 +348,7 @@ def test_public_url_aware_gate_requires_auth_for_loopback_proxy(monkeypatch):
     from hermes_cli.web_server import should_require_dashboard_auth
 
     monkeypatch.setenv(
-        "HERMES_DASHBOARD_PUBLIC_URL",
+        "TINO_DASHBOARD_PUBLIC_URL",
         "https://dashboard.example.test:9443",
     )
     assert should_require_dashboard_auth("127.0.0.1") is True
@@ -346,7 +359,7 @@ def test_public_url_aware_gate_preserves_local_only_mode(monkeypatch):
     from hermes_cli.web_server import should_require_dashboard_auth
 
     monkeypatch.setenv(
-        "HERMES_DASHBOARD_PUBLIC_URL",
+        "TINO_DASHBOARD_PUBLIC_URL",
         "http://localhost:9119",
     )
     assert should_require_dashboard_auth("127.0.0.1") is False
@@ -358,7 +371,7 @@ def test_start_server_loopback_public_url_enables_gate(monkeypatch):
     from tests.hermes_cli.conftest_dashboard_auth import StubAuthProvider
 
     monkeypatch.setenv(
-        "HERMES_DASHBOARD_PUBLIC_URL",
+        "TINO_DASHBOARD_PUBLIC_URL",
         "https://dashboard.example.test:9443",
     )
     clear_providers()
@@ -391,7 +404,7 @@ def test_start_server_loopback_public_url_without_provider_fails_closed(monkeypa
     from hermes_cli.dashboard_auth import clear_providers
 
     monkeypatch.setenv(
-        "HERMES_DASHBOARD_PUBLIC_URL",
+        "TINO_DASHBOARD_PUBLIC_URL",
         "https://dashboard.example.test:9443",
     )
     clear_providers()
@@ -425,9 +438,9 @@ def test_desktop_ssh_backend_serves_session_token_requests_despite_public_url(mo
     from hermes_cli.dashboard_auth import clear_providers, register_provider
     from tests.hermes_cli.conftest_dashboard_auth import StubAuthProvider
 
-    monkeypatch.setenv("HERMES_DASHBOARD_PUBLIC_URL", "https://dashboard.example.test:9443")
-    monkeypatch.setenv("HERMES_DESKTOP", "1")
-    monkeypatch.delenv("HERMES_DASHBOARD_SESSION_TOKEN", raising=False)
+    monkeypatch.setenv("TINO_DASHBOARD_PUBLIC_URL", "https://dashboard.example.test:9443")
+    monkeypatch.setenv("TINO_DESKTOP", "1")
+    monkeypatch.delenv("TINO_DASHBOARD_SESSION_TOKEN", raising=False)
     clear_providers()
     register_provider(StubAuthProvider())
     _stub_uvicorn_run(monkeypatch)
@@ -443,7 +456,7 @@ def test_desktop_ssh_backend_serves_session_token_requests_despite_public_url(mo
             ssh_session_token=ssh_token,
         )
         client = TestClient(web_server.app, base_url="http://127.0.0.1")
-        with_token = client.get("/api/profiles", headers={"X-Hermes-Session-Token": ssh_token})
+        with_token = client.get("/api/profiles", headers={"X-Tino-Session-Token": ssh_token})
         assert with_token.status_code == 200, with_token.text
         without_token = client.get("/api/profiles")
         assert without_token.status_code == 401
@@ -478,7 +491,7 @@ def test_loopback_public_url_fail_closed_message_is_actionable(monkeypatch):
     from hermes_cli.dashboard_auth import clear_providers
 
     monkeypatch.setenv(
-        "HERMES_DASHBOARD_PUBLIC_URL",
+        "TINO_DASHBOARD_PUBLIC_URL",
         "https://dashboard.example.test:9443",
     )
     clear_providers()
@@ -530,10 +543,10 @@ def test_should_require_dashboard_auth_truth_table(
     from hermes_cli.web_server import should_require_dashboard_auth
 
     if public_url is None:
-        monkeypatch.delenv("HERMES_DASHBOARD_PUBLIC_URL", raising=False)
+        monkeypatch.delenv("TINO_DASHBOARD_PUBLIC_URL", raising=False)
         monkeypatch.setattr(
             web_server, "_dashboard_public_hosts", lambda: frozenset()
         )
     else:
-        monkeypatch.setenv("HERMES_DASHBOARD_PUBLIC_URL", public_url)
+        monkeypatch.setenv("TINO_DASHBOARD_PUBLIC_URL", public_url)
     assert should_require_dashboard_auth(host) is expected

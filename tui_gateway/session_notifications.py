@@ -342,7 +342,7 @@ def _format_kanban_event_text(sub: dict, task, ev, board_slug: str) -> Optional[
 
 
 def _kb_board_key(_kb, board_meta) -> tuple[str, str]:
-    """(slug, resolved DB identity) — multiple slugs can point at one DB when HERMES_KANBAN_DB pins it."""
+    """(slug, resolved DB identity) — multiple slugs can point at one DB when TINO_KANBAN_DB pins it."""
     slug = (board_meta or {}).get("slug") or _kb.DEFAULT_BOARD
     db_path = (board_meta or {}).get("db_path")
     try:
@@ -395,7 +395,7 @@ def _kb_poll_board(_kb, slug: str, session_key: str) -> list:
 
 def _collect_kanban_notifications(session: dict) -> list:
     """Claim unseen terminal kanban events for this session's ``platform="tui"`` subscriptions (``kanban_create``
-    auto-subscribes with ``chat_id=HERMES_SESSION_KEY``; no "tui" messaging adapter exists, so this poller is the
+    auto-subscribes with ``chat_id=TINO_SESSION_KEY``; no "tui" messaging adapter exists, so this poller is the
     delivery path). Same atomic cursor-claim as the gateway notifier: exactly-once even if a gateway polls the same DB.
 
     See #59890.
@@ -414,7 +414,7 @@ def _collect_kanban_notifications(session: dict) -> list:
             boards = [_kb.read_board_metadata(_kb.DEFAULT_BOARD)]
         except Exception:
             return []
-    # dict keyed by resolved DB identity: first slug per DB wins (a pinned HERMES_KANBAN_DB aliases slugs).
+    # dict keyed by resolved DB identity: first slug per DB wins (a pinned TINO_KANBAN_DB aliases slugs).
     unique = {}
     for slug, resolved in (_kb_board_key(_kb, board_meta) for board_meta in boards):
         unique.setdefault(resolved, slug)
@@ -764,7 +764,7 @@ _desktop_ui_wired = False
 def _wire_desktop_sinks() -> None:
     """Idempotently wire process-registry and desktop-tool sinks to renderer events: `agent.terminal.output` and
     `terminal.close` (drops a tab without killing the process) route to the window owning the process; desktop-only
-    tools pass the turn's ``HERMES_UI_SESSION_ID`` as ``sid``. `_emit` is thread-safe."""
+    tools pass the turn's ``TINO_UI_SESSION_ID`` as ``sid``. `_emit` is thread-safe."""
     global _desktop_ui_wired
     from tools.process_registry import process_registry
 

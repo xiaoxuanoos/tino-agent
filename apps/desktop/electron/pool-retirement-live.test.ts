@@ -1,5 +1,5 @@
 /** Native Electron main -> real headless serve, without an app/renderer build.
- * Opt in with HERMES_TEST_REAL_SERVE=1; see pool-retirement-live-fixture/README.md.
+ * Opt in with TINO_TEST_REAL_SERVE=1; see pool-retirement-live-fixture/README.md.
  */
 import assert from 'node:assert/strict'
 import { type ChildProcess, spawn } from 'node:child_process'
@@ -26,10 +26,10 @@ function isolatedEnv(root: string): NodeJS.ProcessEnv {
     if (process.env[name]) {env[name] = process.env[name]}
   }
 
-  return { ...env, HOME: root, USERPROFILE: root, HERMES_HOME: join(root, '.hermes'),
+  return { ...env, HOME: root, USERPROFILE: root, TINO_HOME: join(root, '.hermes'),
     XDG_CONFIG_HOME: join(root, 'config'), XDG_CACHE_HOME: join(root, 'cache'),
     TMPDIR: root, TEMP: root, TMP: root, TZ: 'UTC', LANG: 'C.UTF-8',
-    HERMES_DESKTOP_CDP_PORT: 'off', HERMES_DESKTOP_USER_DATA_DIR: join(root, 'user-data') }
+    TINO_DESKTOP_CDP_PORT: 'off', TINO_DESKTOP_USER_DATA_DIR: join(root, 'user-data') }
 }
 
 function waitForExit(child: ChildProcess, timeoutMs: number): Promise<number | null> {
@@ -40,13 +40,13 @@ function waitForExit(child: ChildProcess, timeoutMs: number): Promise<number | n
   })
 }
 
-test.skipIf(process.env.HERMES_TEST_REAL_SERVE !== '1' || process.platform === 'win32')(
+test.skipIf(process.env.TINO_TEST_REAL_SERVE !== '1' || process.platform === 'win32')(
   'native retirement preserves backend-only cron and hands both waiters capacity only after real child exit',
   async () => {
-    const python = process.env.HERMES_TEST_PYTHON
-    assert.ok(python && existsSync(python), 'Set HERMES_TEST_PYTHON to an installed Hermes Python environment')
-    const electron = process.env.HERMES_TEST_ELECTRON || require('electron') as string
-    assert.ok(existsSync(electron), 'HERMES_TEST_ELECTRON must name a real native Electron executable')
+    const python = process.env.TINO_TEST_PYTHON
+    assert.ok(python && existsSync(python), 'Set TINO_TEST_PYTHON to an installed Tino Python environment')
+    const electron = process.env.TINO_TEST_ELECTRON || require('electron') as string
+    assert.ok(existsSync(electron), 'TINO_TEST_ELECTRON must name a real native Electron executable')
     const root = mkdtempSync(join(tmpdir(), 'hermes-pool-retirement-live-'))
     const resultPath = join(root, 'result.json')
     let child: ChildProcess | undefined

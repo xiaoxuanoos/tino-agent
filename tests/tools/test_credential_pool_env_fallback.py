@@ -3,7 +3,7 @@
 Covers the fix from #15914 / PR #15920 and the rotation fix from #20591:
 - _seed_from_env reads API keys from ~/.hermes/.env when not in os.environ
 - _resolve_api_key_provider_secret falls back to credential_pool when env vars are empty
-- ~/.hermes/.env takes priority over os.environ for Hermes-managed credentials
+- ~/.hermes/.env takes priority over os.environ for Tino-managed credentials
   (so a deliberate rotation in .env wins over a stale shell export)
 - env / dotenv values take priority over credential pool (pool fires only when both are empty)
 """
@@ -32,14 +32,14 @@ def _make_pconfig(provider_id="deepseek", env_vars=None):
 
 @pytest.fixture
 def isolated_hermes_home(tmp_path, monkeypatch):
-    """Point HERMES_HOME at a temp dir and clear known API key env vars.
+    """Point TINO_HOME at a temp dir and clear known API key env vars.
 
     Also invalidates any cached get_env_value state by patching Path.home().
     """
     home = tmp_path / ".hermes"
     home.mkdir()
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("TINO_HOME", str(home))
 
     # Clear all known API key env vars so get_env_value falls through to .env
     for key in [

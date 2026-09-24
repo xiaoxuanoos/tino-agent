@@ -9,7 +9,7 @@ from typing import Callable
 def build_update_parser(subparsers, *, cmd_update: Callable) -> None:
     """Attach the ``update`` subcommand to ``subparsers``."""
     update_parser = subparsers.add_parser(
-        "update", help="Update Hermes Agent to the latest version",
+        "update", help="Update Tino Agent to the latest version",
         description="Pull the latest changes from git and reinstall dependencies")
     update_parser.add_argument(
         "--gateway", action="store_true", default=False,
@@ -21,7 +21,7 @@ def build_update_parser(subparsers, *, cmd_update: Callable) -> None:
     update_parser.add_argument(
         "--plan", action="store_true", default=False,
         help="Show the update plan and exit without changing anything: install "
-            "kind (git/docker/nix), every running Hermes service across all "
+            "kind (git/docker/nix), every running Tino service across all "
             "profiles with its supervisor and running code version, and how "
             "each will be restarted. Read-only; safe on a live fleet.")
     update_parser.add_argument(
@@ -30,7 +30,7 @@ def build_update_parser(subparsers, *, cmd_update: Callable) -> None:
     )
     update_parser.add_argument(
         "--backup", action="store_true", default=False,
-        help="Force a FULL pre-update backup (quick state snapshot + HERMES_HOME zip) for this run, regardless of updates.pre_update_backup",
+        help="Force a FULL pre-update backup (quick state snapshot + TINO_HOME zip) for this run, regardless of updates.pre_update_backup",
     )
     update_parser.add_argument(
         "--yes", "-y", action="store_true", default=False,

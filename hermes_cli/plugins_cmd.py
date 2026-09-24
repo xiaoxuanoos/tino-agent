@@ -600,7 +600,7 @@ def _check_manifest_version(manifest: dict, plugin_name: str) -> None:
         raise PluginOperationError(
             f"Plugin '{plugin_name}' requires manifest_version {mv}, "
             f"but this installer only supports up to {_SUPPORTED_MANIFEST_VERSION}. "
-            f"Run {recommended_update_command()} to update Hermes.",
+            f"Run {recommended_update_command()} to update Tino.",
         ) from None
 
 
@@ -650,7 +650,7 @@ def _probe_readable(path: Path) -> None:
 
 
 def _ensure_tree_readable(root: Path, plugins_dir: Path) -> None:
-    """Refuse to ship a tree Hermes cannot read back. A clone can land unreadable (Windows ACL
+    """Refuse to ship a tree Tino cannot read back. A clone can land unreadable (Windows ACL
     inheritance -> WinError 5, a mode-000 file) and discovery would then skip the plugin forever
     (#111804); repair ``u+rX`` where the OS supports it, otherwise fail before anything moves."""
     paths = [root]
@@ -795,7 +795,7 @@ def cmd_install(
         console.print(f"[bold]{entry.name}[/bold] [cyan]\\[{entry.tier}][/cyan] [dim]pinned @ {entry.sha[:8]}[/dim]")
         console.print(catalog.entry_capability_summary(entry))
     else:
-        console.print("[yellow]Warning:[/yellow] custom (unreviewed) source — not from the Hermes catalog.")
+        console.print("[yellow]Warning:[/yellow] custom (unreviewed) source — not from the Tino catalog.")
     if allow_removed:
         console.print(
             "[bold red]WARNING:[/bold red] [red]--allow-removed set — skipping the catalog kill-list check. "
@@ -836,7 +836,7 @@ def cmd_install(
     if not _looks_like_plugin_dir(target):
         console.print(
             f"[yellow]Warning:[/yellow] {installed_name} doesn't contain plugin.yaml, "
-            f"plugin.json, or __init__.py. It may not be a valid Hermes plugin.")
+            f"plugin.json, or __init__.py. It may not be a valid Tino plugin.")
     _prompt_plugin_env_vars(installed_manifest, console)
     _install_python_dependencies(target, console, skip=no_deps)
     _display_after_install(target, identifier)
@@ -1097,7 +1097,7 @@ def cmd_enable(name: str, allow_tool_override: Optional[bool] = None) -> None:
         if plugin in LEGACY_RELAY_PLUGIN_KEYS:
             _fail(console, (
                 f"[red]Plugin '{plugin}' was removed.[/red] Relay lifecycle is owned "
-                f"by Hermes core; configure {RELAY_PLUGINS_CONFIG_ENV} instead."))
+                f"by Tino core; configure {RELAY_PLUGINS_CONFIG_ENV} instead."))
 
     _refuse_legacy_relay(name)
     resolved = _resolve_plugin_key_and_source(name)
@@ -1819,10 +1819,10 @@ def dashboard_install_plugin(
     if catalog_name:
         entry = catalog.get_live_catalog_entry(catalog_name)
         if entry is None:
-            return {"ok": False, "error": f"'{catalog_name}' is not in the Hermes plugin catalog."}
+            return {"ok": False, "error": f"'{catalog_name}' is not in the Tino plugin catalog."}
         identifier = entry.install_identifier
     else:
-        warnings.append("Custom (unreviewed) source — not from the Hermes catalog.")
+        warnings.append("Custom (unreviewed) source — not from the Tino catalog.")
     try:
         git_url = _resolve_git_url(identifier)[0]
         if git_url.startswith(("http://", "file://")):

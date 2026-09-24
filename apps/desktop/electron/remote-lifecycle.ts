@@ -1,24 +1,24 @@
 /**
  * remote-lifecycle.ts
  *
- * Pure, electron-free remote Hermes dashboard lifecycle over SSH for Desktop
+ * Pure, electron-free remote Tino dashboard lifecycle over SSH for Desktop
  * SSH remote mode. Composes an SshConnection (injected) with HTTP probes
  * through the established tunnel (injected fetch) and the served-token adoption
  * step (injected). Knows how to:
  *
- *   - locate the Hermes install on the remote (login-shell probe),
+ *   - locate the Tino install on the remote (login-shell probe),
  *   - gate the remote platform to Linux/macOS via `uname`,
  *   - reuse an existing desktop-dedicated dashboard via a lockfile + an
  *     AUTHENTICATED /api/status probe (pid liveness alone is insufficient),
  *   - spawn a fresh detached `--isolated --port 0` dashboard and scrape its
- *     `HERMES_DASHBOARD_READY port=<n>` readiness line,
+ *     `TINO_DASHBOARD_READY port=<n>` readiness line,
  *   - adopt the token the dashboard actually serves (served-token adoption),
  *   - clean up a stale dashboard only when it is provably ours.
  *
  * No `import 'electron'` so it's unit-testable with `node --test`. main.ts wires
  * the real SshConnection, fetch, adoptServedDashboardToken, and waitForHermes in.
  *
- * The minted HERMES_DASHBOARD_SESSION_TOKEN is the SPAWN credential. After
+ * The minted TINO_DASHBOARD_SESSION_TOKEN is the SPAWN credential. After
  * readiness the caller runs served-token adoption against the tunneled baseUrl
  * and the SERVED token's fingerprint is what lands in the lockfile — so the
  * reuse probe checks the credential that actually authenticates /api/ws, not
@@ -175,7 +175,7 @@ async function locateHermes(ssh, remoteHermesPath) {
     // correctly on its own. Previously, this function followed `exec` wrappers and
     // returned only the python interpreter, which broke:
     //   - version checking: `<python> --version` printed "Python x.y.z" instead of
-    //     the Hermes version, and
+    //     the Tino version, and
     //   - capability probing: `<python> serve --help` failed entirely.
     // See https://github.com/NousResearch/hermes-agent/issues/74411
     return candidate
@@ -198,7 +198,7 @@ async function locateHermes(ssh, remoteHermesPath) {
     }
 
     const err: any = new Error(
-      `The Hermes path you set is not an executable on the remote host: "${remoteHermesPath}". ` +
+      `The Tino path you set is not an executable on the remote host: "${remoteHermesPath}". ` +
         'Check the path (it must be the full path to the `hermes` binary on the remote, e.g. ' +
         '~/hermes-agent/.venv/bin/hermes), or clear it to auto-detect.'
     )
@@ -236,9 +236,9 @@ async function locateHermes(ssh, remoteHermesPath) {
   }
 
   const err: any = new Error(
-    'Hermes is not installed on the remote host (could not find a `hermes` executable). ' +
-      'Install it on the remote with:  curl -fsSL https://hermes-agent.nousresearch.com/install.sh | sh  ' +
-      '— or set the Hermes path explicitly in the SSH connection settings.'
+    'Tino is not installed on the remote host (could not find a `hermes` executable). ' +
+      'Install Tino on the remote (from your own install source)  ' +
+      '— or set the Tino path explicitly in the SSH connection settings.'
   )
 
   err.kind = 'hermes-not-found'
@@ -246,7 +246,7 @@ async function locateHermes(ssh, remoteHermesPath) {
 }
 
 // Probe the resolved binary's version string (first line of `<hermes> --version`,
-// e.g. "Hermes Agent v0.18.2 ..."), or '' on failure. Surfaces WHICH hermes a
+// e.g. "Tino Agent v0.18.2 ..."), or '' on failure. Surfaces WHICH hermes a
 // connection uses, so a stale/unexpected install is visible.
 async function probeHermesVersion(ssh, hermesPath) {
   try {
@@ -267,7 +267,7 @@ async function probeRemotePlatform(ssh) {
 
   if (!SUPPORTED_REMOTE_OS.has(osName)) {
     const err: any = new Error(
-      `Unsupported remote platform "${osName || 'unknown'}". Hermes Desktop SSH mode supports Linux, macOS, and Windows remote hosts.`
+      `Unsupported remote platform "${osName || 'unknown'}". Tino Desktop SSH mode supports Linux, macOS, and Windows remote hosts.`
     )
 
     err.kind = 'unsupported-platform'
@@ -277,16 +277,16 @@ async function probeRemotePlatform(ssh) {
   return { os: osName, arch }
 }
 
-// The HERMES_HOME the remote dashboard will use (explicit env wins, else
+// The TINO_HOME the remote dashboard will use (explicit env wins, else
 // ~/.hermes). Recorded in the lockfile so a future reuse can tell it's the same
 // state store; best-effort.
 async function probeRemoteHermesHome(ssh) {
   try {
-    const out = (await ssh.exec('echo "${HERMES_HOME:-$HOME/.hermes}"')).trim().split('\n').pop()
+    const out = (await ssh.exec('echo "${TINO_HOME:-$HOME/.hermes}"')).trim().split('\n').pop()
 
     return out || '~/.hermes'
   } catch (cause) {
-    const error: any = new Error('Could not resolve the remote Hermes home.')
+    const error: any = new Error('Could not resolve the remote Tino home.')
     error.kind = 'transient-transport-error'
     error.cause = cause
     throw error
@@ -334,7 +334,7 @@ else:
  * Refuse normal SSH reuse/spawn while the remote install is being mutated.
  *
  * This probe intentionally uses only the host's system Python and raw marker
- * bytes; it never imports or executes code from the changing Hermes checkout.
+ * bytes; it never imports or executes code from the changing Tino checkout.
  * Absence or a well-formed, confirmed-dead owner is clear. Every parse, read,
  * probe, or transport uncertainty fails closed so a Desktop relaunch cannot
  * start `serve` beside an updater that survived the old app process.
@@ -350,7 +350,7 @@ async function assertRemoteInstallUpdateClear(ssh, hermesHome) {
         .split(/\r?\n/)
         .pop() || ''
   } catch (cause) {
-    const error: any = new Error('Could not prove that the remote Hermes install is clear for SSH startup.')
+    const error: any = new Error('Could not prove that the remote Tino install is clear for SSH startup.')
     error.kind = 'update-in-progress'
     error.cause = cause
     throw error
@@ -364,8 +364,8 @@ async function assertRemoteInstallUpdateClear(ssh, hermesHome) {
 
   const error: any = new Error(
     live
-      ? `Remote Hermes update process ${live[1]} is still running; SSH startup is paused.`
-      : 'The remote Hermes update marker is unreadable or malformed; refusing SSH startup.'
+      ? `Remote Tino update process ${live[1]} is still running; SSH startup is paused.`
+      : 'The remote Tino update marker is unreadable or malformed; refusing SSH startup.'
   )
 
   error.kind = 'update-in-progress'
@@ -380,7 +380,7 @@ async function listRemoteHermesProfiles(ssh) {
   try {
     listing = await ssh.exec(`if [ -d ${dir} ]; then ls -1 ${dir}; fi`)
   } catch (cause) {
-    const error: any = new Error('Could not list remote Hermes profiles.')
+    const error: any = new Error('Could not list remote Tino profiles.')
     error.kind = 'transient-transport-error'
     error.cause = cause
     throw error
@@ -393,7 +393,7 @@ function assertSafeRemoteHome(home) {
   const value = String(home || '').trim()
 
   if (!/^(\/|~\/)[A-Za-z0-9._/+-]+$/.test(value) || value.includes('..')) {
-    const error: any = new Error('Unsafe remote Hermes home.')
+    const error: any = new Error('Unsafe remote Tino home.')
     error.kind = 'unsafe-path'
     throw error
   }
@@ -630,12 +630,12 @@ async function pidIsOurDashboard(
       `expected=os.path.expanduser(${shq(hermesPath)})\n` +
       // The installer-facing launcher is intentionally preserved for invocation
       // (#74411), but it may `exec python <install-dir>/hermes`, leaving neither
-      // launcher nor HERMES_HOME-derived entrypoint in argv. The ownership-scoped
+      // launcher nor TINO_HOME-derived entrypoint in argv. The ownership-scoped
       // token path + random nonce + exact profile below are the alternative proof.
       `hermes_home=os.path.expanduser(${shq(hermesHome)}) if ${shq(hermesHome)} else ""\n` +
       'expected_entries={expected}\n' +
       'if hermes_home:\n' +
-      ' expected_entries.add(os.path.join(hermes_home,"hermes-agent","venv","bin","hermes"))\n' +
+      ' expected_entries.add(os.path.join(hermes_home,"hermes-agent","venv","bin","tino"))\n' +
       `expected_token=os.path.expanduser(${shq(ownershipId ? spawnTokenPath(ownershipId, spawnNonce) : '')})\n` +
       `expected_profile=${shq(profile)}\n` +
       `nonce=${shq(spawnNonce)}\n` +
@@ -832,7 +832,7 @@ pid=${pid}
 expected_creation=${py(lock.creationTime)}
 expected_path=os.path.expanduser(${py(lock.hermesPath)})
 hermes_home=os.path.expanduser(${py(lock.hermesHome)})
-expected_entries={expected_path,os.path.join(hermes_home,"hermes-agent","venv","bin","hermes")}
+expected_entries={expected_path,os.path.join(hermes_home,"hermes-agent","venv","bin","tino")}
 expected_token=os.path.expanduser(${py(expectedToken)})
 expected_profile=${py(lock.profile)}
 nonce=${py(lock.spawnNonce)}
@@ -933,7 +933,7 @@ finally:
 // the marker check, spawns the backend, and publishes its initial lockfile.
 // Python keeps the descriptor close-on-exec by default and passes it explicitly
 // only to the intended outer shell; each detached child closes it before
-// execing Hermes. mutexPath is expandRemotePath() output — a complete shell
+// execing Tino. mutexPath is expandRemotePath() output — a complete shell
 // word ("$HOME"'/…' or '/abs/…') embedded raw so $HOME expands remotely; a
 // second shq() would hand python the quote characters as part of the path.
 function withRemoteUpdateMutex(command, mutexPath) {
@@ -1102,7 +1102,7 @@ function buildSpawnCommand(hermesPath, profile, opts: any = {}) {
 
   const dashCmd =
     `ulimit -n ${REMOTE_NOFILE_SOFT_LIMIT} 2>/dev/null || true; ` +
-    `exec env HERMES_DESKTOP=1${opts.guestOnboarding === true ? ' HERMES_GUEST_ONBOARDING=1' : ''} ${hermes} ${profileArgs}${subCmd}`
+    `exec env TINO_DESKTOP=1${opts.guestOnboarding === true ? ' TINO_GUEST_ONBOARDING=1' : ''} ${hermes} ${profileArgs}${subCmd}`
 
   const detachedShell = `eval "exec $1>&-"; ${dashCmd} </dev/null >> ${logPath} 2>&1 & echo $!`
   const detachedSpawn = `child=$("$(command -v setsid || echo nohup)" sh -c ${shq(detachedShell)} hermes-update-child "$1" & echo $!)`
@@ -1223,8 +1223,8 @@ async function spawnRemoteDashboard(
 ) {
   if (!(await remoteSupportsSshOwnership(ssh, hermesPath))) {
     const err: any = new Error(
-      'The remote Hermes install does not support --ssh-session-token-file and --ssh-owner-nonce. ' +
-        'Update Hermes on the remote host to continue using Desktop SSH mode.'
+      'The remote Tino install does not support --ssh-session-token-file and --ssh-owner-nonce. ' +
+        'Update Tino on the remote host to continue using Desktop SSH mode.'
     )
 
     err.kind = 'update-required'
@@ -1471,7 +1471,7 @@ async function connect(deps) {
     )
 
     const error: any = new Error(
-      `The remote ownership record ${lpath} does not match this Hermes Desktop build (${lock.reason}). ` +
+      `The remote ownership record ${lpath} does not match this Tino Desktop build (${lock.reason}). ` +
         'It was probably written by a different or modified desktop build sharing this remote, or the file is corrupt. ' +
         'Refusing to reap or overwrite it — that could kill a live SSH backend owned by another build. ' +
         'If nothing else uses this remote, delete that file on the remote host and reconnect.'

@@ -8,7 +8,7 @@ from hermes_cli import config
 
 
 @pytest.mark.linux_only
-@pytest.mark.parametrize("subdir", (".", *config._HERMES_HOME_SUBDIRS))
+@pytest.mark.parametrize("subdir", (".", *config._TINO_HOME_SUBDIRS))
 def test_unavailable_directory_links_are_diagnosed_without_creating_targets(tmp_path, monkeypatch, subdir):
     home = tmp_path / "hermes"
     link = home / subdir
@@ -17,7 +17,7 @@ def test_unavailable_directory_links_are_diagnosed_without_creating_targets(tmp_
     link.symlink_to(target, target_is_directory=True)
     monkeypatch.setattr(config, "get_hermes_home", lambda: home)
     monkeypatch.setattr(config, "is_managed", lambda: False)
-    config._HERMES_HOME_ENSURED.discard(str(home))
+    config._TINO_HOME_ENSURED.discard(str(home))
 
     issues = config.validate_config_structure()
 
@@ -27,12 +27,12 @@ def test_unavailable_directory_links_are_diagnosed_without_creating_targets(tmp_
     assert "mount" in text.lower() and "setup" not in text.lower()
     assert link.is_symlink() and link.readlink() == target
     assert not target.parent.exists()
-    assert str(home) not in config._HERMES_HOME_ENSURED
+    assert str(home) not in config._TINO_HOME_ENSURED
 
     target.mkdir(parents=True, mode=0o750)
     config.ensure_hermes_home()
     assert link.is_symlink() and target.stat().st_mode & 0o777 == 0o750
-    assert str(home) in config._HERMES_HOME_ENSURED
+    assert str(home) in config._TINO_HOME_ENSURED
 
 
 @pytest.mark.linux_only
@@ -51,13 +51,13 @@ def test_initialization_preserves_external_directory_modes(tmp_path, monkeypatch
         (home / "logs").symlink_to(target, target_is_directory=True)
     monkeypatch.setattr(config, "get_hermes_home", lambda: home)
     monkeypatch.setattr(config, "is_managed", lambda: False)
-    config._HERMES_HOME_ENSURED.discard(str(home))
+    config._TINO_HOME_ENSURED.discard(str(home))
 
     config.ensure_hermes_home()
     monkeypatch.setattr(config, "get_hermes_home", lambda: home.resolve())
     config.ensure_hermes_home()
 
-    assert all((home / name).is_dir() for name in config._HERMES_HOME_SUBDIRS)
+    assert all((home / name).is_dir() for name in config._TINO_HOME_SUBDIRS)
     assert (home / "SOUL.md").is_file()
     if linked != "plain":
         assert (home if linked == "home" else home / "logs").is_symlink()
@@ -72,7 +72,7 @@ def test_initialization_preserves_external_directory_modes(tmp_path, monkeypatch
 def test_symlinked_parent_above_home_is_not_an_operator_home_link(
     tmp_path, monkeypatch, existing
 ):
-    """A link above HERMES_HOME is not an operator-owned home link.
+    """A link above TINO_HOME is not an operator-owned home link.
 
     macOS aliases ``/tmp`` -> ``/private/tmp`` and ``/var`` -> ``/private/var``, so a home
     under the default temp root arrives with a symlinked parent; the same happens for any
@@ -87,19 +87,19 @@ def test_symlinked_parent_above_home_is_not_an_operator_home_link(
     home = alias / "hermes"
     if existing:
         home.mkdir(parents=True, mode=0o755)
-        for name in config._HERMES_HOME_SUBDIRS:
+        for name in config._TINO_HOME_SUBDIRS:
             (home / name).mkdir(mode=0o755)
         assert stat.S_IMODE(home.stat().st_mode) == 0o755
 
     monkeypatch.setattr(config, "get_hermes_home", lambda: home)
     monkeypatch.setattr(config, "is_managed", lambda: False)
-    config._HERMES_HOME_ENSURED.discard(str(home))
-    config._HERMES_HOME_ENSURED.discard(str(home.resolve()))
+    config._TINO_HOME_ENSURED.discard(str(home))
+    config._TINO_HOME_ENSURED.discard(str(home.resolve()))
 
     config.ensure_hermes_home()
 
     assert stat.S_IMODE(home.stat().st_mode) == 0o700
-    for name in config._HERMES_HOME_SUBDIRS:
+    for name in config._TINO_HOME_SUBDIRS:
         mode = stat.S_IMODE((home / name).stat().st_mode)
         assert mode == 0o700, f"{name} should be 0700, got 0o{mode:o}"
 
@@ -119,8 +119,8 @@ def test_aliased_parent_still_leaves_an_operator_home_link_alone(tmp_path, monke
 
     monkeypatch.setattr(config, "get_hermes_home", lambda: home)
     monkeypatch.setattr(config, "is_managed", lambda: False)
-    config._HERMES_HOME_ENSURED.discard(str(home))
-    config._HERMES_HOME_ENSURED.discard(str(home.resolve()))
+    config._TINO_HOME_ENSURED.discard(str(home))
+    config._TINO_HOME_ENSURED.discard(str(home.resolve()))
 
     config.ensure_hermes_home()
 

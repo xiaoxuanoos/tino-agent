@@ -16,7 +16,7 @@ from hermes_cli.doctor_state import _state_db_wal
 
 
 # NOTE: no ``requires_wal`` marker here on purpose. That gate exists for tests
-# that depend on Hermes *choosing* WAL mode (declined on vulnerable SQLite
+# that depend on Tino *choosing* WAL mode (declined on vulnerable SQLite
 # builds). This test forces WAL explicitly through raw SQL and asserts only on
 # the holder-guard skip, so the probe mechanics work on any build.
 def test_wal_checkpoint_skipped_while_live_writer_holds_db(tmp_path):
@@ -61,7 +61,7 @@ def test_doctor_names_retired_wal_holders_instead_of_healthy_state_db(tmp_path, 
 
     db = tmp_path / "state.db"
     db.write_bytes(b"")
-    monkeypatch.setattr(doctor, "HERMES_HOME", tmp_path)
+    monkeypatch.setattr(doctor, "TINO_HOME", tmp_path)
     monkeypatch.setattr(hermes_state_dbfile, "iter_deleted_sqlite_sidecar_holders",
                         lambda path: [(4242, f"{path}-wal"), (4242, f"{path}-shm")])
     probed = []

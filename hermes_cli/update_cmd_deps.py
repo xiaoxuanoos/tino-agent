@@ -55,7 +55,7 @@ def _critical_module_import_failures(
     from hermes_cli.update_cmd import _UPDATE_CRITICAL_MODULES, _m
     from hermes_constants import FIRST_PARTY_MODULE_ROOTS
     import secrets
-    marker = f"__HERMES_IMPORT_HEALTH_{secrets.token_hex(16)}__"
+    marker = f"__TINO_IMPORT_HEALTH_{secrets.token_hex(16)}__"
     probe = (
         "import importlib, json, sys\n"
         # Importing hermes_cli.main runs the startup dotenv load, which pulls external secret
@@ -195,7 +195,7 @@ def _capture_active_tool_dependencies() -> list[str]:
         from hermes_cli import tools_config
         return tools_config.active_restorable_python_tool_dependencies()
     except Exception as exc:
-        logger.debug("Could not snapshot active Hermes Tools dependencies: %s", exc)
+        logger.debug("Could not snapshot active Tino Tools dependencies: %s", exc)
         return []
 
 
@@ -224,7 +224,7 @@ def _restore_active_tool_dependencies(
     try:
         from hermes_cli import tools_config
     except Exception as exc:
-        logger.debug("Hermes Tools dependency restore skipped (import failed): %s", exc)
+        logger.debug("Tino Tools dependency restore skipped (import failed): %s", exc)
         return
 
     target_python = _m()._resolve_install_target_python(install_cmd_prefix, env)
@@ -241,7 +241,7 @@ def _restore_active_tool_dependencies(
         return
 
     print()
-    print(f"→ Restoring {len(missing)} Hermes Tools dependency set(s)...")
+    print(f"→ Restoring {len(missing)} Tino Tools dependency set(s)...")
     restored: list[str] = []
     failed: list[tuple[str, str]] = []
     for name, install_args in missing:
@@ -348,7 +348,7 @@ def _refresh_active_lazy_features(
 
 def _refresh_active_memory_provider_dependencies() -> None:
     """Refresh pip deps for the configured external memory provider: its bridge packages live in
-    ``plugin.yaml`` (not Hermes extras / ``LAZY_DEPS``), so the core reinstall can strip them;
+    ``plugin.yaml`` (not Tino extras / ``LAZY_DEPS``), so the core reinstall can strip them;
     re-run the ACTIVE provider's install last so its writes land last. Never raises.
 
     Re-run the provider's declared install for the ACTIVE provider only, after the core install and lazy
@@ -390,7 +390,7 @@ def _refresh_active_memory_provider_dependencies() -> None:
 
 def _reapply_plugin_python_dependencies() -> None:
     """Re-install every enabled user plugin's declared Python deps after the venv was rebuilt (a
-    ``uv sync``/reinstall strips anything Hermes' own lock does not know). Non-memory plugins whose
+    ``uv sync``/reinstall strips anything Tino's own lock does not know). Non-memory plugins whose
     deps no longer resolve are disabled loudly, memory providers last. Never raises."""
     from hermes_cli.plugin_python_deps import reapply_all
     from hermes_cli.update_cmd import _m
@@ -937,7 +937,7 @@ def _rebuild_desktop_after_update(
     """
     from hermes_cli.update_cmd import _m
     # The release tree is git-ignored and can vanish mid-update; pre-update presence suffices. So does the
-    # build stamp under HERMES_HOME: it outlives a swap that lost the artifacts in an earlier run, and
+    # build stamp under TINO_HOME: it outlives a swap that lost the artifacts in an earlier run, and
     # without it the install "forgets" Desktop was installed and never rebuilds (#90495). Never make
     # people who never used Desktop pay for an Electron build.
     has_desktop_app = (
@@ -965,7 +965,7 @@ def _rebuild_desktop_after_update(
 
     desktop_build_cmd = [sys.executable, "-m", "hermes_cli.main", "desktop", "--build-only"]
     # Capture the loud build output into update.log; retry once on failure (still-settling
-    # rebuild window), then surface the tail. Put Hermes-managed Node on PATH: the desktop
+    # rebuild window), then surface the tail. Put Tino-managed Node on PATH: the desktop
     # updater chain loses shell PATH customizations, so a bare-PATH child hits `node: not found`.
     from hermes_constants import with_hermes_node_path
     build_env = with_hermes_node_path()
@@ -1072,7 +1072,7 @@ def _refuse_update_if_venv_foreign_owned(project_root) -> None:
     if not foreign:
         return
     print("\n✗ Update stopped: this install's venv contains files owned by another user.")
-    print("  Updating now would fail midway (Permission denied) and leave Hermes broken.")
+    print("  Updating now would fail midway (Permission denied) and leave Tino broken.")
     print("  This usually happens after running hermes or pip with sudo. Offending paths:")
     for p, uid in foreign:
         print(f"    - {p} (owner uid {uid})")

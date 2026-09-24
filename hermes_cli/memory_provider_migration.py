@@ -2,7 +2,7 @@
 
 A bundled ``plugins/memory/<name>`` that becomes a standalone catalog plugin keeps the same provider
 name, config section (``memory.<name>``), data directory and tool names, so the migration is only
-"the code now lives under ``HERMES_HOME/plugins/<name>``". Two hooks call :func:`migrate_home`:
+"the code now lives under ``TINO_HOME/plugins/<name>``". Two hooks call :func:`migrate_home`:
 
 * ``hermes update`` — for every profile home that shares the venv (primary; runs where the venv was
   just rebuilt anyway).
@@ -33,7 +33,7 @@ def configured_provider(home: Path) -> str:
 
 
 def provider_present(name: str, home: Path) -> bool:
-    """True when the provider resolves anywhere Hermes looks for *home* (bundled, that home's user
+    """True when the provider resolves anywhere Tino looks for *home* (bundled, that home's user
     plugins, entry point). The lookup reads the active home, so it is bound explicitly: the update
     hook walks several profile homes from one process."""
     from plugins.memory import find_provider_dir

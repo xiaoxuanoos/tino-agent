@@ -1,7 +1,7 @@
 name: session-ref
 repo: https://github.com/kama-dev/hermes-session-ref
 sha: 9b6f03fb0ccd9113e2211fb7dd01df88ad45a8ba
-description: Reference another Hermes session in the Desktop composer with @session —
+description: Reference another Tino session in the Desktop composer with @session —
   type @ and pick from live session suggestions. Inserts a compact @session:"<title>"
   reference; nothing is injected into context, the agent resolves it with its own
   session-search. No more copying session IDs.

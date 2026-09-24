@@ -16,10 +16,10 @@ from hermes_cli.config import (
 
 @pytest.fixture(autouse=True)
 def _isolated_hermes_home(tmp_path):
-    """Point HERMES_HOME at a temp dir so tests never touch real config."""
+    """Point TINO_HOME at a temp dir so tests never touch real config."""
     env_file = tmp_path / ".env"
     env_file.touch()
-    with patch.dict(os.environ, {"HERMES_HOME": str(tmp_path)}):
+    with patch.dict(os.environ, {"TINO_HOME": str(tmp_path)}):
         yield tmp_path
 
 
@@ -590,10 +590,10 @@ class TestSchemaValidation:
 
     def test_desktop_macos_signing_identity_is_accepted(self, _isolated_hermes_home, capsys):
         """The documented TCC signing identity setting is part of the schema."""
-        set_config_value("desktop.macos_signing_identity", "Hermes Local Signing")
+        set_config_value("desktop.macos_signing_identity", "Tino Local Signing")
         import yaml
         saved = yaml.safe_load(_read_config(_isolated_hermes_home))
-        assert saved["desktop"]["macos_signing_identity"] == "Hermes Local Signing"
+        assert saved["desktop"]["macos_signing_identity"] == "Tino Local Signing"
         assert "not a recognized config key" not in capsys.readouterr().out
 
 

@@ -28,12 +28,12 @@ test('launches the unpacked helper without prompting and delivers only validated
   const captures: CommandScreenshotCapture[] = []
   const statuses: CommandScreenshotStatus[] = []
   const monitor = new CommandScreenshotMonitor({
-    platform: 'darwin', appPath: '/Applications/Hermes.app/Contents/Resources/app.asar', spawn,
+    platform: 'darwin', appPath: '/Applications/Tino.app/Contents/Resources/app.asar', spawn,
   })
   monitor.start(value => captures.push(value), value => statuses.push(value))
   assert.equal(spawn.mock.calls.length, 1)
   assert.deepEqual(spawn.mock.calls[0], [
-    '/Applications/Hermes.app/Contents/Resources/app.asar.unpacked/dist/native/command-screenshot-monitor',
+    '/Applications/Tino.app/Contents/Resources/app.asar.unpacked/dist/native/command-screenshot-monitor',
     [], { stdio: ['pipe', 'pipe', 'ignore'], shell: false, detached: false, windowsHide: true },
   ])
   child.stdout.write('{"type":"capture","windowId":2,"width":100,"height":200}\n')

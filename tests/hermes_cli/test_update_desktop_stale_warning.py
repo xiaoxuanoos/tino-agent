@@ -116,7 +116,7 @@ def test_up_to_date_desktop_returns_true_without_spawning(desktop_env):
 
 def test_lost_desktop_with_surviving_build_stamp_is_rebuilt(desktop_env, monkeypatch):
     """#90495: a swap that lost release/ and dist/ in an EARLIER run leaves both presence terms false
-    forever; the build stamp under HERMES_HOME survived and is the proof Desktop was installed here."""
+    forever; the build stamp under TINO_HOME survived and is the proof Desktop was installed here."""
     desktop_dir, calls = desktop_env
     monkeypatch.setattr(
         update_cmd._m(), "_run_logged_subprocess",

@@ -60,9 +60,9 @@ def _hermes_home_real() -> str:
 
 
 def _get_hermes_config_resolved() -> str | None:
-    """Resolved absolute path of the Hermes config file for the ACTIVE profile.
+    """Resolved absolute path of the Tino config file for the ACTIVE profile.
 
-    Resolved per call so it tracks the per-turn ``HERMES_HOME`` scope (#107327);
+    Resolved per call so it tracks the per-turn ``TINO_HOME`` scope (#107327);
     a test may pin it via ``_hermes_config_resolved`` + ``_hermes_config_resolved_loaded``."""
     if _hermes_config_resolved_loaded:
         return _hermes_config_resolved
@@ -72,7 +72,7 @@ def _get_hermes_config_resolved() -> str | None:
         # Resolver failure must stay bound to the ACTIVE profile's home, not the
         # subprocess HOME. ``_expand_tilde("~/...")`` follows the subprocess-HOME
         # contract, which under host ``auto`` mode can be the real/default user
-        # home rather than the active multiplex ``HERMES_HOME`` — comparing
+        # home rather than the active multiplex ``TINO_HOME`` — comparing
         # beta's ``config.yaml`` against the default/root config would let the
         # hard-block fail open on the exception path. Re-derive from the same
         # ``get_hermes_home()`` key the happy path uses, and substitute no
@@ -85,9 +85,9 @@ def _get_hermes_config_resolved() -> str | None:
 
 
 def _get_real_hermes_home() -> str | None:
-    """Realpath of the authoritative Hermes home for the ACTIVE profile.
+    """Realpath of the authoritative Tino home for the ACTIVE profile.
 
-    Resolved per call so it tracks the per-turn ``HERMES_HOME`` scope (#107327);
+    Resolved per call so it tracks the per-turn ``TINO_HOME`` scope (#107327);
     a test may pin it via ``_real_hermes_home_cached`` + ``_real_hermes_home_loaded``.
     Consumers exempting a whole TREE want ``_hermes_exempt_homes()``: under a named
     profile this home is ``<root>/profiles/<name>`` and the root is exempt too."""
@@ -111,15 +111,15 @@ def _get_real_hermes_home() -> str | None:
 
 
 def _hermes_exempt_homes() -> tuple[str, ...]:
-    """Realpaths of the Hermes home tree(s) the protected-instruction gate must stay out of:
-    the ACTIVE profile's home, plus the Hermes ROOT when that home is a named profile
+    """Realpaths of the Tino home tree(s) the protected-instruction gate must stay out of:
+    the ACTIVE profile's home, plus the Tino ROOT when that home is a named profile
     (``<root>/profiles/<name>``). Exempting only the profile dir left the root's DIRECT files
     (LEDGER.md / MEMORY.md / SOUL.md / AGENTS.md ...) to the ``.hermes`` component rule, which
     gated them like a project-local ``<repo>/.hermes/config.yaml`` — fail-closed headless
     (#110630). They are the agent's own store, governed by their own guards, exactly like
     ``~/.hermes`` under the default profile. The root is added only when the shape really is a
     named profile (``named_profile_home``), so a coincidental ``profiles/`` dir elsewhere never
-    exempts its parent; the home comes from the ACTIVE scope, never ``HERMES_HOME`` alone."""
+    exempts its parent; the home comes from the ACTIVE scope, never ``TINO_HOME`` alone."""
     home = _get_real_hermes_home()
     if not home:
         return ()
@@ -162,7 +162,7 @@ def _check_sensitive_path(filepath: str, task_id: str = "default") -> str | None
     hermes_config = _get_hermes_config_resolved()
     if hermes_config and hermes_config in candidates:
         return (
-            f"Refusing to write to Hermes config file: {filepath}\n"
+            f"Refusing to write to Tino config file: {filepath}\n"
             "Agent cannot modify security-sensitive configuration. "
             "Edit ~/.hermes/config.yaml directly or use 'hermes config' instead.")
     return None
@@ -386,7 +386,7 @@ def _check_approval_required_write(paths: list[str], task_id: str = "default") -
 
 
 def _get_container_mirror_prefix_for_task(task_id: str = "default") -> str | None:
-    """Return the container-side Hermes mirror prefix for persistent Docker file tools."""
+    """Return the container-side Tino mirror prefix for persistent Docker file tools."""
     try:
         from tools.terminal_tool import (
             _active_environments, _env_lock, _get_env_config, _resolve_container_task_id)
@@ -407,7 +407,7 @@ def _get_container_mirror_prefix_for_task(task_id: str = "default") -> str | Non
 
 def _check_cross_profile_path(filepath: str, task_id: str = "default") -> str | None:
     """Soft-guard: warn when ``filepath`` lands on a host-side or Docker sandbox MIRROR of
-    Hermes state (a write the host never reads). Not profile isolation — that guard was
+    Tino state (a write the host never reads). Not profile isolation — that guard was
     removed; ``cross_profile=True`` keeps bypassing this one for replay compat. Fails open."""
     try:
         from agent.file_safety import get_container_mirror_warning, get_sandbox_mirror_warning

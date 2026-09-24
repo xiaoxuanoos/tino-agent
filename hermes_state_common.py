@@ -33,7 +33,7 @@ def routed_sessions_setting(key: str, env_var: str) -> Any:
     """``sessions.<key>`` for the profile whose state.db this process is touching.
 
     ``gateway/run.py`` bridges the LAUNCH profile's ``sessions.*`` into ``env_var`` (the cross-process
-    carrier CLI/cron children read). Under a multiplexer a routed turn runs with a HERMES_HOME override
+    carrier CLI/cron children read). Under a multiplexer a routed turn runs with a TINO_HOME override
     and that env slot holds the default profile's value, so a served profile with different
     ``sessions.*`` settings must read its own config.yaml. Unscoped: the env bridge, as before.
     Returns ``None`` when neither source sets the key.
@@ -470,7 +470,7 @@ CREATE TABLE IF NOT EXISTS gateway_hygiene_state (
 
 -- Monotonic conversation generation per routing peer (#96811).
 --
--- A host-declared conversation key (X-Hermes-Session-Key / build_session_key)
+-- A host-declared conversation key (X-Tino-Session-Key / build_session_key)
 -- is per-CHAT and outlives any single conversation on it, so the prompt-cache
 -- affinity scope derived from it must be qualified by which conversation is
 -- currently live. Deriving that from the session rows themselves
@@ -986,7 +986,7 @@ END;
 # only when provably dead, indeterminate liveness defers.  `<db>.fts_rebuild.lock` is distinct from
 # `<db>.repair.lock` (offline schema surgery, minutes in VACUUM).  Lives here: mixins cannot import hermes_state.
 
-# ── Cross-process full-FTS-rebuild admission (single authority) ────────────── Several independent Hermes
+# ── Cross-process full-FTS-rebuild admission (single authority) ────────────── Several independent Tino
 # processes routinely share one state.db (gateway service, the Desktop app's `hermes serve` backend,
 # interactive CLI sessions, the TUI slash worker). A full structural FTS rebuild — the FTS5 'rebuild'
 # command or the drop/recreate script in `_recover_stale_fts` — must only ever run in ONE of them at a time:
@@ -1163,7 +1163,7 @@ def _acquire_db_flock(lock_path, handle, timeout_seconds, poll_seconds, descript
 def _describe_lock_holder(record) -> str:
     """Human-readable holder identity for deferral warnings."""
     if not isinstance(record, dict) or "pid" not in record:
-        return "unknown (no holder record; pre-fix writer or non-Hermes)"
+        return "unknown (no holder record; pre-fix writer or non-Tino)"
     age = ""
     with contextlib.suppress(TypeError, ValueError):
         if record.get("acquired_at") is not None:

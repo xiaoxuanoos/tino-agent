@@ -1,9 +1,9 @@
 //! Update orchestration.
 //!
-//! Driven when the installer is launched as `Hermes-Setup.exe --update` (see
+//! Driven when the installer is launched as `Tino-Setup.exe --update` (see
 //! `AppMode` in lib.rs). The desktop app hands off to us — it exits, then we:
 //!
-//!   1. wait for the old Hermes desktop process to fully exit (so both the
+//!   1. wait for the old Tino desktop process to fully exit (so both the
 //!      venv shim and packaged app.asar are free; otherwise `hermes update`
 //!      or repair bootstrap can race locked files),
 //!   2. run `hermes update --yes --gateway` (Python/repo update; this does NOT
@@ -309,7 +309,7 @@ async fn run_update(app: AppHandle) -> Result<()> {
                 format!("{secs}s")
             };
             let msg = format!(
-                "Another Hermes update is already running (PID {}, started {} ago). \
+                "Another Tino update is already running (PID {}, started {} ago). \
                  Wait for it to finish, or close the window or dashboard tab that \
                  started it, then try again.",
                 owner.pid, elapsed
@@ -336,7 +336,7 @@ async fn run_update(app: AppHandle) -> Result<()> {
 
     let hermes = resolve_hermes(&install_root).ok_or_else(|| {
         let msg = format!(
-            "Could not find the hermes CLI under {}. Is Hermes installed? \
+            "Could not find the hermes CLI under {}. Is Tino installed? \
              Re-run the installer to repair the install.",
             install_root.display()
         );
@@ -401,7 +401,7 @@ async fn run_update(app: AppHandle) -> Result<()> {
     // already exited and waited for the install locks to clear before launching
     // us, and wait_for_install_locks_free below force-kills any straggler — so by the
     // time `hermes update` runs there is no legitimate hermes.exe to protect,
-    // and the guard would only produce a false "Hermes is still running" stop.
+    // and the guard would only produce a false "Tino is still running" stop.
     //
     // NOTE: --force does NOT bypass the venv-python holder guard (that needs
     // an explicit `--force-venv`, which we deliberately do not pass). Our lock
@@ -409,7 +409,7 @@ async fn run_update(app: AppHandle) -> Result<()> {
     // python holding a native .pyd (a user terminal, an unmanaged gateway)
     // could still be alive here — mutating the venv under it would strand the
     // install half-updated. If that guard fires, it exits 2 and the match arm
-    // below surfaces the correct "close all Hermes windows" message.
+    // below surfaces the correct "close all Tino windows" message.
     update_args.push("--force".into());
     update_args.push("--branch".into());
     update_args.push(update_branch);
@@ -437,7 +437,7 @@ async fn run_update(app: AppHandle) -> Result<()> {
     // second `hermes update` runs clean because the now-current module is loaded
     // from the start. Rather than make the parked user click Update twice (and
     // stare at a scary crash first), retry once automatically. Skip the retry
-    // for the concurrent-instance guard (exit 2) — that's a "close Hermes" state
+    // for the concurrent-instance guard (exit 2) — that's a "close Tino" state
     // a retry can't fix.
     if !matches!(update.exit_code, Some(0) | Some(UPDATE_EXIT_CONCURRENT)) {
         emit_log(
@@ -461,7 +461,7 @@ async fn run_update(app: AppHandle) -> Result<()> {
     // Self-owned-marker heal (#75788). Exit 2 means the child refused over a
     // live update marker with a foreign owner. When that "foreign" owner is
     // THIS process, the child simply failed to recognize the handoff — a
-    // checkout predating the HERMES_UPDATE_HANDOFF_PID env fix (8c76fe19f)
+    // checkout predating the TINO_UPDATE_HANDOFF_PID env fix (8c76fe19f)
     // and the ancestor-pid fallback runs its pre-pull update_lock.py, reads
     // our marker, and exits 2 every time. The refusal loop is unbreakable
     // from the user's side because the update being refused is the one that
@@ -499,7 +499,7 @@ async fn run_update(app: AppHandle) -> Result<()> {
             emit_stage(&app, "update", StageState::Succeeded, Some(update_ms), None);
         }
         Some(code) if code == UPDATE_EXIT_CONCURRENT => {
-            let msg = "Hermes is still running. Close all Hermes windows and try \
+            let msg = "Tino is still running. Close all Tino windows and try \
                        the update again."
                 .to_string();
             emit_stage(
@@ -672,7 +672,7 @@ async fn run_update(app: AppHandle) -> Result<()> {
                 &app,
                 None,
                 LogStream::Stderr,
-                &format!("[update] could not auto-launch desktop: {err}. Launch Hermes manually."),
+                &format!("[update] could not auto-launch desktop: {err}. Launch Tino manually."),
             );
         }
     } else if let Err(err) =
@@ -685,7 +685,7 @@ async fn run_update(app: AppHandle) -> Result<()> {
             &app,
             None,
             LogStream::Stdout,
-            &format!("[update] could not auto-launch desktop: {err}. Launch Hermes manually."),
+            &format!("[update] could not auto-launch desktop: {err}. Launch Tino manually."),
         );
     }
 
@@ -716,7 +716,7 @@ pub(crate) async fn wait_for_install_locks_free(install_root: &Path, app: &AppHa
     let lock_targets = install_lock_probe_paths(install_root);
     let deadline = Instant::now() + DESKTOP_EXIT_WAIT;
 
-    emit_log(app, Some(stage), LogStream::Stdout, "[handoff] waiting for Hermes to exit…");
+    emit_log(app, Some(stage), LogStream::Stdout, "[handoff] waiting for Tino to exit…");
 
     loop {
         let locked = locked_paths(&lock_targets);
@@ -727,13 +727,13 @@ pub(crate) async fn wait_for_install_locks_free(install_root: &Path, app: &AppHa
             // Last resort: a backend shim can still hold update-sensitive
             // files when the desktop's shutdown races a detached child. Only
             // target the shim at this install root: the desktop binary is also
-            // Hermes.exe, so an image-name kill would tear down the app itself.
+            // Tino.exe, so an image-name kill would tear down the app itself.
             emit_log(
                 app,
                 Some(stage),
                 LogStream::Stdout,
                 &format!(
-                    "[handoff] Hermes still holding install files ({}); locating backend shims…",
+                    "[handoff] Tino still holding install files ({}); locating backend shims…",
                     format_locked_paths(&locked)
                 ),
             );
@@ -801,8 +801,8 @@ fn desktop_app_payload_paths(install_root: &Path) -> Vec<PathBuf> {
         ]
     } else if cfg!(target_os = "macos") {
         vec![
-            release.join("mac").join("Hermes.app").join("Contents").join("Resources").join("app.asar"),
-            release.join("mac-arm64").join("Hermes.app").join("Contents").join("Resources").join("app.asar"),
+            release.join("mac").join("Tino.app").join("Contents").join("Resources").join("app.asar"),
+            release.join("mac-arm64").join("Tino.app").join("Contents").join("Resources").join("app.asar"),
         ]
     } else {
         vec![release.join("linux-unpacked").join("resources").join("app.asar")]
@@ -819,7 +819,7 @@ fn format_locked_paths(paths: &[PathBuf]) -> String {
 
 /// Find processes running the exact `venv\Scripts\hermes.exe` shim for this
 /// installation. Windows image names are case-insensitive and the desktop is
-/// also Hermes.exe, so matching by image name alone is unsafe.
+/// also Tino.exe, so matching by image name alone is unsafe.
 #[cfg(windows)]
 fn backend_shim_pids(shim: &Path) -> Vec<u32> {
     use std::ffi::OsString;
@@ -1031,7 +1031,7 @@ fn resolve_hermes(install_root: &Path) -> Option<PathBuf> {
 fn update_child_env(install_root: &Path) -> Vec<(String, OsString)> {
     let hermes_home = crate::paths::hermes_home();
     let mut envs = vec![(
-        "HERMES_HOME".to_string(),
+        "TINO_HOME".to_string(),
         hermes_home.as_os_str().to_os_string(),
     )];
     // `hermes update` is a Python CLI writing to a pipe here, so CPython
@@ -1045,11 +1045,11 @@ fn update_child_env(install_root: &Path) -> Vec<(String, OsString)> {
     // `hermes update` child claims that SAME lock (hermes_cli/update_lock.py).
     // Name our pid so the child recognizes the live holder as its own
     // orchestrator and runs under our claim — without this every GUI update
-    // refuses its parent's marker with exit 2 ("Hermes is still running")
+    // refuses its parent's marker with exit 2 ("Tino is still running")
     // and no number of retries can ever succeed. Keep the variable name in
     // sync with HANDOFF_PID_ENV in hermes_cli/update_lock.py.
     envs.push((
-        "HERMES_UPDATE_HANDOFF_PID".to_string(),
+        "TINO_UPDATE_HANDOFF_PID".to_string(),
         OsString::from(std::process::id().to_string()),
     ));
     if let Some(path) = path_with_prepended_entries(&[
@@ -1129,7 +1129,7 @@ async fn install_macos_app_update(
 
     let rebuilt_app = crate::bootstrap::resolve_hermes_desktop_app(install_root).ok_or_else(|| {
         anyhow!(
-            "desktop rebuild succeeded but no Hermes.app was found under {}",
+            "desktop rebuild succeeded but no Tino.app was found under {}",
             install_root.join("apps").join("desktop").join("release").display()
         )
     })?;
@@ -1382,7 +1382,7 @@ mod tests {
     fn update_child_env_names_our_pid_for_the_lock_handoff() {
         let envs = update_child_env(Path::new("/x/hermes-agent"));
         assert!(
-            envs.iter().any(|(k, v)| k == "HERMES_UPDATE_HANDOFF_PID"
+            envs.iter().any(|(k, v)| k == "TINO_UPDATE_HANDOFF_PID"
                 && v.to_str() == Some(std::process::id().to_string().as_str())),
             "the hermes update child claims the same marker we hold; without our pid \
              it refuses its own parent's lock and every GUI update dead-ends on exit 2"
@@ -1428,7 +1428,7 @@ mod tests {
     #[test]
     fn same_windows_path_rejects_desktop_binary() {
         assert!(!same_windows_path(
-            Path::new(r"C:\Users\tester\.hermes\hermes-agent\apps\desktop\Hermes.exe"),
+            Path::new(r"C:\Users\tester\.hermes\hermes-agent\apps\desktop\Tino.exe"),
             Path::new(r"C:\Users\tester\.hermes\hermes-agent\venv\Scripts\hermes.exe"),
         ));
     }
@@ -1675,7 +1675,7 @@ mod tests {
         );
 
         // And with the marker gone the heal can never fire twice (the retry's
-        // own exit 2, e.g. a genuinely still-running Hermes, stays terminal).
+        // own exit 2, e.g. a genuinely still-running Tino, stays terminal).
         assert!(!should_heal_self_marker_refusal(
             Some(UPDATE_EXIT_CONCURRENT),
             &marker
@@ -1806,8 +1806,8 @@ mod tests {
     #[test]
     fn parses_only_app_targets() {
         assert_eq!(
-            target_app_from_args(["--update", "--target-app", "/Applications/Hermes.app"]),
-            Some(PathBuf::from("/Applications/Hermes.app"))
+            target_app_from_args(["--update", "--target-app", "/Applications/Tino.app"]),
+            Some(PathBuf::from("/Applications/Tino.app"))
         );
         assert_eq!(target_app_from_args(["--target-app", "/tmp/not-an-app"]), None);
     }
@@ -1834,9 +1834,9 @@ mod tests {
     #[tokio::test]
     async fn swap_installs_new_bundle_and_cleans_up() {
         let base = unique_tmp_dir("ok");
-        let target = base.join("Hermes.app");
-        let tmp = base.join("Hermes.app.hermes-update-new");
-        let old = base.join("Hermes.app.hermes-update-old");
+        let target = base.join("Tino.app");
+        let tmp = base.join("Tino.app.hermes-update-new");
+        let old = base.join("Tino.app.hermes-update-old");
         write_marker(&target, "OLD");
         write_marker(&tmp, "NEW");
 
@@ -1864,9 +1864,9 @@ mod tests {
         //  - `old` is a NON-EMPTY dir  -> rename(target, old) fails
         //  - `tmp` does not exist       -> rename(tmp, target) fails
         let base = unique_tmp_dir("fail");
-        let target = base.join("Hermes.app");
-        let tmp = base.join("Hermes.app.hermes-update-new"); // intentionally absent
-        let old = base.join("Hermes.app.hermes-update-old");
+        let target = base.join("Tino.app");
+        let tmp = base.join("Tino.app.hermes-update-new"); // intentionally absent
+        let old = base.join("Tino.app.hermes-update-old");
         write_marker(&target, "OLD");
         write_marker(&old, "OCCUPIED"); // non-empty => rename(target,old) fails
 
@@ -1887,9 +1887,9 @@ mod tests {
         // Move-aside succeeds but installing the staged bundle fails (tmp
         // absent). The original must be rolled back from `old` to `target`.
         let base = unique_tmp_dir("rollback");
-        let target = base.join("Hermes.app");
-        let tmp = base.join("Hermes.app.hermes-update-new"); // absent
-        let old = base.join("Hermes.app.hermes-update-old");
+        let target = base.join("Tino.app");
+        let tmp = base.join("Tino.app.hermes-update-new"); // absent
+        let old = base.join("Tino.app.hermes-update-old");
         write_marker(&target, "OLD");
 
         let result = swap_in_new_bundle(&tmp, &target, &old).await;

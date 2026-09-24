@@ -7,8 +7,8 @@ cwd entry. That entry is gone under ``PYTHONSAFEPATH`` and useless when the venv
 editable install maps a moved/deleted checkout -- the worker then dies with
 "No module named 'cron'" before its ownership ack (#112729, hypothesised cause).
 
-The shared subprocess sanitizer strips Hermes-owned PYTHONPATH entries because user
-children must not see our tree. This child IS Hermes, so the pin is applied *after* the
+The shared subprocess sanitizer strips Tino-owned PYTHONPATH entries because user
+children must not see our tree. This child IS Tino, so the pin is applied *after* the
 env is built, on the sanitized env -- the sanitizer's other decisions (dropped runtime
 site-packages, dropped venv markers) stand.
 """

@@ -281,11 +281,11 @@ def _warn_review_routing_fallback(agent: Any, task_provider: str, task_model: st
 
 def _parent_can_emit_tool_calls(agent: Any) -> bool:
     """Whether a fork inheriting ``agent``'s runtime could act at all: an agent-as-provider client
-    shim declaring ``SUPPORTS_HERMES_TOOL_CALLS = False`` (instance or class) is skipped — the fork
+    shim declaring ``SUPPORTS_TINO_TOOL_CALLS = False`` (instance or class) is skipped — the fork
     would be a guaranteed no-op that still pays a full spawn. Silence means capable."""
     client = getattr(agent, "client", None)
     for candidate in (client, type(client) if client is not None else None):
-        supported = getattr(candidate, "SUPPORTS_HERMES_TOOL_CALLS", None)
+        supported = getattr(candidate, "SUPPORTS_TINO_TOOL_CALLS", None)
         if candidate is not None and supported is not None:
             return bool(supported)
     return True
@@ -481,7 +481,7 @@ _SKILL_REVIEW_PROMPT = (
     "If you notice two existing skills that overlap, note it in your reply — the background "
     "curator handles consolidation at scale.\n\n"
     "Protected skills (DO NOT edit these):\n"
-    "  • Bundled skills (shipped with Hermes, e.g. 'hermes-agent').\n"
+    "  • Bundled skills (shipped with Tino, e.g. 'hermes-agent').\n"
     "  • Hub-installed skills (installed via 'hermes skills install').\n"
     "  • Skills in skills.external_dirs (externally owned).\n"
     "  • PINNED skills (marked via 'hermes curator pin'). You are an autonomous no-user-present "
@@ -549,7 +549,7 @@ _COMBINED_REVIEW_PROMPT = (
     "If you notice overlapping existing skills, mention it — the background curator handles "
     "consolidation.\n\n"
     "Protected skills (DO NOT edit these):\n"
-    "  • Bundled skills (shipped with Hermes, e.g. 'hermes-agent').\n"
+    "  • Bundled skills (shipped with Tino, e.g. 'hermes-agent').\n"
     "  • Hub-installed skills (installed via 'hermes skills install').\n"
     "  • Skills in skills.external_dirs (externally owned).\n"
     "  • PINNED skills (marked via 'hermes curator pin'). Pin blocks autonomous writes entirely — "
@@ -746,7 +746,7 @@ def build_memory_write_metadata(
         "execution_context": execution_context or getattr(agent, "_memory_write_context", "foreground"),
         "session_id": agent.session_id or "",
         "parent_session_id": agent._parent_session_id or "",
-        "platform": agent.platform or os.environ.get("HERMES_SESSION_SOURCE", "cli"),
+        "platform": agent.platform or os.environ.get("TINO_SESSION_SOURCE", "cli"),
         "tool_name": "memory",
         "task_id": task_id or None,
         "tool_call_id": tool_call_id or None,
@@ -1218,12 +1218,12 @@ def _run_review_in_thread(
         finish_background_review_run(agent, review_run)
         return
     _set_thread_approval_callback(_bg_review_auto_deny)
-    # A client that can't carry Hermes tool calls back would spawn a fork that cannot write
+    # A client that can't carry Tino tool calls back would spawn a fork that cannot write
     # anything. Checked BEFORE the thread-scoped silence so the warning is not swallowed; cheap
     # check first so the normal path never resolves the runtime twice.
     if not _parent_can_emit_tool_calls(agent) and not _resolve_review_runtime(agent, task_cfg).get("routed"):
         logger.warning(
-            "Background review skipped: provider %r cannot emit Hermes tool calls, "
+            "Background review skipped: provider %r cannot emit Tino tool calls, "
             "so the review fork could not write memories or skills. Set "
             "auxiliary.background_review.{provider,model} to route the review to a normal model.",
             getattr(agent, "provider", "?"),

@@ -166,7 +166,7 @@ def test_empty_exception_text_stays_diagnosable():
 def test_failed_reauth_rollback_preserves_newer_oauth_state(tmp_path, monkeypatch):
     from tools.mcp_oauth import HermesTokenStorage
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("TINO_HOME", str(tmp_path))
     storage = HermesTokenStorage("reports")
     storage._tokens_path().parent.mkdir(parents=True)
     storage._tokens_path().write_text("OLD", encoding="utf-8")
@@ -197,7 +197,7 @@ def test_preregistered_pinned_redirect_port_keeps_loopback_listener_under_dashbo
         force_interactive_oauth,
     )
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("TINO_HOME", str(tmp_path))
     with socket.socket() as probe:
         probe.bind(("127.0.0.1", 0))
         port = probe.getsockname()[1]

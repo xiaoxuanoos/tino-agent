@@ -73,7 +73,7 @@ def _codex_device_code_start_error(resp: Any) -> str:
     if "device" in lower and ("authori" in lower or "enable" in lower):
         message = (
             "OpenAI rejected the device-code login request. Your OpenAI "
-            "account may need device-code authorization enabled before Hermes "
+            "account may need device-code authorization enabled before Tino "
             "can start this dashboard login. Enable device-code authorization "
             "in OpenAI, then return here and click Login again."
         )
@@ -395,7 +395,7 @@ async def _start_nous_device_code(profile: Optional[str]) -> Dict[str, Any]:
     from hermes_cli.web_server_profiles import _config_profile_scope, _profile_scope
     pconfig = PROVIDER_REGISTRY["nous"]
     portal_base_url = (
-        os.getenv("HERMES_PORTAL_BASE_URL") or os.getenv("NOUS_PORTAL_BASE_URL") or pconfig.portal_base_url
+        os.getenv("TINO_PORTAL_BASE_URL") or os.getenv("NOUS_PORTAL_BASE_URL") or pconfig.portal_base_url
     ).rstrip("/")
     with _profile_scope(_oauth_profile_name(profile)):
         guest = anon_auth.current_nous_state() if anon_auth.guest_enabled() else None
@@ -577,14 +577,14 @@ def _oauth_provider_disconnect_command(provider: Dict[str, Any]) -> Optional[str
 
 def _oauth_provider_disconnect_hint(provider: Dict[str, Any], status: Dict[str, Any]) -> Optional[str]:
     """Return the manual disconnect path when the API cannot clear this provider."""
-    # "anthropic" is flow == "external" (no in-dashboard login) but Hermes still
+    # "anthropic" is flow == "external" (no in-dashboard login) but Tino still
     # OWNS its credential (the PKCE file ~/.hermes/.anthropic_oauth.json and its
     # credential-pool entry, written by `hermes auth add anthropic`), so it is
     # excluded from the "external providers can't be auto-disconnected" rule.
     if provider.get("flow") == "external" and provider.get("id") != "anthropic":
         if _oauth_provider_disconnect_command(provider):
             # Fallback wording for surfaces without the one-click "run in terminal" path.
-            return "Managed outside Hermes — run the disconnect command to remove it."
+            return "Managed outside Tino — run the disconnect command to remove it."
         return "Managed by that provider's CLI; remove it there."
     if status.get("source") == "env_var":
         return "Remove the API key from Settings → Keys instead."
@@ -598,12 +598,16 @@ def _build_oauth_catalog() -> list[Dict[str, Any]]:
     rows: list[Dict[str, Any]] = []
     seen: set[str] = set()
     for entry in _OAUTH_PROVIDER_CATALOG:
+        if os.environ.get("TINO_AGENT_BRANDED") == "1" and entry["id"] == "nous":
+            continue
         if entry["id"] not in seen:
             seen.add(entry["id"])
             rows.append(dict(entry))
     try:
         from hermes_cli.provider_catalog import provider_catalog
         for d in provider_catalog():
+            if os.environ.get("TINO_AGENT_BRANDED") == "1" and d.slug == "nous":
+                continue
             if d.tab != "accounts" or d.slug in seen:
                 continue
             seen.add(d.slug)
@@ -644,7 +648,7 @@ def _reject_if_not_disconnectable(provider: Dict[str, Any], status: Dict[str, An
 
 
 def _clear_anthropic_auth() -> bool:
-    """Clear only the Hermes-managed PKCE file and auth-store entry (never ~/.claude/*)."""
+    """Clear only the Tino-managed PKCE file and auth-store entry (never ~/.claude/*)."""
     cleared = False
     try:
         from agent.anthropic_credentials import _get_hermes_oauth_file
@@ -720,6 +724,8 @@ def _validate_oauth_profile(profile: Optional[str]) -> str:
 @router.post("/api/providers/oauth/{provider_id}/start")
 async def start_oauth_login(provider_id: str, request: Request, profile: Optional[str] = None):
     """Initiate an OAuth login flow. Token-protected."""
+    if os.environ.get("TINO_AGENT_BRANDED") == "1" and provider_id == "nous":
+        raise HTTPException(status_code=404, detail="This provider is not part of Tino Agent")
     _require_token(request)
     _gc_oauth_sessions()
     _validate_oauth_profile(profile)

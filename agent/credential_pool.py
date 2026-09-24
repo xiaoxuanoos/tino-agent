@@ -151,10 +151,10 @@ FAILURE_REASON_BILLING_UNVERIFIED = "billing_unverified"
 # core, and stalled the event loop (Desktop backend readiness timeouts).
 # Credential selection runs on a hot path (every model call, plus auxiliary tasks like
 # compression/moa/titles), so when a pool is empty or fully exhausted the un-throttled log fires on *every*
-# selection. On Windows several Hermes processes share one rotating log guarded by concurrent-log-handler's
+# selection. On Windows several Tino processes share one rotating log guarded by concurrent-log-handler's
 # cross-process lock; that per-selection volume storms the lock (``RuntimeError: Cannot acquire lock after
 # 20 attempts``), pegs a core, and stalls the asyncio event loop long enough to fail the Desktop backend
-# readiness handshake ("Timed out connecting to Hermes backend after 15000ms"). Logging the condition at
+# readiness handshake ("Timed out connecting to Tino backend after 15000ms"). Logging the condition at
 # most once per window preserves the signal while removing the storm — same class of fix as the warn-once
 # dedup in #58265.
 NO_AVAILABLE_ENTRIES_LOG_THROTTLE_SECONDS = 60.0
@@ -310,7 +310,7 @@ class PooledCredential:
             # Pool rows keep the canonical ChatGPT URL; the profile-scoped proxy override must win
             # for every reader of the row — initial resolution AND a 401/429 rotation
             # (client_lifecycle._swap_credential), or a rotation silently leaves the proxy.
-            return get_secret_str("HERMES_CODEX_BASE_URL", "").strip().rstrip("/") or self.base_url
+            return get_secret_str("TINO_CODEX_BASE_URL", "").strip().rstrip("/") or self.base_url
         return self.base_url
 
 
@@ -326,7 +326,7 @@ def label_from_token(token: str, fallback: str) -> str:
 def _codex_principal_identity(access_token: Any) -> Optional[Tuple[str, str]]:
     """``(chatgpt_account_id, sub)`` of a Codex access token, or None when either claim is missing.
 
-    Decoded without signature verification: this only decides whether two credentials Hermes
+    Decoded without signature verification: this only decides whether two credentials Tino
     already holds belong to the same principal, never whether a token is valid. Both claims are
     required because members of one ChatGPT workspace share ``chatgpt_account_id`` yet have their
     own subjects and quotas.
@@ -780,8 +780,8 @@ REFRESHABLE_OAUTH_PROVIDERS = frozenset({"anthropic", "nous", *_TOKENS_SINGLETON
 _SINGLE_USE_REFRESH_PROVIDERS = ("openai-codex", "xai-oauth", "anthropic")
 
 _REFRESH_TIMEOUT_ENV_VARS = {
-    "openai-codex": "HERMES_CODEX_REFRESH_TIMEOUT_SECONDS",
-    "xai-oauth": "HERMES_XAI_REFRESH_TIMEOUT_SECONDS",
+    "openai-codex": "TINO_CODEX_REFRESH_TIMEOUT_SECONDS",
+    "xai-oauth": "TINO_XAI_REFRESH_TIMEOUT_SECONDS",
 }
 
 # Singleton-seeded source whose exhausted/DEAD pool row may be revived by a
@@ -1285,7 +1285,7 @@ class CredentialPool(CredentialPoolAdminMixin, CredentialPoolModelCooldownMixin)
             return self._refresh_entry_impl(entry, force=force)
 
         # Single-use refresh tokens: sync -> POST -> write-back must be atomic
-        # across Hermes processes, or two processes adopt the same on-disk
+        # across Tino processes, or two processes adopt the same on-disk
         # token, both POST it, and the loser gets ``refresh_token_reused`` /
         # ``invalid_grant`` (for Anthropic sources other than claude_code
         # there was no recovery path at all). Serialize through the shared
@@ -1384,7 +1384,7 @@ class CredentialPool(CredentialPoolAdminMixin, CredentialPoolModelCooldownMixin)
 
     def _single_use_refresh_lock_timeout(self) -> float:
         """Configured refresh POST timeout plus margin, so a slow token endpoint cannot starve the flock."""
-        env_var = _REFRESH_TIMEOUT_ENV_VARS.get(self.provider, "HERMES_ANTHROPIC_REFRESH_TIMEOUT_SECONDS")
+        env_var = _REFRESH_TIMEOUT_ENV_VARS.get(self.provider, "TINO_ANTHROPIC_REFRESH_TIMEOUT_SECONDS")
         refresh_timeout_seconds = auth_mod.env_float(env_var, 20)
         return max(float(auth_mod.AUTH_LOCK_TIMEOUT_SECONDS), float(refresh_timeout_seconds) + 5.0)
 
@@ -1394,7 +1394,7 @@ class CredentialPool(CredentialPoolAdminMixin, CredentialPoolModelCooldownMixin)
         """Write a rotated Anthropic pair to its authoritative singleton, or fail closed.
 
         claude_code -> ~/.claude/.credentials.json (so the fallback resolver
-        and other profiles see it). hermes_pkce -> <HERMES_HOME>/.anthropic_oauth.json
+        and other profiles see it). hermes_pkce -> <TINO_HOME>/.anthropic_oauth.json
         (``_seed_from_singletons`` re-seeds it every load). Not ``endswith``:
         manual:hermes_pkce is pool-owned and a singleton for it would be a second
         authority for the same refresh-token family.
@@ -1557,7 +1557,7 @@ class CredentialPool(CredentialPoolAdminMixin, CredentialPoolModelCooldownMixin)
             if is_terminal_anthropic_refresh_error(exc):
                 # A dead grant is not "exhausted": benching it for a TTL replays the dead token every
                 # hour at DEBUG, so the lost login left no trace (#113023). Never touch the external
-                # CLI's credentials file here — only Hermes' own row goes DEAD.
+                # CLI's credentials file here — only Tino' own row goes DEAD.
                 logger.warning(
                     "Anthropic OAuth refresh token for %s is terminally invalid (%s); the credential "
                     "leaves rotation. Re-run 'hermes auth add anthropic' to sign in again.",
@@ -1576,7 +1576,7 @@ class CredentialPool(CredentialPoolAdminMixin, CredentialPoolModelCooldownMixin)
             # entries from the pool (mirrors the Nous quarantine path).
             if getattr(auth_mod, terminal_fn_name)(exc):
                 # WARNING, not debug: this is the moment a login is lost. At the default log level a
-                # silent quarantine looked like "I logged in once and Hermes keeps failing" (#113023).
+                # silent quarantine looked like "I logged in once and Tino keeps failing" (#113023).
                 logger.warning(
                     "%s OAuth refresh token is terminally invalid (%s); clearing local token state. "
                     "Re-run 'hermes auth add %s' to sign in again.", display, exc, self.provider)
@@ -2313,7 +2313,7 @@ class _Seeder:
 
 
 def _seed_anthropic_singletons(seed: _Seeder) -> None:
-    # Only auto-discover external credentials (Claude Code, Hermes PKCE) when
+    # Only auto-discover external credentials (Claude Code, Tino PKCE) when
     # the user explicitly configured anthropic; otherwise auxiliary fallback
     # chains would read ~/.claude/.credentials.json without consent (PR #4210).
     try:
@@ -2353,7 +2353,7 @@ def _seed_anthropic_singletons(seed: _Seeder) -> None:
         sources.append(("claude_code", read_claude_code_credentials()))
     else:
         # Singleton-seeded rows are otherwise never pruned; the opt-out must also drop the row an
-        # earlier (adopting) process persisted, or it keeps rotating a login Hermes no longer reads.
+        # earlier (adopting) process persisted, or it keeps rotating a login Tino no longer reads.
         seed.changed |= _retain_sources_not_in(seed.entries, {"claude_code"})
     for source_name, creds in sources:
         if creds and creds.get("accessToken"):
@@ -2497,7 +2497,7 @@ def _seed_minimax_singleton(seed: _Seeder) -> None:
 def _seed_tokens_singleton(seed: _Seeder, auth_store: Dict[str, Any]) -> None:
     """Codex / xAI: surface the auth.json ``providers.<id>.tokens`` singleton as ``device_code``.
 
-    Hermes owns its own Codex auth state and does NOT auto-import
+    Tino owns its own Codex auth state and does NOT auto-import
     ~/.codex/auth.json: refresh tokens are single-use, so sharing them with
     Codex CLI / VS Code causes refresh_token_reused races. Adoption is an
     explicit one-time prompt via `hermes auth openai-codex`.
@@ -2698,7 +2698,7 @@ def _prune_stale_seeded_entries(
         # requested (an `hermes auth` command that confirmed the source is gone).
         if entry.source.startswith("env:"):
             return prune_env_sources
-        # File-backed singletons and Hermes PKCE disappear when their backing file is gone.
+        # File-backed singletons and Tino PKCE disappear when their backing file is gone.
         return is_borrowed_credential_source(entry.source, entry.provider) or entry.source == "hermes_pkce"
 
     retained = [

@@ -16,7 +16,7 @@ import hermes_cli.web_server_messaging as _web_server_messaging
 from hermes_cli.web_server import _SESSION_TOKEN, app
 
 client = TestClient(app)
-HEADERS = {"X-Hermes-Session-Token": _SESSION_TOKEN}
+HEADERS = {"X-Tino-Session-Token": _SESSION_TOKEN}
 
 
 def _env_rows(monkeypatch, env_on_disk):

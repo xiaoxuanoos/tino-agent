@@ -2,13 +2,13 @@
 name: agent-merge-conflict-arbiter
 description: "Neutral arbiter for merge conflicts between two agents."
 version: 1.0.0
-author: Hermes Agent
+author: Tino Agent
 license: MIT
 platforms: [linux, macos, windows]
 metadata:
   hermes:
     tags: [Multi-Agent, Git, Merge-Conflict, Kanban, Arbitration]
-    related_skills: [hermes-agent]
+    related_skills: [tino-agent]
 ---
 
 # Agent Merge-Conflict Arbiter

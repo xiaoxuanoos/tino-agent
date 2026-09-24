@@ -9,10 +9,10 @@ from hermes_cli import kanban_db_connect as kbc
 
 
 def test_connect_succeeds_under_test_home(tmp_path, monkeypatch):
-    """When HERMES_HOME is a temp dir, kanban connect succeeds normally."""
+    """When TINO_HOME is a temp dir, kanban connect succeeds normally."""
     home = tmp_path / "hermes_home"
     home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("TINO_HOME", str(home))
     conn = kbc.connect()
     try:
         assert str(kanban_db.kanban_db_path()).startswith(str(home))

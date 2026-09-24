@@ -585,7 +585,7 @@ def _touch_stale_kill_activity(agent, elapsed: float) -> None:
 def _check_stale_giveup(agent) -> None:
     """Raise immediately when the consecutive-stale streak is past the
     give-up threshold — no network attempt, no stale-timeout wait."""
-    _giveup = env_int("HERMES_STREAM_STALE_GIVEUP", 5)
+    _giveup = env_int("TINO_STREAM_STALE_GIVEUP", 5)
     _streak = _stale_streak(agent)
     if _giveup > 0 and _streak >= _giveup:
         raise RuntimeError(
@@ -596,14 +596,14 @@ def _check_stale_giveup(agent) -> None:
 
 
 def _configured_stale_base(agent) -> float:
-    """Per-provider ``stale_timeout_seconds`` config, else HERMES_STREAM_STALE_TIMEOUT (180s)."""
+    """Per-provider ``stale_timeout_seconds`` config, else TINO_STREAM_STALE_TIMEOUT (180s)."""
     cfg = get_provider_stale_timeout(agent.provider, agent.model)
-    return cfg if cfg is not None else env_float("HERMES_STREAM_STALE_TIMEOUT", 180.0)
+    return cfg if cfg is not None else env_float("TINO_STREAM_STALE_TIMEOUT", 180.0)
 
 
 def _local_stream_stale_timeout_default() -> float:
     """Local-provider stale ceiling: ``agent.local_stream_stale_timeout`` (900s) or
-    HERMES_LOCAL_STREAM_STALE_TIMEOUT. Shared by the stream stale detector and the
+    TINO_LOCAL_STREAM_STALE_TIMEOUT. Shared by the stream stale detector and the
     Responses first-event watchdog so both give a local server the same prefill grace."""
     local_default = 900.0
     with contextlib.suppress(Exception):
@@ -613,7 +613,7 @@ def _local_stream_stale_timeout_default() -> float:
         value = agent_cfg.get("local_stream_stale_timeout") if isinstance(agent_cfg, dict) else None
         if isinstance(value, (int, float)):
             local_default = float(value)
-    return env_float("HERMES_LOCAL_STREAM_STALE_TIMEOUT", local_default)
+    return env_float("TINO_LOCAL_STREAM_STALE_TIMEOUT", local_default)
 
 
 def _scale_stale_timeout_for_context(base: float, est_tokens: int) -> float:
@@ -653,7 +653,7 @@ def _cloud_stale_timeout_for(agent, api_kwargs: dict) -> float:
     explicit = get_provider_stale_timeout(agent.provider, agent.model)
     if explicit is not None:
         return explicit
-    return _cloud_stale_timeout(env_float("HERMES_STREAM_STALE_TIMEOUT", 180.0), api_kwargs)
+    return _cloud_stale_timeout(env_float("TINO_STREAM_STALE_TIMEOUT", 180.0), api_kwargs)
 
 
 def _bedrock_reasoning_stale_floor(model_id: object) -> "float | None":
@@ -685,7 +685,7 @@ def _bedrock_reasoning_stale_floor(model_id: object) -> "float | None":
 
 
 def _bedrock_converse_call(api_kwargs: dict, *, stream: bool, on_stream_denied=None):
-    """Pop the Hermes routing keys and call ``converse`` / ``converse_stream`` (boto3
+    """Pop the Tino routing keys and call ``converse`` / ``converse_stream`` (boto3
     directly) with the shared recovery: a cachePoint rejection (Nova: toolConfig.tools,
     #97281) drops the marker and resends once inside the same attempt; a streaming IAM
     denial hands off to ``on_stream_denied(client, kwargs, exc)``; a stale connection
@@ -1136,10 +1136,10 @@ def _resolve_nonstream_watchdogs(agent, api_kwargs: dict) -> _NonStreamWatchdogs
     event remains transport activity). Only the implicit official OpenAI Codex policy
     for large contexts defers arming until progress; small requests, compatible backends,
     and explicit overrides retain the legacy first-event semantics. Tunables:
-    HERMES_CODEX_TTFB_TIMEOUT_SECONDS,
-    HERMES_CODEX_EVENT_STALE_TIMEOUT_SECONDS (0 disables each),
-    HERMES_CODEX_TTFB_DISABLE_ABOVE_TOKENS / HERMES_CODEX_TTFB_STRICT,
-    HERMES_CODEX_TTFB_MAX_SECONDS (opt-in ceiling, default 0 = none), HERMES_CODEX_HARD_TIMEOUT_SECONDS.
+    TINO_CODEX_TTFB_TIMEOUT_SECONDS,
+    TINO_CODEX_EVENT_STALE_TIMEOUT_SECONDS (0 disables each),
+    TINO_CODEX_TTFB_DISABLE_ABOVE_TOKENS / TINO_CODEX_TTFB_STRICT,
+    TINO_CODEX_TTFB_MAX_SECONDS (opt-in ceiling, default 0 = none), TINO_CODEX_HARD_TIMEOUT_SECONDS.
     """
     # The effort floor on the STALE timeout lives inside _compute_non_stream_stale_timeout so the
     # run-budget cap still bounds it; here the floor only raises the TTFB/idle implicit defaults.
@@ -1157,7 +1157,7 @@ def _resolve_nonstream_watchdogs(agent, api_kwargs: dict) -> _NonStreamWatchdogs
             stale_timeout = max(stale_timeout, codex_floor)
         # Flat hard ceiling (#64507) for a request that emits SOME events then wedges.
         # Default sits ABOVE the max floor (1200s) — a backstop, never tighter. 0 disables.
-        hard_timeout = env_float("HERMES_CODEX_HARD_TIMEOUT_SECONDS", 1500.0)
+        hard_timeout = env_float("TINO_CODEX_HARD_TIMEOUT_SECONDS", 1500.0)
         if hard_timeout > 0:
             stale_timeout = min(stale_timeout, hard_timeout)
 
@@ -1168,26 +1168,26 @@ def _resolve_nonstream_watchdogs(agent, api_kwargs: dict) -> _NonStreamWatchdogs
     # No-event TTFB cutoff. Default 120s: the SDK's own read timeout is 600s,
     # and a tight 12s killed subscription-backed requests mid-prefill.
     ttfb_enabled = codex
-    ttfb_explicit = env_float("HERMES_CODEX_TTFB_TIMEOUT_SECONDS", -1.0) != -1.0
-    ttfb_timeout = env_float("HERMES_CODEX_TTFB_TIMEOUT_SECONDS", 120.0)
+    ttfb_explicit = env_float("TINO_CODEX_TTFB_TIMEOUT_SECONDS", -1.0) != -1.0
+    ttfb_timeout = env_float("TINO_CODEX_TTFB_TIMEOUT_SECONDS", 120.0)
     if ttfb_timeout <= 0:
         ttfb_enabled = False
     elif openai_codex_backend:
         # Large requests legitimately spend tens of seconds in admission/prefill before the
         # first SSE event: scale the cutoff up to the idle default unless TTFB_STRICT is set.
-        disable_above = env_float("HERMES_CODEX_TTFB_DISABLE_ABOVE_TOKENS", 10_000.0)
-        strict = os.environ.get("HERMES_CODEX_TTFB_STRICT", "").strip().lower() in {"1", "true", "yes", "on"}
+        disable_above = env_float("TINO_CODEX_TTFB_DISABLE_ABOVE_TOKENS", 10_000.0)
+        strict = os.environ.get("TINO_CODEX_TTFB_STRICT", "").strip().lower() in {"1", "true", "yes", "on"}
         if not strict and disable_above > 0 and est_tokens >= disable_above and ttfb_timeout < idle_default:
             logger.info("Scaling openai-codex no-event TTFB watchdog from %.0fs to %.0fs "
                 "for large request (context=~%s tokens >= %.0f). "
-                "Set HERMES_CODEX_TTFB_STRICT=1 to keep the smaller cutoff.", ttfb_timeout, idle_default,
+                "Set TINO_CODEX_TTFB_STRICT=1 to keep the smaller cutoff.", ttfb_timeout, idle_default,
                 f"{est_tokens:,}", disable_above)
             ttfb_timeout = idle_default
         # Opt-in ceiling (0 = off): a 120s default here silently undid the scale-up above (#91621).
-        ttfb_cap = env_float("HERMES_CODEX_TTFB_MAX_SECONDS", 0.0)
+        ttfb_cap = env_float("TINO_CODEX_TTFB_MAX_SECONDS", 0.0)
         if ttfb_cap > 0 and ttfb_timeout > ttfb_cap:
             logger.info("Capping openai-codex no-event TTFB timeout from %.0fs to %.0fs "
-                "(context=~%s tokens) per HERMES_CODEX_TTFB_MAX_SECONDS.", ttfb_timeout, ttfb_cap,
+                "(context=~%s tokens) per TINO_CODEX_TTFB_MAX_SECONDS.", ttfb_timeout, ttfb_cap,
                 f"{est_tokens:,}")
             ttfb_timeout = ttfb_cap
     elif not ttfb_explicit and (base_url := getattr(agent, "base_url", None)) and is_local_endpoint(base_url):
@@ -1197,7 +1197,7 @@ def _resolve_nonstream_watchdogs(agent, api_kwargs: dict) -> _NonStreamWatchdogs
         local_ceiling = _local_stream_stale_timeout_default()
         if local_ceiling > ttfb_timeout:
             logger.info("Local provider detected (%s) — no-event TTFB watchdog raised from %.0fs to %.0fs "
-                "(agent.local_stream_stale_timeout); set HERMES_CODEX_TTFB_TIMEOUT_SECONDS for an explicit cutoff.",
+                "(agent.local_stream_stale_timeout); set TINO_CODEX_TTFB_TIMEOUT_SECONDS for an explicit cutoff.",
                 base_url, ttfb_timeout, local_ceiling)
             ttfb_timeout = local_ceiling
     if ttfb_enabled and not ttfb_explicit:
@@ -1207,8 +1207,8 @@ def _resolve_nonstream_watchdogs(agent, api_kwargs: dict) -> _NonStreamWatchdogs
     # An operator-set idle timeout keeps first-event semantics; only the implicit
     # default defers arming until model progress. Sentinel: env_float returns the
     # default for unset AND unparseable values, so both count as implicit.
-    idle_explicit = env_float("HERMES_CODEX_EVENT_STALE_TIMEOUT_SECONDS", -1.0) != -1.0
-    idle_timeout = env_float("HERMES_CODEX_EVENT_STALE_TIMEOUT_SECONDS", idle_default)
+    idle_explicit = env_float("TINO_CODEX_EVENT_STALE_TIMEOUT_SECONDS", -1.0) != -1.0
+    idle_timeout = env_float("TINO_CODEX_EVENT_STALE_TIMEOUT_SECONDS", idle_default)
     return _NonStreamWatchdogs(stale_timeout=stale_timeout, codex=codex, est_tokens=est_tokens,
         ttfb_enabled=ttfb_enabled, ttfb_timeout=ttfb_timeout, idle_enabled=codex and idle_timeout > 0,
         idle_timeout=idle_timeout,
@@ -1540,7 +1540,7 @@ def _assistant_content_for_storage(agent, assistant_message):
     # Sanitize surrogates (Kimi/GLM via Ollama emit code points that crash json.dumps),
     # strip inline <think> tags at the storage boundary (they leaked to platforms and
     # polluted titles), then redact inlined credentials before the message enters
-    # history / state.db / gateway delivery (no-op with HERMES_REDACT_SECRETS off).
+    # history / state.db / gateway delivery (no-op with TINO_REDACT_SECRETS off).
     content = _sanitize_surrogates(flatten_message_text(getattr(assistant_message, "content", None)))
     if isinstance(content, str) and content:
         content = agent._strip_think_blocks(content).strip()
@@ -2154,7 +2154,7 @@ def _iteration_summary_api_messages(agent, messages: list) -> list:
         # chat.completions.create() directly, bypassing the transport — so mirror that sanitization here:
         # tool_name (SQLite FTS bookkeeping), the codex_* reasoning carriers, timestamp (preserved on
         # gateway user replay entries for the stale-confirmation expiry check — #47868 rejection class), and
-        # every Hermes-internal underscore-prefixed scaffolding key.
+        # every Tino-internal underscore-prefixed scaffolding key.
         substitute_api_content(api_msg)
         if needs_sanitize:
             agent._sanitize_tool_calls_for_strict_api(api_msg, model=sanitize_model)
@@ -2576,7 +2576,7 @@ class _BedrockStream:
         except Exception as _inval_exc:
             logger.debug("bedrock: stale client eviction failed: %s", _inval_exc)
         self.last_event = time.time()
-        # Raises RuntimeError past HERMES_STREAM_STALE_GIVEUP; otherwise end
+        # Raises RuntimeError past TINO_STREAM_STALE_GIVEUP; otherwise end
         # THIS call with a TimeoutError and let the streak carry forward.
         _check_stale_giveup(agent)
         self.result["error"] = TimeoutError(
@@ -2842,14 +2842,14 @@ class _StreamingCall(StreamingWaitMonitor):
 
     def _stream_timeouts(self) -> tuple[float, float, float]:
         """``(write, read, connect/pool)`` socket timeouts. Per-provider
-        ``request_timeout_seconds`` wins over HERMES_API_TIMEOUT (1800s) and
-        HERMES_STREAM_READ_TIMEOUT (120s); connect/pool cover the handshake, not
+        ``request_timeout_seconds`` wins over TINO_API_TIMEOUT (1800s) and
+        TINO_STREAM_READ_TIMEOUT (120s); connect/pool cover the handshake, not
         inference: 30s, or capped at 60s when configured."""
         cfg = get_provider_request_timeout(self.agent.provider, self.agent.model)
-        base = cfg if cfg is not None else env_float("HERMES_API_TIMEOUT", 1800.0)
+        base = cfg if cfg is not None else env_float("TINO_API_TIMEOUT", 1800.0)
         if cfg is not None:
             return base, cfg, min(base, 60.0)
-        read = env_float("HERMES_STREAM_READ_TIMEOUT", 120.0)
+        read = env_float("TINO_STREAM_READ_TIMEOUT", 120.0)
         stale = self._stream_stale_timeout
         if read == 120.0 and self.agent.base_url and is_local_endpoint(self.agent.base_url):
             read = base  # local providers prefill for minutes
@@ -3003,7 +3003,7 @@ class _StreamingCall(StreamingWaitMonitor):
             completed_response_predicate=lambda value: hasattr(value, "choices"),
             metadata=_relay_stream_metadata(self.agent, "chat_completions"), defer_logical_completion=True))
         if self.agent.provider == "moa":
-            # Hermes interrupts the managed stream; Relay alone closes the provider stream.
+            # Tino interrupts the managed stream; Relay alone closes the provider stream.
             self.clients.set_stream_handle(stream)
 
         for chunk in _iter_provider_stream_chunks(stream, response=lambda: self._attempt_stream_response):
@@ -3478,9 +3478,9 @@ class _StreamingCall(StreamingWaitMonitor):
         return self._call_anthropic(request_client)
 
     def _call(self):
-        _max_stream_retries = env_int("HERMES_STREAM_RETRIES", 2)
+        _max_stream_retries = env_int("TINO_STREAM_RETRIES", 2)
         # The one stream_options compatibility retry (#9705) is not a network retry and must not
-        # consume the transient budget: on the last attempt (or HERMES_STREAM_RETRIES=0) the
+        # consume the transient budget: on the last attempt (or TINO_STREAM_RETRIES=0) the
         # handler returned True and the loop ended with neither a response nor an error set.
         self._compat_retries = 0
         _stream_attempt = -1
@@ -3615,7 +3615,7 @@ class _StreamingCall(StreamingWaitMonitor):
     def _resolve_stale_timeout(self) -> None:
         """Set ``_stream_stale_timeout``. Local endpoints (unless the env is set) get
         long but FINITE patience — 900s / ``agent.local_stream_stale_timeout`` /
-        HERMES_LOCAL_STREAM_STALE_TIMEOUT — an infinite one stalled sessions on a
+        TINO_LOCAL_STREAM_STALE_TIMEOUT — an infinite one stalled sessions on a
         crashed endpoint forever. Cloud values scale with context size and are
         floored for known reasoning models (else BrokenPipeError from the gateway)."""
         base = _configured_stale_base(self.agent)

@@ -4,7 +4,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { registerTerminalContextMenu } from '@/app/right-sidebar/terminal/terminal-context-menu'
 import { DirectiveContent } from '@/components/assistant-ui/directive-text'
-import { ContextMenu, ContextMenuTrigger, HERMES_CONTEXT_MENU_TRIGGER_ATTR } from '@/components/ui/context-menu'
+import { ContextMenu, ContextMenuTrigger, TINO_CONTEXT_MENU_TRIGGER_ATTR } from '@/components/ui/context-menu'
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
 import { formatCombo } from '@/lib/keybinds/combo'
 import { $previewTabs, closeRightRail } from '@/store/preview'
@@ -668,6 +668,6 @@ describe('ContextMenuTrigger asChild', () => {
     const footer = screen.getByText('bar')
 
     expect(footer.getAttribute('data-slot')).toBe('statusbar')
-    expect(footer.hasAttribute(HERMES_CONTEXT_MENU_TRIGGER_ATTR)).toBe(true)
+    expect(footer.hasAttribute(TINO_CONTEXT_MENU_TRIGGER_ATTR)).toBe(true)
   })
 })

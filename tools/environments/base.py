@@ -1,4 +1,4 @@
-"""Base class for all Hermes execution environment backends.
+"""Base class for all Tino execution environment backends.
 
 Unified spawn-per-call model: every command spawns a fresh ``bash -c`` process.
 A session snapshot (env vars, functions, aliases) is captured once at init and
@@ -33,8 +33,8 @@ from utils import env_var_enabled
 logger = logging.getLogger(__name__)
 
 # Opt-in debug tracing for the interrupt/activity/poll machinery
-# (HERMES_DEBUG_INTERRUPT=1). Off by default to avoid flooding gateway logs.
-_DEBUG_INTERRUPT = env_var_enabled("HERMES_DEBUG_INTERRUPT")
+# (TINO_DEBUG_INTERRUPT=1). Off by default to avoid flooding gateway logs.
+_DEBUG_INTERRUPT = env_var_enabled("TINO_DEBUG_INTERRUPT")
 
 # Extra seconds the ``run_bounded_sync`` backstop waits past the inner ``_wait_for_process``
 # deadline: the inner loop returns partial output + 124; the outer bound only fires when that
@@ -110,7 +110,7 @@ def touch_activity_if_due(state: dict, label: str) -> None:
 
 def get_sandbox_dir() -> Path:
     """Host-side root for all sandbox storage (Docker workspaces, Singularity
-    overlays/SIF cache). ``TERMINAL_SANDBOX_DIR`` overrides ``{HERMES_HOME}/sandboxes``."""
+    overlays/SIF cache). ``TERMINAL_SANDBOX_DIR`` overrides ``{TINO_HOME}/sandboxes``."""
     custom = os.getenv("TERMINAL_SANDBOX_DIR")
     p = Path(custom) if custom else get_hermes_home() / "sandboxes"
     p.mkdir(parents=True, exist_ok=True)
@@ -141,14 +141,14 @@ def _file_mtime_key(host_path: str) -> tuple[float, int] | None:
 
 
 class BaseEnvironment(ABC):
-    """Common interface and unified execution flow for all Hermes backends. Subclasses
+    """Common interface and unified execution flow for all Tino backends. Subclasses
     implement ``_run_bash()`` and ``cleanup()``; the base provides ``execute()`` with
     snapshot sourcing, CWD tracking, interrupt handling and timeout enforcement."""
 
     # Subclasses that embed stdin as a heredoc (Modal, Daytona) set this.
     _stdin_mode: str = "pipe"  # "pipe" or "heredoc"
 
-    # True only when commands execute on the SAME host as the Hermes process
+    # True only when commands execute on the SAME host as the Tino process
     # (LocalEnvironment); controller-host facts then describe the execution target.
     is_local: bool = False
 
@@ -208,7 +208,7 @@ class BaseEnvironment(ABC):
         """
         import base64
         import binascii
-        marker = f"__HERMES_FETCH_{uuid.uuid4().hex[:12]}__"
+        marker = f"__TINO_FETCH_{uuid.uuid4().hex[:12]}__"
         quoted = shlex.quote(remote_path)
         # ``[ -f ]`` follows symlinks, so a link to a denied host file is judged by the CALLER on
         # ``readlink -f`` output before any bytes move.
@@ -336,7 +336,7 @@ class BaseEnvironment(ABC):
     @staticmethod
     def _embed_stdin_heredoc(command: str, stdin_data: str) -> str:
         """Append stdin_data as a shell heredoc to the command string (SDK backends)."""
-        delimiter = f"HERMES_STDIN_{uuid.uuid4().hex[:12]}"
+        delimiter = f"TINO_STDIN_{uuid.uuid4().hex[:12]}"
         return f"{command} << '{delimiter}'\n{stdin_data}\n{delimiter}"
 
     # --- Process lifecycle ---
@@ -456,7 +456,7 @@ class BaseEnvironment(ABC):
         self._extract_cwd_from_output(result)
 
     def _extract_cwd_from_output(self, result: dict):
-        """Parse the ``__HERMES_CWD_{session}__`` marker from ``result["output"]``, update
+        """Parse the ``__TINO_CWD_{session}__`` marker from ``result["output"]``, update
         ``self.cwd`` and strip the marker line. ``result["cwd_observed"]``/``["cwd"]`` are set
         only when THIS command emitted a marker: a killed/timed-out command emits none and
         ``self.cwd`` keeps the previous value. The environment is shared across sessions, so

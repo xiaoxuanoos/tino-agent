@@ -95,7 +95,7 @@ def test_abort_recovery_hands_managed_profiles_to_a_fresh_process(monkeypatch):
     assert kwargs["text"] is True
     assert kwargs["capture_output"] is True
     assert kwargs["check"] is False
-    assert kwargs["env"]["HERMES_UPDATE_RESTART_RECOVERY"] == "1"
+    assert kwargs["env"]["TINO_UPDATE_RESTART_RECOVERY"] == "1"
 
 
 def test_abort_recovery_does_not_claim_success_when_fresh_process_fails(monkeypatch):
@@ -269,7 +269,7 @@ def test_recovery_child_restarts_each_profile_with_a_fresh_main(monkeypatch):
         calls.append((argv, kwargs))
         return _Completed(0)
 
-    monkeypatch.setenv("_HERMES_GATEWAY", "1")
+    monkeypatch.setenv("_TINO_GATEWAY", "1")
     result = recovery.restart_profiles(["default", "coder"], run=fake_run)
 
     # No supervisor observations were possible → conservative labels only.
@@ -287,8 +287,8 @@ def test_recovery_child_restarts_each_profile_with_a_fresh_main(monkeypatch):
         assert kwargs["capture_output"] is True
         assert kwargs["text"] is True
         assert kwargs["check"] is False
-        assert kwargs["env"]["HERMES_UPDATE_RESTART_RECOVERY"] == "1"
-        assert "_HERMES_GATEWAY" not in kwargs["env"]
+        assert kwargs["env"]["TINO_UPDATE_RESTART_RECOVERY"] == "1"
+        assert "_TINO_GATEWAY" not in kwargs["env"]
 
 
 def test_recovery_child_verifies_systemd_profiles_via_is_active(monkeypatch):
@@ -453,7 +453,7 @@ def test_recovery_module_end_to_end_in_a_real_fresh_process(tmp_path):
 
     env = os.environ.copy()
     env["PYTHONPATH"] = str(tmp_path) + os.pathsep + env.get("PYTHONPATH", "")
-    env["_HERMES_GATEWAY"] = "1"  # must be scrubbed before the grandchild runs
+    env["_TINO_GATEWAY"] = "1"  # must be scrubbed before the grandchild runs
 
     result = subprocess.run(
         [sys.executable, "-m", "hermes_cli.update_restart_recovery", "--stdin"],

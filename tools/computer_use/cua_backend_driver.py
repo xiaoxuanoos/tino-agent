@@ -17,8 +17,8 @@ from typing import Any, Dict, List, Optional, Tuple
 logger = logging.getLogger("tools.computer_use.cua_backend")
 
 # No version *pin* knob on purpose: the upstream installer always fetches the latest release, so a pin
-# var would only LOOK like it pinned. Point HERMES_CUA_DRIVER_CMD at a specific binary instead.
-_CUA_DRIVER_CMD_ENV = "HERMES_CUA_DRIVER_CMD"
+# var would only LOOK like it pinned. Point TINO_CUA_DRIVER_CMD at a specific binary instead.
+_CUA_DRIVER_CMD_ENV = "TINO_CUA_DRIVER_CMD"
 _CUA_DRIVER_DEFAULT_CMD = "cua-driver"
 _CUA_DRIVER_ARGS = ["mcp"]  # stdio MCP; fallback when the driver has no `manifest` verb
 _CUA_DRIVER_RUNTIME_CONTRACT_MIN = (0, 20, 0)
@@ -59,8 +59,8 @@ def _has_path_separator(value: str) -> bool:
     return os.sep in value or (os.altsep is not None and os.altsep in value)
 
 def _wsl_windows_path_to_posix(path: str) -> str:
-    """Translate a Windows absolute manifest command to its DrvFS ``/mnt/<drive>/...`` form when Hermes runs in WSL
-    (a Windows cua-driver manifest can report ``C:\\...`` while Hermes spawns via POSIX). Non-Windows paths and
+    """Translate a Windows absolute manifest command to its DrvFS ``/mnt/<drive>/...`` form when Tino runs in WSL
+    (a Windows cua-driver manifest can report ``C:\\...`` while Tino spawns via POSIX). Non-Windows paths and
     non-WSL hosts are returned unchanged."""
     if not re.match(r"^[A-Za-z]:[\\/]", path):
         return path
@@ -74,7 +74,7 @@ def _wsl_windows_path_to_posix(path: str) -> str:
     return os.path.join("/mnt", drive, *(str(part) for part in win.parts[1:])) if wsl and drive else path
 
 def _candidate_cua_driver_commands(override: Optional[str] = None) -> List[str]:
-    """Candidate commands in resolution order. ``override`` / a non-empty ``HERMES_CUA_DRIVER_CMD`` is authoritative
+    """Candidate commands in resolution order. ``override`` / a non-empty ``TINO_CUA_DRIVER_CMD`` is authoritative
     (if wrong, report the driver missing rather than silently picking another binary). Otherwise PATH, then
     canonical installer locations — Finder/Dock-launched apps inherit a narrow PATH without ``~/.local/bin``;
     fresh Windows sessions inherit a stale one."""
@@ -132,7 +132,7 @@ def _resolve_mcp_invocation(driver_cmd: str, *, timeout: float = 6.0) -> Tuple[s
     Surface 8 of NousResearch/hermes-agent#47072: instead of hardcoding ``["mcp"]`` we ask the driver itself
     via ``cua-driver manifest`` (trycua/cua#1961). The manifest carries a stable ``mcp_invocation`` pointer
     with both ``command`` and ``args``, so a future cua-driver that renames or relocates the subcommand
-    keeps working without a Hermes patch.
+    keeps working without a Tino patch.
     When ``computer_use.no_overlay`` is enabled (or auto-detected — macOS, headless/WSL2/X11 Linux),
     ``--no-overlay`` is appended to suppress the cursor overlay rendering loop that can consume CPU
     indefinitely when idle (#28152, #47032). Older drivers that don't recognise the flag will reject it;
@@ -160,7 +160,7 @@ def _manifest_contract_reason(manifest: Optional[Dict[str, Any]]) -> str:
     if not match:
         return "driver manifest does not report a semantic version"
     if tuple(int(part) for part in match.groups()) < _CUA_DRIVER_RUNTIME_CONTRACT_MIN:
-        return "Hermes computer use requires cua-driver 0.20.0 or newer"
+        return "Tino computer use requires cua-driver 0.20.0 or newer"
     if not _valid_mcp_args(manifest.get("mcp_invocation")):
         return "driver manifest does not provide an MCP launch command"
     advertised: Dict[str, set[str]] = {
@@ -174,7 +174,7 @@ def _manifest_contract_reason(manifest: Optional[Dict[str, Any]]) -> str:
     return "driver manifest is missing: " + ", ".join(missing) if missing else ""
 
 def cua_driver_runtime_contract_status(binary: Optional[str] = None) -> Dict[str, Any]:
-    """Report whether a local driver can host Hermes' 0.20 integration."""
+    """Report whether a local driver can host Tino' 0.20 integration."""
     resolved = binary or resolve_cua_driver_cmd()
     version: Optional[str] = None
     reason = "cua-driver is not installed"

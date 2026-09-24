@@ -11,7 +11,7 @@ from urllib.parse import parse_qs, urlparse
 import pytest
 
 import plugins.memory.openviking as openviking_plugin
-from hermes_cli import __version__ as _HERMES_VERSION
+from hermes_cli import __version__ as _TINO_VERSION
 from plugins.memory.openviking import OpenVikingMemoryProvider
 
 
@@ -160,7 +160,7 @@ class TestOpenVikingSkillQuerySafety:
         _write_bundle(bundles_dir, "demo", ["example"])
 
         monkeypatch.setattr(skills_tool, "SKILLS_DIR", skills_dir)
-        monkeypatch.setenv("HERMES_BUNDLES_DIR", str(bundles_dir))
+        monkeypatch.setenv("TINO_BUNDLES_DIR", str(bundles_dir))
         monkeypatch.setattr(skill_commands, "_skill_commands", {})
         monkeypatch.setattr(skill_commands, "_skill_commands_platform", None)
         monkeypatch.setattr(skill_bundles, "_bundles_cache", {})
@@ -303,7 +303,7 @@ class TestOpenVikingConfigSchema:
     def test_recall_config_reads_from_config_yaml(self, monkeypatch, tmp_path):
         """_recall_config() reads memory.openviking values from config.yaml when
         the corresponding OPENVIKING_RECALL_* env vars are not set."""
-        # Populate config.yaml in the temp HERMES_HOME
+        # Populate config.yaml in the temp TINO_HOME
         hermes_home = tmp_path / "hermes_test"
         hermes_home.mkdir(exist_ok=True)
         config_yaml = hermes_home / "config.yaml"
@@ -324,7 +324,7 @@ memory:
 """,
             encoding="utf-8",
         )
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        monkeypatch.setenv("TINO_HOME", str(hermes_home))
         # Clear any OPENVIKING_RECALL_* env vars so config.yaml prevails
         for key in list(os.environ):
             if key.startswith("OPENVIKING_RECALL_"):
@@ -359,7 +359,7 @@ memory:
 """,
             encoding="utf-8",
         )
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        monkeypatch.setenv("TINO_HOME", str(hermes_home))
         # Override config.yaml via env
         monkeypatch.setenv("OPENVIKING_RECALL_LIMIT", "6")
         monkeypatch.setenv("OPENVIKING_RECALL_RESOURCES", "false")
@@ -386,7 +386,7 @@ memory:
 """,
             encoding="utf-8",
         )
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        monkeypatch.setenv("TINO_HOME", str(hermes_home))
         for key in list(os.environ):
             if key.startswith("OPENVIKING_RECALL_"):
                 monkeypatch.delenv(key, raising=False)
@@ -787,7 +787,7 @@ class TestOpenVikingAutoRecallPrefetch:
         ]
         assert all(headers.get("x-openviking-actor-peer", "") == peer for headers in normalized_headers)
         assert all(
-            headers.get("user-agent") == f"openviking-memory-hermes/{_HERMES_VERSION}"
+            headers.get("user-agent") == f"openviking-memory-hermes/{_TINO_VERSION}"
             for headers in normalized_headers
         )
         assert all(headers.get("x-openviking-account") == "acct" for headers in normalized_headers)
@@ -1096,7 +1096,7 @@ class TestEnsureClientReloadsEnv:
         assert out["message_status"] == "accepted"
         assert out["session_uri"].endswith(f"/sessions/{out['session_id']}")
         assert out["recovery_command"] == f"ov session commit {out['session_id']}"
-        assert "same OpenViking profile and credentials as Hermes" in out["recovery_note"]
+        assert "same OpenViking profile and credentials as Tino" in out["recovery_note"]
         assert len(posts) == 2
         assert posts[0][0].endswith("/messages")
         assert posts[1][0].endswith("/commit")
@@ -1310,7 +1310,7 @@ class TestUnavailableWarningsPromiseRetry:
 
     @staticmethod
     def _assert_promises_retry(message: str) -> None:
-        assert "for this Hermes run" not in message, message
+        assert "for this Tino run" not in message, message
         assert "will retry on a later access" in message, message
         assert "when the config changes" in message, message
 
@@ -1404,7 +1404,7 @@ class TestUnavailableWarningsPromiseRetry:
             def health(self):
                 return False
 
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path / ".hermes"))
+        monkeypatch.setenv("TINO_HOME", str(tmp_path / ".hermes"))
         monkeypatch.setenv("OPENVIKING_ENDPOINT", "https://sick.example")
         monkeypatch.setattr(openviking_plugin, "_VikingClient", _UnhealthyClient)
         provider = OpenVikingMemoryProvider()
@@ -1448,7 +1448,7 @@ class TestUnavailableWarningsPromiseRetry:
                 probes.append(self.endpoint)
                 return len(probes) > 1  # down at startup, up on the next access
 
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path / ".hermes"))
+        monkeypatch.setenv("TINO_HOME", str(tmp_path / ".hermes"))
         monkeypatch.setenv("OPENVIKING_ENDPOINT", "https://remote.example")
         monkeypatch.setattr(openviking_plugin, "_VikingClient", _FlakyClient)
         provider = OpenVikingMemoryProvider()

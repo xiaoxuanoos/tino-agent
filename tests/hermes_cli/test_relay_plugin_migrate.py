@@ -1,4 +1,4 @@
-"""``hermes update`` / ``hermes migrate relay``: legacy ``HERMES_NEMO_RELAY_ATIF_*``/``ATOF_*`` vars
+"""``hermes update`` / ``hermes migrate relay``: legacy ``TINO_NEMO_RELAY_ATIF_*``/``ATOF_*`` vars
 become a validated ``relay-plugins.toml`` per profile home, selected from ``.env``."""
 
 from __future__ import annotations
@@ -16,14 +16,14 @@ from hermes_cli.relay_plugin_cutover import RELAY_PLUGINS_CONFIG_ENV, configured
 nemo_relay = pytest.importorskip("nemo_relay")
 
 LEGACY_ENV = """OPENAI_API_KEY=sk-test
-HERMES_NEMO_RELAY_ATOF_ENABLED=1
-HERMES_NEMO_RELAY_ATOF_OUTPUT_DIRECTORY={home}/telemetry/atof
-HERMES_NEMO_RELAY_ATOF_FILENAME=hermes-atof.jsonl
-HERMES_NEMO_RELAY_ATOF_MODE=append
-HERMES_NEMO_RELAY_ATIF_ENABLED=1
-HERMES_NEMO_RELAY_ATIF_OUTPUT_DIRECTORY={home}/telemetry/atif
-HERMES_NEMO_RELAY_ATIF_FILENAME_TEMPLATE=trajectory-{{session_id}}.json
-HERMES_NEMO_RELAY_ATIF_SUBAGENT_EXPORT_MODE=all
+TINO_NEMO_RELAY_ATOF_ENABLED=1
+TINO_NEMO_RELAY_ATOF_OUTPUT_DIRECTORY={home}/telemetry/atof
+TINO_NEMO_RELAY_ATOF_FILENAME=hermes-atof.jsonl
+TINO_NEMO_RELAY_ATOF_MODE=append
+TINO_NEMO_RELAY_ATIF_ENABLED=1
+TINO_NEMO_RELAY_ATIF_OUTPUT_DIRECTORY={home}/telemetry/atif
+TINO_NEMO_RELAY_ATIF_FILENAME_TEMPLATE=trajectory-{{session_id}}.json
+TINO_NEMO_RELAY_ATIF_SUBAGENT_EXPORT_MODE=all
 """
 
 
@@ -41,7 +41,7 @@ def profile_env(tmp_path, monkeypatch):
     home = tmp_path / ".hermes"
     home.mkdir()
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("TINO_HOME", str(home))
     return home
 
 
@@ -57,7 +57,7 @@ def test_legacy_env_becomes_validated_toml_selected_from_env(profile_env):
     sink = document["components"][0]["config"]["atof"]["sinks"][0]
     assert sink["type"] == "file" and sink["filename"] == "hermes-atof.jsonl"
     assert document["components"][0]["config"]["atif"]["filename_template"] == "trajectory-{session_id}.json"
-    # Relay itself accepts the file Hermes will load at runtime.
+    # Relay itself accepts the file Tino will load at runtime.
     report = asyncio.run(nemo_relay.plugin.initialize(document))
     asyncio.run(nemo_relay.plugin.clear_async())
     assert report.get("diagnostics") == []
@@ -67,7 +67,7 @@ def test_legacy_env_becomes_validated_toml_selected_from_env(profile_env):
     assert env[RELAY_PLUGINS_CONFIG_ENV] == str(toml_path)
     assert env["OPENAI_API_KEY"] == "sk-test"
     assert configured_legacy_relay_env_vars(env) == ()
-    assert "# migrated to relay-plugins.toml: HERMES_NEMO_RELAY_ATOF_ENABLED=1" in (profile_env / ".env").read_text(encoding="utf-8")
+    assert "# migrated to relay-plugins.toml: TINO_NEMO_RELAY_ATOF_ENABLED=1" in (profile_env / ".env").read_text(encoding="utf-8")
     assert migrate_profile_relay_env(profile_env).skipped_reason == "no legacy exporter variables"
 
 

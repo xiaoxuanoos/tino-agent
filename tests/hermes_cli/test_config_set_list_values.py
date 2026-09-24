@@ -14,8 +14,8 @@ import pytest
 def user_home(tmp_path, monkeypatch):
     home = tmp_path / "home"
     home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
-    monkeypatch.delenv("HERMES_MANAGED_DIR", raising=False)
+    monkeypatch.setenv("TINO_HOME", str(home))
+    monkeypatch.delenv("TINO_MANAGED_DIR", raising=False)
     import hermes_cli.config as cfg
     from hermes_cli import managed_scope
 

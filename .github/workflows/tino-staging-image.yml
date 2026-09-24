@@ -1,0 +1,77 @@
+name: Tino private staging image
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: tino-staging-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    # An explicit repo variable must point at the *separate* Tino repository.
+    # This workflow must never publish an image from NousResearch/hermes-agent.
+    if: >-
+      github.repository != 'NousResearch/hermes-agent' &&
+      github.repository == vars.TINO_RELEASE_REPOSITORY
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Verify source archive boundary
+        run: python3 scripts/ci/check_profile_archive_boundary.py
+      - name: Test Tino upgrade guardrails
+        run: python3 -m unittest discover -s tests/scripts -p 'test_tino_auto_*.py'
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
+      - name: Build Tino staging image
+        uses: docker/build-push-action@bcafcacb16a39f128d818304e6c9c0c18556b85f # v7.1.0
+        with:
+          context: .
+          file: Dockerfile
+          load: true
+          tags: |
+            ghcr.io/${{ github.repository }}:stable
+            ghcr.io/${{ github.repository }}:${{ github.sha }}
+          labels: |
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+          build-args: |
+            TINO_GIT_SHA=${{ github.sha }}
+            TINO_IMAGE_NAME=ghcr.io/${{ github.repository }}
+      - name: Smoke-test exact image revision before publication
+        env:
+          IMAGE: ghcr.io/${{ github.repository }}:stable
+          REPOSITORY: ${{ github.repository }}
+          REVISION: ${{ github.sha }}
+        run: |
+          docker run --rm --entrypoint cat "$IMAGE" /etc/hermes/image-provenance.json > "$RUNNER_TEMP/tino-provenance.json"
+          python3 - <<'PY'
+          import json, os
+          from pathlib import Path
+          actual = json.loads((Path(os.environ['RUNNER_TEMP']) / 'tino-provenance.json').read_text())
+          assert actual['image'] == 'ghcr.io/' + os.environ['REPOSITORY']
+          assert actual['revision'] == os.environ['REVISION']
+          PY
+          docker run --rm "$IMAGE" dump
+      - name: Sign in to this repository's GHCR package
+        uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121 # v4.1.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Publish only the tested image
+        env:
+          IMAGE: ghcr.io/${{ github.repository }}
+          REVISION: ${{ github.sha }}
+        run: |
+          docker tag "$IMAGE:stable" "$IMAGE:$REVISION"
+          docker push "$IMAGE:$REVISION"
+          docker push "$IMAGE:stable"

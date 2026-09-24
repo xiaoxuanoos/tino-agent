@@ -1,6 +1,6 @@
 """Rekey profile-local checkpoint projects after a named profile directory moves (#112973).
 
-The checkpoint store lives under ``HERMES_HOME/checkpoints`` and therefore moves with a renamed
+The checkpoint store lives under ``TINO_HOME/checkpoints`` and therefore moves with a renamed
 profile, but project identity inside it (ref, ``projects/<hash>.json``, agent-write ledger) is a
 hash of the absolute workdir. Every workdir beneath the profile home gets a new hash after the
 rename, so its history stays on disk yet unreachable from the new path until it is rekeyed here.

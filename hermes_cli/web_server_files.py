@@ -10,7 +10,7 @@ from pathlib import Path
 from typing import Any, Dict
 
 
-_MANAGED_FILES_ROOT_ENV = "HERMES_DASHBOARD_FILES_ROOT"
+_MANAGED_FILES_ROOT_ENV = "TINO_DASHBOARD_FILES_ROOT"
 _HOSTED_MANAGED_FILES_ROOT = Path("/opt/data")
 
 
@@ -82,7 +82,7 @@ def _path_text(raw_path: str | None) -> str:
 
 
 def _default_hermes_root_is_opt_data() -> bool:
-    raw = os.environ.get("HERMES_HOME", "").strip()
+    raw = os.environ.get("TINO_HOME", "").strip()
     if not raw:
         return False
     try:
@@ -102,6 +102,10 @@ def _dashboard_local_update_managed_externally() -> bool:
     the update button is the correct path. pip stays blocked in containers: its
     apply path mutates the running container filesystem.
     """
+    # A branded fork must only be upgraded through its own release pipeline.
+    # The upstream CLI updater could replace Tino's application code in place.
+    if os.environ.get("TINO_AGENT_BRANDED") == "1":
+        return True
     from hermes_cli.web_server import PROJECT_ROOT
     from hermes_cli.config import detect_install_method
     if _default_hermes_root_is_opt_data():
@@ -128,8 +132,8 @@ def _managed_files_policy(request: Request, *, create_root: bool = True) -> Mana
         return ManagedFilesPolicy(default_path=root, locked_root=root, can_change_path=False)
 
     # Remote/OAuth access does not imply a hosted container (a gated macOS launchd
-    # install still browses its home). Lock to /opt/data only when the Hermes
-    # root actually IS /opt/data or HERMES_DASHBOARD_FILES_ROOT is set.
+    # install still browses its home). Lock to /opt/data only when the Tino
+    # root actually IS /opt/data or TINO_DASHBOARD_FILES_ROOT is set.
     if _default_hermes_root_is_opt_data():
         root = _ensure_managed_root(_HOSTED_MANAGED_FILES_ROOT) if create_root else _HOSTED_MANAGED_FILES_ROOT
         return ManagedFilesPolicy(default_path=root, locked_root=root, can_change_path=False)

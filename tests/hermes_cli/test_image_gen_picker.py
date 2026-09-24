@@ -108,7 +108,7 @@ class TestConfigPrompt:
         not force a setup prompt on the user."""
         from hermes_cli import tools_config
 
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("TINO_HOME", str(tmp_path))
         monkeypatch.delenv("FAL_KEY", raising=False)
 
         image_gen_registry.register_provider(_FakeProvider("avail-img", available=True))
@@ -123,7 +123,7 @@ class TestConfigWriting:
         ``image_gen.provider`` and ``image_gen.model``."""
         from hermes_cli import tools_config
 
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("TINO_HOME", str(tmp_path))
         image_gen_registry.register_provider(_FakeProvider("noenv", schema={
             "name": "NoEnv",
             "badge": "free",
@@ -197,11 +197,11 @@ class TestCodexOAuthBootstrapHook:
 
     def test_hook_prints_auth_command_instead_of_device_login_when_noninteractive(self, monkeypatch, capsys):
         """Desktop's PostSetupRunner spawns `hermes tools post-setup openai_codex` with stdin=DEVNULL and
-        HERMES_NONINTERACTIVE=1: nobody can complete a device-code login there, so the hook must name
+        TINO_NONINTERACTIVE=1: nobody can complete a device-code login there, so the hook must name
         the real command and return instead of starting one."""
         from hermes_cli import auth, tools_config_post_setup
 
-        monkeypatch.setenv("HERMES_NONINTERACTIVE", "1")
+        monkeypatch.setenv("TINO_NONINTERACTIVE", "1")
         monkeypatch.setattr(auth, "get_codex_auth_status", lambda: {"logged_in": False})
         monkeypatch.setattr("hermes_cli.setup.prompt_choice", lambda *a, **kw: 0)
         monkeypatch.setattr(auth, "_codex_device_code_login",

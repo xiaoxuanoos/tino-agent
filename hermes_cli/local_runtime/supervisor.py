@@ -13,6 +13,7 @@ from contextlib import suppress
 from functools import lru_cache
 import json
 import logging
+import os
 import secrets
 import socket
 import subprocess
@@ -41,7 +42,7 @@ _DEFAULT_PORT = 18434
 
 
 def state_path() -> Path:
-    """Endpoint state for other Hermes processes (provider resolution routes llamacpp-alias
+    """Endpoint state for other Tino processes (provider resolution routes llamacpp-alias
     requests at the managed server from this)."""
     return runtimes_root() / "server.json"
 
@@ -83,11 +84,16 @@ def _stable_api_key() -> str:
     with suppress(OSError):
         existing = key_path.read_text(encoding="utf-8").strip()
         if len(existing) >= 16:
+            with suppress(OSError):
+                key_path.chmod(0o600)
             return existing
     key = secrets.token_urlsafe(24)
     try:
         key_path.parent.mkdir(parents=True, exist_ok=True)
-        key_path.write_text(key, encoding="utf-8")
+        fd = os.open(key_path, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+        with os.fdopen(fd, "w", encoding="utf-8") as key_file:
+            key_file.write(key)
+        key_path.chmod(0o600)
     except OSError as exc:
         logger.warning("could not persist api key (%s); sessions will need "
                        "a re-pick after restart", exc)
@@ -107,7 +113,7 @@ def _direct_io_args(executable: Path) -> tuple[str, ...]:
 
 
 class LlamaServerSupervisor:
-    """Own one llama-server router process for the life of a Hermes session."""
+    """Own one llama-server router process for the life of a Tino session."""
 
     # A model that has gone quiet gets its VRAM back after this long. A constant, not a knob:
     # long enough that an active conversation never trips it, short enough that a wandered-off
@@ -193,8 +199,15 @@ class LlamaServerSupervisor:
         if self._log_handle is not None:
             # The crash-restart loop calls _spawn repeatedly; each restart would leak one fd.
             _quiet(self._log_handle.close)
-        self._log_handle = open(self.log_path, "a", encoding="utf-8", errors="replace")
-        self._log_handle.write(f"\n# spawn: {cmd}\n")
+        log_fd = os.open(self.log_path, os.O_WRONLY | os.O_CREAT | os.O_APPEND, 0o600)
+        with suppress(OSError):
+            self.log_path.chmod(0o600)
+        self._log_handle = os.fdopen(log_fd, "a", encoding="utf-8", errors="replace")
+        # Never record argv here: it contains the persistent --api-key and may
+        # also contain credentials supplied through extra_args.
+        self._log_handle.write(
+            f"\n# spawn: llama-server router port={self.port} models_max={self.models_max}\n"
+        )
         self._log_handle.flush()
         # list-args, never a shell: spaced paths (user homes) must survive.
         self.proc, self._job = spawn_server(cmd, stdout=self._log_handle,

@@ -2103,7 +2103,7 @@ export function resetLayoutTree() {
 
 // Dev hook for automation.
 if ((import.meta.env.DEV || import.meta.env.VITE_PERF_PROBE === '1') && typeof window !== 'undefined') {
-  ;(window as unknown as Record<string, unknown>).__HERMES_LAYOUT_TREE__ = {
+  ;(window as unknown as Record<string, unknown>).__TINO_LAYOUT_TREE__ = {
     close: closeTreePane,
     dismissed: () => $dismissedPanes.get(),
     get: () => $layoutTree.get(),

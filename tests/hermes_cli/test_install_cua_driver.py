@@ -346,7 +346,7 @@ class TestInstallCuaDriverUpgrade:
     def test_install_target_writability_is_probed_for_real_on_macos(self):
         """The ``_cua_install_target_writable`` seam the two tests above patch.
 
-        ``macos_only``: ``/Applications`` is the only install target Hermes
+        ``macos_only``: ``/Applications`` is the only install target Tino
         checks, and the probe short-circuits to True on every other platform —
         so this is the one host where the real filesystem answer means
         anything.
@@ -388,7 +388,7 @@ class TestInstallCuaDriverUpgrade:
         incompatible = {
             "ready": False,
             "version": "0.19.4",
-            "reason": "Hermes computer use requires cua-driver 0.20.0 or newer",
+            "reason": "Tino computer use requires cua-driver 0.20.0 or newer",
         }
         repaired = {"ready": True, "version": "0.20.0", "reason": ""}
         with patch.object(
@@ -418,11 +418,11 @@ class TestInstallCuaDriverUpgrade:
     def test_incompatible_explicit_override_is_not_replaced(self, monkeypatch):
         from hermes_cli import tools_config_cua as tools_config
 
-        monkeypatch.setenv("HERMES_CUA_DRIVER_CMD", "/opt/custom/cua-driver")
+        monkeypatch.setenv("TINO_CUA_DRIVER_CMD", "/opt/custom/cua-driver")
         incompatible = {
             "ready": False,
             "version": "0.19.4",
-            "reason": "Hermes computer use requires cua-driver 0.20.0 or newer",
+            "reason": "Tino computer use requires cua-driver 0.20.0 or newer",
         }
         with patch.object(
                  tools_config,
@@ -445,7 +445,7 @@ class TestInstallCuaDriverUpgrade:
     ):
         from hermes_cli import tools_config_cua as tools_config
 
-        monkeypatch.setenv("HERMES_CUA_DRIVER_CMD", "/missing/custom/cua-driver")
+        monkeypatch.setenv("TINO_CUA_DRIVER_CMD", "/missing/custom/cua-driver")
         with patch.object(
                  tools_config,
                  "_resolved_cua_driver_cmd",
@@ -564,7 +564,7 @@ class TestRequireConfirmedUpdate:
         incompatible = {
             "ready": False,
             "version": "0.19.3",
-            "reason": "Hermes computer use requires cua-driver 0.20.0 or newer",
+            "reason": "Tino computer use requires cua-driver 0.20.0 or newer",
         }
         ok, runner, info = self._install(
             None,
@@ -630,7 +630,7 @@ class TestRequireConfirmedUpdate:
         reason="automatic Windows updates must not launch an interactive repair",
     )
     def test_incompatible_driver_repairs_on_posix_despite_indeterminate_check(self):
-        """Hermes' own version floor is the confirmation. When the installed
+        """Tino' own version floor is the confirmation. When the installed
         driver fails the runtime contract, the `hermes update` refresh must
         repair it even though ``check-update`` can't confirm a newer release
         (its ~20h cache routinely lags a same-day floor bump — the 0.19.3
@@ -642,7 +642,7 @@ class TestRequireConfirmedUpdate:
         incompatible = {
             "ready": False,
             "version": "0.19.3",
-            "reason": "Hermes computer use requires cua-driver 0.20.0 or newer",
+            "reason": "Tino computer use requires cua-driver 0.20.0 or newer",
         }
         with patch.object(tools_config.shutil, "which",
                           side_effect=lambda n: "/x/" + n
@@ -1632,7 +1632,7 @@ class TestWindowsAutostartRepair:
 class TestCuaVersionSummary:
     """`hermes computer-use status` prints one line, whatever the binary says.
 
-    A binary chosen by HERMES_CUA_DRIVER_CMD is under no obligation to answer
+    A binary chosen by TINO_CUA_DRIVER_CMD is under no obligation to answer
     `--version` the way cua-driver does, and its output used to be spliced
     verbatim into the status line.
     """

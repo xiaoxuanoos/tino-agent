@@ -2,7 +2,7 @@
 #
 # WHY THIS EXISTS (the frozen-binary problem): the Desktop's Update button
 # used to hand off exclusively to the staged Tauri binary
-# (%HERMES_HOME%\hermes-setup.exe). That binary has no self-update path --
+# (%TINO_HOME%\hermes-setup.exe). That binary has no self-update path --
 # copy_self_to_hermes_home deliberately no-ops during --update -- so every
 # updater-side fix (cache refresh #67369, marker self-adopt #74782, straggler
 # handling) only reaches users when a new installer is built, signed, and
@@ -19,7 +19,7 @@
 # CONTRACT (keep in sync with apps/desktop/electron/main.ts):
 #   cmd /d /s /c start "" /min powershell -NoProfile -ExecutionPolicy Bypass
 #     -File scripts\desktop-update\windows.ps1
-#     -InstallRoot <path>   repo checkout (HERMES_HOME\hermes-agent)
+#     -InstallRoot <path>   repo checkout (TINO_HOME\hermes-agent)
 #     -Branch <ref>         branch to update against
 #     -DesktopPid <pid>     the Electron main process to wait out
 #     [-RelaunchExe <path>] Hermes.exe to start when done (omit = no relaunch)
@@ -33,9 +33,9 @@
 # .hermes-update-result.json for the relaunched Desktop to surface, and
 # relaunches the Desktop so the user is never left stranded.
 #
-# Marker: we claim HERMES_HOME\.hermes-update-in-progress with OUR pid as
+# Marker: we claim TINO_HOME\.hermes-update-in-progress with OUR pid as
 # step 0 (the wrapper cmd.exe pid the Desktop saw is useless -- it exits
-# immediately), retaining HERMES_UPDATE_STARTED_AT from the Desktop hand-off.
+# immediately), retaining TINO_UPDATE_STARTED_AT from the Desktop hand-off.
 # hermes_cli/update_lock.py's ancestry rule lets our
 # `hermes update` child adopt the claim; electron/update-marker.ts parks a
 # relaunched Desktop on it. Cleanup only removes the marker while WE still
@@ -760,9 +760,9 @@ function Start-DesktopRelaunch {
 # Overridable so the pipe-drain self-test does not have to sit out the real
 # grace; not documented as a user knob.
 $script:StepDrainGraceSeconds = 20
-if ($env:HERMES_UPDATE_PIPE_DRAIN_SECONDS) {
+if ($env:TINO_UPDATE_PIPE_DRAIN_SECONDS) {
     $parsedGrace = 0
-    if ([int]::TryParse($env:HERMES_UPDATE_PIPE_DRAIN_SECONDS, [ref]$parsedGrace) -and $parsedGrace -ge 0) {
+    if ([int]::TryParse($env:TINO_UPDATE_PIPE_DRAIN_SECONDS, [ref]$parsedGrace) -and $parsedGrace -ge 0) {
         $script:StepDrainGraceSeconds = $parsedGrace
     }
 }
@@ -774,9 +774,9 @@ if ($env:HERMES_UPDATE_PIPE_DRAIN_SECONDS) {
 # every step is assigned to a private, non-breakaway Windows job and a timed-out
 # step is retryable only after that job reports zero active processes.
 $script:StepIdleTimeoutSeconds = 600
-if ($env:HERMES_UPDATE_STEP_IDLE_SECONDS) {
+if ($env:TINO_UPDATE_STEP_IDLE_SECONDS) {
     $parsedIdle = 0
-    if ([int]::TryParse($env:HERMES_UPDATE_STEP_IDLE_SECONDS, [ref]$parsedIdle) -and $parsedIdle -gt 0) {
+    if ([int]::TryParse($env:TINO_UPDATE_STEP_IDLE_SECONDS, [ref]$parsedIdle) -and $parsedIdle -gt 0) {
         $script:StepIdleTimeoutSeconds = $parsedIdle
     }
 }
@@ -791,8 +791,8 @@ if ($env:HERMES_UPDATE_STEP_IDLE_SECONDS) {
 # Overridable so the pipe-drain self-test can point it at its own file; not
 # documented as a user knob.
 $script:StepProgressLogPath = Join-Path $LogDir "update.log"
-if ($env:HERMES_UPDATE_PROGRESS_LOG) {
-    $script:StepProgressLogPath = $env:HERMES_UPDATE_PROGRESS_LOG
+if ($env:TINO_UPDATE_PROGRESS_LOG) {
+    $script:StepProgressLogPath = $env:TINO_UPDATE_PROGRESS_LOG
 }
 
 function Get-StepProgressLogStamp {
@@ -1203,8 +1203,8 @@ $script:TreeSafeToFinalize = $true
 # Manual QA for the Edge shell without a checkout or a real update. Exits
 # before the marker/desktop/venv machinery — touches nothing. Off Windows
 # (or without Edge) the loopback server still starts and the URL prints, so
-# the page can be QA'd in any browser; HERMES_SELFTEST_FAIL=1 exercises the
-# error state, HERMES_SELFTEST_HOLD_SECONDS delays the terminal event.
+# the page can be QA'd in any browser; TINO_SELFTEST_FAIL=1 exercises the
+# error state, TINO_SELFTEST_HOLD_SECONDS delays the terminal event.
 if ($SelfTestUi) {
     New-Item -ItemType Directory -Path $LogDir -Force -ErrorAction SilentlyContinue | Out-Null
     Show-ProgressWindow
@@ -1219,10 +1219,10 @@ if ($SelfTestUi) {
     }
     Write-HandoffLog "SELF-TEST: shim simulation (no update will run)"
     $hold = 6
-    if ($env:HERMES_SELFTEST_HOLD_SECONDS) { $hold = [int]$env:HERMES_SELFTEST_HOLD_SECONDS }
+    if ($env:TINO_SELFTEST_HOLD_SECONDS) { $hold = [int]$env:TINO_SELFTEST_HOLD_SECONDS }
     Publish-UiProgress "Testing quiet update"
     Start-Sleep -Seconds $hold
-    if ($env:HERMES_SELFTEST_FAIL) {
+    if ($env:TINO_SELFTEST_FAIL) {
         Show-ErrorFinale "self-test error state"
     } else {
         Close-ProgressWindow
@@ -1257,9 +1257,9 @@ if ($SelfTestUi) {
 if ($SelfTestPipeDrain) {
     New-Item -ItemType Directory -Path $LogDir -Force -ErrorAction SilentlyContinue | Out-Null
     $hold = 60
-    if ($env:HERMES_SELFTEST_HOLD_SECONDS) { $hold = [int]$env:HERMES_SELFTEST_HOLD_SECONDS }
+    if ($env:TINO_SELFTEST_HOLD_SECONDS) { $hold = [int]$env:TINO_SELFTEST_HOLD_SECONDS }
     $floodKb = 8192
-    if ($env:HERMES_SELFTEST_FLOOD_KB) { $floodKb = [int]$env:HERMES_SELFTEST_FLOOD_KB }
+    if ($env:TINO_SELFTEST_FLOOD_KB) { $floodKb = [int]$env:TINO_SELFTEST_FLOOD_KB }
     # $PSHOME is this interpreter's own directory -- no hardcoded system path.
     $powershell = Join-Path $PSHOME "powershell.exe"
     $stamp = [Guid]::NewGuid().ToString("N")
@@ -1443,7 +1443,7 @@ try {
     try {
         $epoch = [DateTimeOffset]::UtcNow.ToUnixTimeSeconds()
         $startedAt = 0L
-        $hasStartedAt = [int64]::TryParse($env:HERMES_UPDATE_STARTED_AT, [ref]$startedAt)
+        $hasStartedAt = [int64]::TryParse($env:TINO_UPDATE_STARTED_AT, [ref]$startedAt)
         if (-not $hasStartedAt -or $startedAt -gt $epoch -or ($epoch - $startedAt) -gt 1200) {
             $startedAt = $epoch
         }
@@ -1463,7 +1463,7 @@ try {
 
     # StartAssigned passes a null CreateProcess currentDirectory, so children
     # inherit the hand-off process directory rather than PowerShell's $PWD.
-    # Desktop launches us from HERMES_HOME; pin the process directory to the
+    # Desktop launches us from TINO_HOME; pin the process directory to the
     # checkout before any update child can resolve files against the wrong tree.
     try {
         $resolvedInstallRoot = Set-InstallRootCurrentDirectory $InstallRoot

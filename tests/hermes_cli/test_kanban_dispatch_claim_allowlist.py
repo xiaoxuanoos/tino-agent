@@ -1,6 +1,6 @@
 """kanban.dispatch_profiles: per-home claim allowlist for shared boards (#110995).
 
-On a board shared across Hermes homes (one kanban.db mounted in several
+On a board shared across Tino homes (one kanban.db mounted in several
 containers) every home's ``profile_exists("default")`` is True, so any home's
 dispatcher could claim cards assigned to ``default``. The allowlist wraps the
 same predicate consumed by the spawn gate and the spawnable telemetry, so a
@@ -20,10 +20,10 @@ from hermes_cli import kanban_db_dispatch as kbd
 
 @pytest.fixture
 def kanban_home(tmp_path, monkeypatch):
-    """Isolated HERMES_HOME with an empty kanban DB."""
+    """Isolated TINO_HOME with an empty kanban DB."""
     home = tmp_path / ".hermes"
     home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("TINO_HOME", str(home))
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
     kb.init_db()
     return home

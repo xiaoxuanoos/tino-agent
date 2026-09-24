@@ -1,4 +1,4 @@
-"""Hermes update pipeline: dispatchers (``_cmd_update_impl``/``_cmd_update_check``) + git plumbing.
+"""Tino update pipeline: dispatchers (``_cmd_update_impl``/``_cmd_update_check``) + git plumbing.
 
 Each concern lives in ``update_cmd_<concern>.py`` and is re-imported here so
 ``hermes_cli.update_cmd.<name>`` keeps resolving (and stays monkeypatchable). Imports are one-way:
@@ -338,11 +338,11 @@ def _refuse_update_for_contended_shims(exc: BaseException) -> None:
 
     See #87331.
     """
-    print("✗ Cannot continue the update: live Hermes launcher(s) could not be")
+    print("✗ Cannot continue the update: live Tino launcher(s) could not be")
     print("  moved aside:")
     for name in getattr(exc, "failed_shims", []) or ["hermes.exe"]:
         print(f"    {name}")
-    print("  Another process is holding this install's venv — typically Hermes")
+    print("  Another process is holding this install's venv — typically Tino")
     print("  Desktop, a gateway, or another hermes REPL — and mutating the venv")
     print("  now would strand it half-updated.")
     print("  The dependency install has been deferred: close the process(es)")
@@ -419,7 +419,7 @@ def _format_concurrent_instances_message(matches: list[tuple[int, str]], scripts
         f"  Updating now would fail to overwrite {shim} because",
         "  Windows blocks REPLACE on a running executable.",
         "",
-        "  Close Hermes Desktop, exit any open `hermes` REPLs, and",
+        "  Close Tino Desktop, exit any open `hermes` REPLs, and",
         "  stop the gateway (`hermes gateway stop`) before retrying.",
         ""]
     if matches:
@@ -661,7 +661,7 @@ def _repair_venv_on_current_checkout(
     healthy_after, detail_after = _venv_core_imports_healthy()
     if not healthy_after:
         print(f"⚠ Venv still unhealthy after repair: {detail_after}")
-        print("  Close all Hermes windows/gateways and re-run: hermes update")
+        print("  Close all Tino windows/gateways and re-run: hermes update")
         return False
     print("✓ Dependencies repaired!")
     # The hand-off child never reaches the commits-pulled Node/web/Desktop
@@ -766,7 +766,7 @@ def _repair_current_checkout(
         print()
         print("⚠ Restart required to finish the managed Python runtime repair.")
         print(
-            "  Any running Hermes gateways, Desktop backends, or other "
+            "  Any running Tino gateways, Desktop backends, or other "
             "long-lived processes still use the previous runtime.")
         print("  Restart each of them to pick up the repaired runtime.")
     return current_checkout_complete
@@ -1091,7 +1091,7 @@ def _begin_update_receipt_and_plan(args):
 
     # Plan phase: snapshot runtimes/supervisors/version (read-only; probe failure records
     # nothing). Re-read AFTER the restart phase to reconcile — the plan is the worklist.
-    # Plan phase (#91277 Phase 2): snapshot the pre-update fleet — every running Hermes runtime, its
+    # Plan phase (#91277 Phase 2): snapshot the pre-update fleet — every running Tino runtime, its
     # supervisor, and its running code version — into the receipt, so a post-mortem can compare what the
     # update SAW against what it did. ``_pre_update_plan`` is read again AFTER the restart phase to
     # reconcile every planned runtime against the phase's bookkeeping (restart via declared mechanism — the
@@ -1225,7 +1225,7 @@ def _handle_update_called_process_error(
             print(f"✗ {stage} (the code update itself succeeded).")
             _print_called_process_error_tail(e)
             print()
-            print("  Hermes may not start until the dependencies are installed. Fix the error above")
+            print("  Tino may not start until the dependencies are installed. Fix the error above")
             print("  (usually network or disk space), then run `hermes update` again.")
             if _m()._is_windows():
                 print("  If `hermes update` itself will not start, retry through the venv interpreter:")
@@ -1551,7 +1551,7 @@ def _cmd_update_impl(args, gateway_mode: bool):
         _run_post_swap_phase(args, gateway_mode)
         return
 
-    print("☤ Updating Hermes Agent...")
+    print("☤ Updating Tino Agent...")
     print()
 
     _pre_update_plan = _begin_update_receipt_and_plan(args)

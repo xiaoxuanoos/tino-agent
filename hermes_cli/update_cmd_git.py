@@ -238,7 +238,7 @@ def _offer_upstream_remote(git_cmd: list[str], cwd: Path, *, assume_yes: bool, i
     ``--yes`` means "don't block", not "mutate my remotes", so a non-interactive skip is NOT persisted."""
     from hermes_cli.update_cmd import _add_upstream_remote, _mark_skip_upstream_prompt
     print(
-        "\nℹ Your fork is not tracking the official Hermes repository.\n"
+        "\nℹ Your fork is not tracking the official Tino repository.\n"
         "  This means you may miss updates from NousResearch/hermes-agent.\n"
     )
     if assume_yes or (input_fn is None and not (sys.stdin.isatty() and sys.stdout.isatty())):
@@ -377,10 +377,10 @@ def _git_is_trampoline(git_cmd: list) -> bool:
 
 def _portable_git_candidates() -> list:
     """PortableGit candidates: shared root first (where the managed tree actually lives, not the
-    profile-scoped HERMES_HOME), then profile home as a fallback for custom layouts.
+    profile-scoped TINO_HOME), then profile home as a fallback for custom layouts.
 
-    The Hermes-managed PortableGit tree lives under the SHARED root (``<root>/git/...``), not the
-    profile-scoped HERMES_HOME (``<root>/profiles/<name>``), so a profile-scoped ``hermes update`` must look
+    The Tino-managed PortableGit tree lives under the SHARED root (``<root>/git/...``), not the
+    profile-scoped TINO_HOME (``<root>/profiles/<name>``), so a profile-scoped ``hermes update`` must look
     there (monerostar review, #87876).
     """
     from hermes_cli.update_cmd import get_default_hermes_root, get_hermes_home

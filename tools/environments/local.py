@@ -21,7 +21,7 @@ from tools.environments.base import BaseEnvironment
 from tools.environments.base_output import _pipe_stdin
 from hermes_cli._subprocess_compat import windows_hide_flags
 from tools.environments.local_env_policy import (
-    _ALWAYS_STRIP_KEYS, _HERMES_PROVIDER_ENV_BLOCKLIST, _HERMES_PROVIDER_ENV_FORCE_PREFIX,
+    _ALWAYS_STRIP_KEYS, _TINO_PROVIDER_ENV_BLOCKLIST, _TINO_PROVIDER_ENV_FORCE_PREFIX,
     _is_hermes_internal_secret, _is_terminal_first_party_env,
     _matches_terminal_first_party_prefix, _plugin_terminal_env_strip_keys, strip_profile_gate_env)
 from tools.environments.local_gitbash_probe import (
@@ -36,7 +36,7 @@ _IS_WINDOWS = platform.system() == "Windows"
 logger = logging.getLogger(__name__)
 
 # --- Terminal temp-cache pruning ---
-# get_temp_dir() defaults to HERMES_HOME/cache/terminal (real storage, not tmpfs), so
+# get_temp_dir() defaults to TINO_HOME/cache/terminal (real storage, not tmpfs), so
 # stale artifacts don't vanish on reboot: the gateway housekeeping loop prunes hourly
 # and a once-per-process sweep covers CLI-only installs.
 TERMINAL_TEMP_MAX_AGE_HOURS = 72
@@ -49,7 +49,7 @@ _BG_GROUP_RE = re.compile(r"^(hermes_bg_[A-Za-z0-9_-]+)\.(log|pid|exit)$")
 
 
 def _default_terminal_temp_dir() -> "Path | None":
-    """Return HERMES_HOME/cache/terminal, or None if unresolvable."""
+    """Return TINO_HOME/cache/terminal, or None if unresolvable."""
     try:
         from hermes_constants import get_hermes_home
         return get_hermes_home() / "cache" / "terminal"
@@ -203,18 +203,18 @@ def _resolve_safe_cwd(cwd: str) -> str:
 
 # --- Child-process environment construction ---
 def _apply_profile_home(env: dict) -> None:
-    """Bridge the context-local HERMES_HOME override, then the subprocess HOME contract."""
+    """Bridge the context-local TINO_HOME override, then the subprocess HOME contract."""
     from hermes_constants import apply_subprocess_home_env, get_hermes_home_override
     try:
         if value := get_hermes_home_override():
-            env["HERMES_HOME"] = value
+            env["TINO_HOME"] = value
     except Exception:
         pass
     apply_subprocess_home_env(env)
 
 
 def _inject_session_context_env(env: dict) -> None:
-    """Bridge gateway session ContextVars (HERMES_SESSION_*) into a child env.
+    """Bridge gateway session ContextVars (TINO_SESSION_*) into a child env.
     Cross-session leak guard: the vars' last-writer-wins ``os.environ`` mirror may
     belong to another turn on a concurrent multi-session host, so once the session
     context is engaged ContextVars are authoritative — a bound value (incl. "") wins
@@ -235,7 +235,7 @@ def _inject_session_context_env(env: dict) -> None:
 def _filter_secret_env(
     items: Mapping[str, str], out: dict, *, unwrap_force: bool,
     plugin_strip: frozenset = frozenset()) -> None:
-    """Copy *items* into *out*, dropping Hermes-managed secrets. ``_HERMES_FORCE_<NAME>``
+    """Copy *items* into *out*, dropping Tino-managed secrets. ``_TINO_FORCE_<NAME>``
     unwraps to ``NAME`` when ``unwrap_force`` (caller extras / terminal env), else is
     dropped. Blocklisted names survive only via env_passthrough registration or as
     context-entitled first-party ``BUZZ_*`` vars; the latter are used directly, never
@@ -245,10 +245,10 @@ def _filter_secret_env(
     except Exception:
         is_env_passthrough, resolve_passthrough_value = (lambda _: False), (lambda _n, fb: fb)
     for key, value in items.items():
-        if key.startswith(_HERMES_PROVIDER_ENV_FORCE_PREFIX):
+        if key.startswith(_TINO_PROVIDER_ENV_FORCE_PREFIX):
             if not unwrap_force:
                 continue
-            key = key[len(_HERMES_PROVIDER_ENV_FORCE_PREFIX):]
+            key = key[len(_TINO_PROVIDER_ENV_FORCE_PREFIX):]
             if not _is_hermes_internal_secret(key):
                 out[key] = value
             continue
@@ -256,7 +256,7 @@ def _filter_secret_env(
             continue
         first_party = _is_terminal_first_party_env(key)
         passthrough = is_env_passthrough(key)
-        if key in _HERMES_PROVIDER_ENV_BLOCKLIST and not (passthrough or first_party):
+        if key in _TINO_PROVIDER_ENV_BLOCKLIST and not (passthrough or first_party):
             continue
         if passthrough and not first_party:
             value = resolve_passthrough_value(key, value)
@@ -266,7 +266,7 @@ def _filter_secret_env(
 
 def _finalize_child_env(env: dict) -> dict:
     """Guards shared by every spawn surface: profile-home propagation, session-context
-    bridging, Hermes-owned PYTHONPATH + venv-marker strip, MSYS defaults, delegate_task
+    bridging, Tino-owned PYTHONPATH + venv-marker strip, MSYS defaults, delegate_task
     Kanban scrub. Returns the (possibly new) dict."""
     _apply_profile_home(env)
     _inject_session_context_env(env)
@@ -299,7 +299,7 @@ def _scrubbed_env(parts, plugin_strip: frozenset, fix_path) -> dict:
 
 
 def _sanitize_subprocess_env(base_env: dict | None, extra_env: dict | None = None) -> dict:
-    """Filter Hermes-managed secrets from a subprocess environment (background/PTY
+    """Filter Tino-managed secrets from a subprocess environment (background/PTY
     spawn path, search workers, computer-use driver, user-script runners)."""
     return _scrubbed_env([(base_env or {}, False), (extra_env or {}, True)],
                          _plugin_terminal_env_strip_keys(), lambda p: p)
@@ -321,9 +321,9 @@ def _scrub_credentials(env: dict, *, inherit_credentials: bool) -> dict:
     """Tier 1 (always) and, unless ``inherit_credentials``, Tier 2 provider/tool credentials, in place."""
     strip = _ALWAYS_STRIP_KEYS | _plugin_terminal_env_strip_keys()
     if not inherit_credentials:
-        strip |= _HERMES_PROVIDER_ENV_BLOCKLIST
+        strip |= _TINO_PROVIDER_ENV_BLOCKLIST
     for key in list(env):
-        if (key in strip or key.startswith(_HERMES_PROVIDER_ENV_FORCE_PREFIX)
+        if (key in strip or key.startswith(_TINO_PROVIDER_ENV_FORCE_PREFIX)
                 or _is_hermes_internal_secret(key)):
             del env[key]
     return env
@@ -337,7 +337,7 @@ def build_subprocess_env(
     ``scrub_secrets=True`` -> :func:`_sanitize_subprocess_env` (profile home inherent,
     ``inherit_profile_home`` ignored). ``scrub_secrets=False`` keeps the base
     byte-for-byte (git credential flows, ``bws``/``op``); ``inherit_profile_home``
-    bridges HERMES_HOME + HOME and ``extra`` is applied last so caller overrides win.
+    bridges TINO_HOME + HOME and ``extra`` is applied last so caller overrides win.
     ``strip_launch_profile`` drops the LAUNCH profile's ``.env`` residue from the base first
     (:func:`strip_launch_profile_env`; a no-op unless a routed home is active) so a child that
     acts for a routed profile sees only that profile's declared names, never the launch profile's."""
@@ -379,7 +379,7 @@ def served_profile_child_env(
     env = dict(base) if base is not None else hermes_subprocess_env(inherit_credentials=inherit_credentials)
     target = str(target_home or get_hermes_home_override() or "")
     if target:
-        env["HERMES_HOME"] = target
+        env["TINO_HOME"] = target
         apply_scratch_tmp_env(env)  # TMPDIR follows the served home, like HOME does
         if _is_routed_home(target):
             strip_launch_profile_env(env, target)
@@ -410,13 +410,13 @@ def _is_routed_home(target_home: "str | Path") -> bool:
 def strip_launch_profile_env(env: dict, target_home: "str | Path | None" = None) -> dict:
     """Drop the LAUNCH profile's residue from a child env built for another served profile.
     ``os.environ`` holds the default profile's ``.env`` and its bridged ``TERMINAL_*`` settings;
-    the secret scrub removes credentials but not settings (``HERMES_MODEL``, ``TERMINAL_ENV``,
-    ``HERMES_LANGUAGE``...), so a standalone ``hermes -p X`` worker and a served one saw different
+    the secret scrub removes credentials but not settings (``TINO_MODEL``, ``TERMINAL_ENV``,
+    ``TINO_LANGUAGE``...), so a standalone ``hermes -p X`` worker and a served one saw different
     envs. The child re-loads X's own ``.env`` and bridges X's config itself. ``target_home``
     defaults to the active home override; no-op when there is no target or the target IS the
     launch profile. The authority test is "does this task serve a routed home", not "is the
     gateway-wide multiplex flag on": the Desktop/dashboard backend serves ``?profile=B`` by
-    installing a HERMES_HOME override without that flag."""
+    installing a TINO_HOME override without that flag."""
     from agent.secret_scope import _is_global_env, load_env_file
     from hermes_constants import get_hermes_home_override, get_process_hermes_home
     target = target_home or get_hermes_home_override()
@@ -435,7 +435,7 @@ def strip_launch_profile_env(env: dict, target_home: "str | Path | None" = None)
 
 # --- Shell discovery ---
 def _windows_bash_candidates(custom: "str | None") -> list[str]:
-    """Ordered bash.exe candidates on Windows: HERMES_GIT_BASH_PATH, our portable Git
+    """Ordered bash.exe candidates on Windows: TINO_GIT_BASH_PATH, our portable Git
     under %LOCALAPPDATA%\\hermes\\git (PortableGit ``bin`` and MinGit ``usr\\bin``),
     known Git-for-Windows dirs, then PATH last — ``shutil.which`` may return WSL's
     bash, which fails silently on Windows paths."""
@@ -462,15 +462,15 @@ def _find_bash() -> str:
         return (shutil.which("bash")
                 or next((p for p in ("/usr/bin/bash", "/bin/bash") if os.path.isfile(p)), None)
                 or os.environ.get("SHELL") or "/bin/sh")
-    custom = os.environ.get("HERMES_GIT_BASH_PATH")
+    custom = os.environ.get("TINO_GIT_BASH_PATH")
     candidates = _windows_bash_candidates(custom)
-    # First candidate that can actually start wins: a stale HERMES_GIT_BASH_PATH
+    # First candidate that can actually start wins: a stale TINO_GIT_BASH_PATH
     # pointing at a broken install must not beat a healthy portable Git.
     for candidate in candidates:
         if _bash_starts(candidate):
             if candidate != custom and custom and os.path.isfile(custom):
                 logger.warning(
-                    "HERMES_GIT_BASH_PATH=%s fails to start; using %s instead", custom, candidate)
+                    "TINO_GIT_BASH_PATH=%s fails to start; using %s instead", custom, candidate)
             return candidate
     if candidates:
         probe_details = "\n".join(
@@ -481,9 +481,9 @@ def _find_bash() -> str:
         # real bash error instead of a less useful "not found".
         return candidates[0]
     raise RuntimeError(
-        "Git Bash not found. Hermes Agent requires Git for Windows on Windows.\n"
+        "Git Bash not found. Tino Agent requires Git for Windows on Windows.\n"
         "Install it from: https://git-scm.com/download/win\n"
-        "Or set HERMES_GIT_BASH_PATH to your bash.exe location.")
+        "Or set TINO_GIT_BASH_PATH to your bash.exe location.")
 
 
 _git_bash_bin_dirs_cache: "list[str] | None" = None
@@ -554,7 +554,7 @@ _SANE_PATH = ("/opt/homebrew/bin:/opt/homebrew/sbin:"
 # Cached directory containing the ``hermes`` console-script.
 # ``_SENTINEL`` distinguishes "not resolved yet" from a resolved ``None``.
 _SENTINEL = object()
-_HERMES_BIN_DIR: "str | None | object" = _SENTINEL
+_TINO_BIN_DIR: "str | None | object" = _SENTINEL
 
 
 def _resolve_hermes_bin_dir() -> str | None:
@@ -562,9 +562,9 @@ def _resolve_hermes_bin_dir() -> str | None:
     launched by systemd/cron/a desktop launcher lacks the install dir on PATH and bare
     ``hermes`` exits 127. Order: ``which``; absolute ``sys.argv[0]`` naming a real
     hermes executable; ``sys.executable``'s dir if it holds the shim."""
-    global _HERMES_BIN_DIR
-    if _HERMES_BIN_DIR is not _SENTINEL:
-        return _HERMES_BIN_DIR  # type: ignore[return-value]
+    global _TINO_BIN_DIR
+    if _TINO_BIN_DIR is not _SENTINEL:
+        return _TINO_BIN_DIR  # type: ignore[return-value]
     which = shutil.which("hermes")
     argv0 = sys.argv[0] if sys.argv else ""
     base = os.path.basename(argv0).lower()
@@ -577,8 +577,8 @@ def _resolve_hermes_bin_dir() -> str | None:
         candidate = os.path.dirname(argv0)
     else:
         candidate = exe_dir if exe_dir and os.path.isfile(os.path.join(exe_dir, shim)) else None
-    _HERMES_BIN_DIR = candidate if candidate and os.path.isdir(candidate) else None
-    return _HERMES_BIN_DIR
+    _TINO_BIN_DIR = candidate if candidate and os.path.isdir(candidate) else None
+    return _TINO_BIN_DIR
 
 
 def _prepend_hermes_bin_dir(existing_path: str) -> str:
@@ -588,8 +588,8 @@ def _prepend_hermes_bin_dir(existing_path: str) -> str:
 
 
 def _managed_runtime_path_entries() -> list[str]:
-    """Existing Hermes-managed runtime dirs: ``$HERMES_HOME/node`` (+``/bin``) and
-    ``$HERMES_HOME/bin`` (managed ``uv``). Per call, not cached: home is
+    """Existing Tino-managed runtime dirs: ``$TINO_HOME/node`` (+``/bin``) and
+    ``$TINO_HOME/bin`` (managed ``uv``). Per call, not cached: home is
     profile-scoped and a managed tree can appear mid-process."""
     try:
         from hermes_constants import get_hermes_home, iter_hermes_node_dirs
@@ -635,7 +635,7 @@ def _apply_windows_msys_bash_env_defaults(env: dict) -> None:
 
     Git Bash rewrites arguments that look like Unix paths (``/FO``, ``/TN``, ``/Create``) into
     ``C:/.../git/FO``-style paths, which breaks native Windows commands such as ``tasklist``, ``schtasks``,
-    and ``wmic``. Hermes runs terminal commands through bash on Windows, so set the standard MSYS opt-out by
+    and ``wmic``. Tino runs terminal commands through bash on Windows, so set the standard MSYS opt-out by
     default. Refs #56700.
     MSYS2-proper and Cygwin bash (which ``_find_bash`` can still return via the final ``shutil.which``
     fallback) ignore it and honor ``MSYS2_ARG_CONV_EXCL`` instead, so set both. ``*`` disables all argv
@@ -661,12 +661,12 @@ def _make_run_env(env: dict) -> dict:
                          lambda p: _prepend_git_bash_dirs(_append_missing_sane_path_entries(p)))
 
 
-# --- Hermes venv / repo-root detection (module-level, computed once) ---
+# --- Tino venv / repo-root detection (module-level, computed once) ---
 # Owned here; read lazily by tools.environments.local_pythonpath (tests patch here).
 # The Electron app prepends the repo root to PYTHONPATH so the backend can ``import
 # tools``; other subprocesses must not inherit it. Aliases: launchers may emit other
-# spellings — the Windows gateway launcher renders Hermes-owned paths under the
-# configured HERMES_HOME spelling (possibly a junction to another drive).
+# spellings — the Windows gateway launcher renders Tino-owned paths under the
+# configured TINO_HOME spelling (possibly a junction to another drive).
 _hermes_repo_root: Path = Path(__file__).resolve().parents[2]
 _hermes_repo_root_aliases: tuple[Path, ...] = _build_hermes_repo_root_aliases(
     _hermes_repo_root, Path(__file__).absolute().parents[2], get_process_hermes_home())
@@ -805,7 +805,7 @@ class LocalEnvironment(BaseEnvironment):
 
     _sudo_nopasswd_probe_supported = True
     _profile_scoped_passthrough = True
-    # Commands run on the Hermes host itself — controller-side platform behavior
+    # Commands run on the Tino host itself — controller-side platform behavior
     # (macOS TCC pruning, etc.) legitimately applies here.
     is_local = True
 
@@ -826,11 +826,11 @@ class LocalEnvironment(BaseEnvironment):
 
     def get_temp_dir(self) -> str:
         """Shell-safe writable temp dir. Precedence: ``TERMINAL_TEMP_DIR``, TMPDIR/TMP/TEMP
-        (Termux has no system temp dir), ``HERMES_HOME/cache/terminal`` (real storage: a
-        tmpfs system temp dir fills under Hermes load; pruned by ``cleanup_terminal_temp_cache``),
+        (Termux has no system temp dir), ``TINO_HOME/cache/terminal`` (real storage: a
+        tmpfs system temp dir fills under Tino load; pruned by ``cleanup_terminal_temp_cache``),
         ``tempfile.gettempdir()``; backend env before process env so terminal.env
         overrides work. Windows: ``%TEMP%`` often has spaces that break unquoted bash,
-        so always the HERMES_HOME cache dir with forward slashes (bash- and Python-valid)."""
+        so always the TINO_HOME cache dir with forward slashes (bash- and Python-valid)."""
         if _IS_WINDOWS:
             cache_dir = (_default_terminal_temp_dir()
                          or Path(tempfile.gettempdir()) / "hermes_terminal")

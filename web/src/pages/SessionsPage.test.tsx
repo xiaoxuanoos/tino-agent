@@ -91,6 +91,7 @@ async function renderSessionsPage(rows: Record<string, unknown>[]) {
 }
 
 beforeEach(() => {
+  localStorage.setItem("tino-locale", "en");
   for (const fn of Object.values(apiMocks)) fn.mockReset();
   apiMocks.getStatus.mockResolvedValue({});
   apiMocks.getEmptySessionsCount.mockResolvedValue({ count: 0 });
@@ -116,6 +117,7 @@ afterEach(async () => {
   await act(async () => root?.unmount());
   container?.remove();
   vi.unstubAllGlobals();
+  localStorage.removeItem("tino-locale");
 });
 
 describe("SessionsPage per-row profile routing (#99387)", () => {

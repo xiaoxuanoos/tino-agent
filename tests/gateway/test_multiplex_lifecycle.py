@@ -7,7 +7,7 @@ from gateway.restart import GATEWAY_FATAL_CONFIG_EXIT_CODE
 
 class TestServedProfilesStatus:
     def test_write_and_read_served_profiles(self, tmp_path, monkeypatch):
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("TINO_HOME", str(tmp_path))
         import importlib
         import gateway.status as status
         importlib.reload(status)
@@ -26,7 +26,7 @@ def test_cron_profile_homes_serve_every_live_profile(tmp_path, monkeypatch):
     a tombstoned profile dir is skipped."""
     monkeypatch.setattr("pathlib.Path.home", lambda: tmp_path)
     default_home = tmp_path / ".hermes"
-    monkeypatch.setenv("HERMES_HOME", str(default_home))
+    monkeypatch.setenv("TINO_HOME", str(default_home))
     for name in ("worker", "guest", "gone"):
         (default_home / "profiles" / name).mkdir(parents=True)
         (default_home / "profiles" / name / "config.yaml").write_text("{}\n")  # identity marker
@@ -48,7 +48,7 @@ def test_cron_tick_homes_include_active_named_host(tmp_path, monkeypatch):
     for name in ("host", "worker"):
         (default_home / "profiles" / name).mkdir(parents=True)
         (default_home / "profiles" / name / "config.yaml").write_text("{}\n")  # identity marker
-    monkeypatch.setenv("HERMES_HOME", str(default_home / "profiles" / "host"))
+    monkeypatch.setenv("TINO_HOME", str(default_home / "profiles" / "host"))
 
     import gateway.run as gateway_run
 

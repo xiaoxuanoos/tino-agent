@@ -5,13 +5,13 @@ Hermetic-test invariants enforced here (see AGENTS.md for rationale):
 1. **No credential env vars.** All provider/credential-shaped env vars
    (ending in _API_KEY, _TOKEN, _SECRET, _PASSWORD, _CREDENTIALS, etc.)
    are unset before every test. Local developer keys cannot leak in.
-2. **Isolated HERMES_HOME.** HERMES_HOME points to a per-test tempdir so
+2. **Isolated TINO_HOME.** TINO_HOME points to a per-test tempdir so
    code reading ``~/.hermes/*`` via ``get_hermes_home()`` can't see the
    real one. (We do NOT also redirect HOME — that broke subprocesses in
    CI. Code using ``Path.home() / ".hermes"`` instead of the canonical
    ``get_hermes_home()`` is a bug to fix at the callsite.)
 3. **Deterministic runtime.** TZ=UTC, LANG=C.UTF-8, PYTHONHASHSEED=0.
-4. **No HERMES_SESSION_* inheritance** — the agent's current gateway
+4. **No TINO_SESSION_* inheritance** — the agent's current gateway
    session must not leak into tests.
 
 These invariants make the local test run match CI closely. Gaps that
@@ -37,14 +37,14 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 
-# ── Sandbox HERMES_HOME before ANY test module is imported ──────────────────
+# ── Sandbox TINO_HOME before ANY test module is imported ──────────────────
 # `hermes_cli/main.py` calls `setup_logging()` at MODULE level, which resolves
 # `get_hermes_home()` and attaches rotating file handlers to the ROOT logger.
 # So merely importing it - which many test modules do, directly or
 # transitively - points the whole pytest session's logging at the operator's
 # real `~/.hermes/logs/agent.log` and `errors.log`.
 #
-# The `_isolate_env` fixture below also sandboxes HERMES_HOME, but fixtures run
+# The `_isolate_env` fixture below also sandboxes TINO_HOME, but fixtures run
 # AFTER collection imports test modules, by which point the handler already
 # holds an absolute path to the real log. Measured on a live install: 126
 # warnings in the operator's agent.log came from test runs, not the gateway -
@@ -54,25 +54,25 @@ if str(PROJECT_ROOT) not in sys.path:
 # window. The per-test fixture still applies for everything after import.
 #
 # ORDER MATTERS: the kanban write guard's deny-list (further down) must know
-# the REAL Hermes root — capture it BEFORE the sandbox rewires HERMES_HOME,
+# the REAL Tino root — capture it BEFORE the sandbox rewires TINO_HOME,
 # otherwise the deny-list would point at the throwaway tempdir and the guard
 # would silently stop protecting the operator's actual ~/.hermes (#69385).
-_PRE_SANDBOX_KANBAN_OVERRIDE = os.environ.get("HERMES_KANBAN_HOME", "").strip()
-_PRE_SANDBOX_HERMES_HOME = os.environ.get("HERMES_HOME", "")
+_PRE_SANDBOX_KANBAN_OVERRIDE = os.environ.get("TINO_KANBAN_HOME", "").strip()
+_PRE_SANDBOX_TINO_HOME = os.environ.get("TINO_HOME", "")
 
 
 def _hermes_home_points_at_production(value: str) -> bool:
-    """True when a pre-set HERMES_HOME resolves to the real production root.
+    """True when a pre-set TINO_HOME resolves to the real production root.
 
     Gateway-launched shells (and developer shells that ``export
-    HERMES_HOME=~/.hermes``) hand pytest the PRODUCTION home. Historically
+    TINO_HOME=~/.hermes``) hand pytest the PRODUCTION home. Historically
     the session sandbox below honored any pre-set value, so collection-time
     imports (logging handlers, ``hermes_state.DEFAULT_DB_PATH``) froze paths
     inside the real ``~/.hermes`` — the escape vector that landed pytest
     fixture rows (chat-1 / wx-chat sessions, /tmp/pytest-of-* routing
     scopes) in the live state.db and flipped its journal mode under the
     WAL-mode gateway writer. Only a genuinely custom (non-production)
-    HERMES_HOME is honored now.
+    TINO_HOME is honored now.
     """
     if not value:
         return True
@@ -93,32 +93,32 @@ def _hermes_home_points_at_production(value: str) -> bool:
     return resolved.parent.name == "profiles" and resolved.parent.parent == real_root
 
 
-if _hermes_home_points_at_production(os.environ.get("HERMES_HOME", "")):
-    _SESSION_HERMES_HOME = tempfile.mkdtemp(prefix="hermes-test-home-")
-    os.environ["HERMES_HOME"] = _SESSION_HERMES_HOME
-    atexit.register(shutil.rmtree, _SESSION_HERMES_HOME, True)
+if _hermes_home_points_at_production(os.environ.get("TINO_HOME", "")):
+    _SESSION_TINO_HOME = tempfile.mkdtemp(prefix="hermes-test-home-")
+    os.environ["TINO_HOME"] = _SESSION_TINO_HOME
+    atexit.register(shutil.rmtree, _SESSION_TINO_HOME, True)
 
 # Subprocess-surviving isolation marker (#82770). PYTEST_CURRENT_TEST /
 # PYTEST_VERSION are pytest's own vars, and tests that spawn children
 # routinely rebuild the child env and strip them ("the subprocess must look
 # like a real CLI") — which used to disarm hermes_state's live-DB guard in
-# the child at the same moment the child lost the HERMES_HOME redirect.
-# HERMES_TEST_ISOLATION is OUR marker: exported here (before any test module
+# the child at the same moment the child lost the TINO_HOME redirect.
+# TINO_TEST_ISOLATION is OUR marker: exported here (before any test module
 # imports), inherited by every child by default, and honored by
 # hermes_state_guard._running_under_pytest() as a test-context signal. A child
 # that carries it and still resolves the production state.db fails hard.
 # Tests that legitimately need a child to look like a non-test process AND
-# open a real DB must export HERMES_STATE_DB_GUARD_BYPASS=1 in that child's
+# open a real DB must export TINO_STATE_DB_GUARD_BYPASS=1 in that child's
 # env instead of stripping markers.
-os.environ["HERMES_TEST_ISOLATION"] = os.environ.get("HERMES_HOME", "") or "1"
+os.environ["TINO_TEST_ISOLATION"] = os.environ.get("TINO_HOME", "") or "1"
 
-#: HERMES_HOME as it stood when conftest was imported - i.e. before any test
+#: TINO_HOME as it stood when conftest was imported - i.e. before any test
 #: module could import code that configures logging. Recorded so the guard in
 #: tests/test_log_isolation.py can assert the sandbox existed AT THAT MOMENT.
 #: Reading os.environ from inside a test is useless here: the per-test
 #: `_isolate_env` fixture has sandboxed it by then, so the check would pass
 #: even with this block removed.
-HERMES_HOME_AT_CONFTEST_IMPORT = os.environ.get("HERMES_HOME", "")
+TINO_HOME_AT_CONFTEST_IMPORT = os.environ.get("TINO_HOME", "")
 
 
 # ── Per-file process isolation ──────────────────────────────────────────────
@@ -258,9 +258,9 @@ def _looks_like_credential(name: str) -> bool:
     return any(name.endswith(suf) for suf in _CREDENTIAL_SUFFIXES)
 
 
-# HERMES_* vars that change test behavior by being set. Unset all of these
+# TINO_* vars that change test behavior by being set. Unset all of these
 # unconditionally — individual tests that need them set do so explicitly.
-_HERMES_BEHAVIORAL_VARS = frozenset({
+_TINO_BEHAVIORAL_VARS = frozenset({
     # Voice/TTS runtime flags. ``tui_gateway/server.py`` reads these straight
     # off ``os.environ`` at call time (``_voice_mode_enabled`` /
     # ``_voice_tts_enabled``) and, on every completed turn, hands the turn's
@@ -269,76 +269,76 @@ _HERMES_BEHAVIORAL_VARS = frozenset({
     # leak (from the shell, or from an earlier test that drove the
     # ``voice.toggle`` RPC, which writes ``os.environ`` directly) cannot carry
     # into the next test. See ``_audio_playback_guard`` for the second layer.
-    "HERMES_VOICE",
-    "HERMES_VOICE_TTS",
-    "HERMES_YOLO_MODE",
+    "TINO_VOICE",
+    "TINO_VOICE_TTS",
+    "TINO_YOLO_MODE",
     # Injected into subprocess envs by the terminal tool (_make_run_env), so
-    # any test run launched FROM a Hermes agent session inherits them and
+    # any test run launched FROM a Tino agent session inherits them and
     # hermes_constants home-resolution helpers prefer them over monkeypatched
     # HOME (test_subprocess_home_isolation red locally, green on CI).
-    "HERMES_REAL_HOME",
+    "TINO_REAL_HOME",
     "TERMINAL_HOME_MODE",
-    "HERMES_INTERACTIVE",
-    "HERMES_QUIET",
-    "HERMES_TOOL_PROGRESS",
-    "HERMES_TOOL_PROGRESS_MODE",
-    "HERMES_MAX_ITERATIONS",
-    "HERMES_SESSION_PLATFORM",
-    "HERMES_SESSION_CHAT_ID",
-    "HERMES_SESSION_CHAT_NAME",
-    "HERMES_SESSION_CHAT_TYPE",
-    "HERMES_SESSION_THREAD_ID",
-    "HERMES_SESSION_SOURCE",
-    "HERMES_SESSION_KEY",
-    "HERMES_GATEWAY_SESSION",
-    "HERMES_CRON_SESSION",
-    "_HERMES_GATEWAY",
-    "HERMES_PLATFORM",
-    "HERMES_MODEL",
-    "HERMES_INFERENCE_MODEL",
-    "HERMES_INFERENCE_PROVIDER",
-    "HERMES_TUI_PROVIDER",
-    "HERMES_MANAGED",
-    "HERMES_MANAGED_DIR",
-    "HERMES_DEV",
-    "HERMES_CONTAINER",
-    "HERMES_EPHEMERAL_SYSTEM_PROMPT",
-    "HERMES_TIMEZONE",
-    "HERMES_REDACT_SECRETS",
-    "HERMES_BACKGROUND_NOTIFICATIONS",
-    "HERMES_EXEC_ASK",
-    "HERMES_HOME_MODE",
-    "HERMES_AGENT_USE_LEGACY_SESSION_KEYS",
+    "TINO_INTERACTIVE",
+    "TINO_QUIET",
+    "TINO_TOOL_PROGRESS",
+    "TINO_TOOL_PROGRESS_MODE",
+    "TINO_MAX_ITERATIONS",
+    "TINO_SESSION_PLATFORM",
+    "TINO_SESSION_CHAT_ID",
+    "TINO_SESSION_CHAT_NAME",
+    "TINO_SESSION_CHAT_TYPE",
+    "TINO_SESSION_THREAD_ID",
+    "TINO_SESSION_SOURCE",
+    "TINO_SESSION_KEY",
+    "TINO_GATEWAY_SESSION",
+    "TINO_CRON_SESSION",
+    "_TINO_GATEWAY",
+    "TINO_PLATFORM",
+    "TINO_MODEL",
+    "TINO_INFERENCE_MODEL",
+    "TINO_INFERENCE_PROVIDER",
+    "TINO_TUI_PROVIDER",
+    "TINO_MANAGED",
+    "TINO_MANAGED_DIR",
+    "TINO_DEV",
+    "TINO_CONTAINER",
+    "TINO_EPHEMERAL_SYSTEM_PROMPT",
+    "TINO_TIMEZONE",
+    "TINO_REDACT_SECRETS",
+    "TINO_BACKGROUND_NOTIFICATIONS",
+    "TINO_EXEC_ASK",
+    "TINO_HOME_MODE",
+    "TINO_AGENT_USE_LEGACY_SESSION_KEYS",
     # Kanban path/board pins must never leak from a developer shell or
     # dispatched worker into tests; otherwise tests can write fake tasks to
-    # the real ~/.hermes/kanban.db instead of the per-test HERMES_HOME.
-    "HERMES_KANBAN_DB",
-    "HERMES_KANBAN_BOARD",
-    "HERMES_KANBAN_HOME",
-    "HERMES_KANBAN_WORKSPACES_ROOT",
-    "HERMES_KANBAN_LOGS_ROOT",
-    "HERMES_KANBAN_TASK",
-    "HERMES_KANBAN_WORKSPACE",
-    "HERMES_KANBAN_RUN_ID",
-    "HERMES_KANBAN_CLAIM_LOCK",
-    "HERMES_KANBAN_DISPATCH_IN_GATEWAY",
+    # the real ~/.hermes/kanban.db instead of the per-test TINO_HOME.
+    "TINO_KANBAN_DB",
+    "TINO_KANBAN_BOARD",
+    "TINO_KANBAN_HOME",
+    "TINO_KANBAN_WORKSPACES_ROOT",
+    "TINO_KANBAN_LOGS_ROOT",
+    "TINO_KANBAN_TASK",
+    "TINO_KANBAN_WORKSPACE",
+    "TINO_KANBAN_RUN_ID",
+    "TINO_KANBAN_CLAIM_LOCK",
+    "TINO_KANBAN_DISPATCH_IN_GATEWAY",
     # Pytest is routinely launched from a delegated worker.  The worker
     # lineage marker must not make parent-state tests run as delegated
     # children; tests that exercise child behavior set it explicitly.
-    "HERMES_DELEGATED_CHILD_CONTEXT",
-    "HERMES_TENANT",
+    "TINO_DELEGATED_CHILD_CONTEXT",
+    "TINO_TENANT",
     # Honcho host selection changes which nested config block wins. A local
     # shell override leaked "myhost" into the full suite and flipped 20
     # otherwise-unrelated config tests away from the default "hermes" host.
-    "HERMES_HONCHO_HOST",
+    "TINO_HONCHO_HOST",
     # Dashboard OAuth auth gate (PR #30156). When set, the bundled
     # dashboard-auth `nous` plugin auto-registers itself on plugin discovery,
     # which is triggered by any `/api/status` call. That leaks a provider
     # into the dashboard_auth registry across tests in the same worker and
     # makes assertions like `auth_providers == []` flaky. CI never sets
     # these, so production tests must not see them either.
-    "HERMES_DASHBOARD_OAUTH_CLIENT_ID",
-    "HERMES_DASHBOARD_PORTAL_URL",
+    "TINO_DASHBOARD_OAUTH_CLIENT_ID",
+    "TINO_DASHBOARD_PORTAL_URL",
     "TERMINAL_CWD",
     "TERMINAL_ENV",
     "TERMINAL_VERCEL_RUNTIME",
@@ -462,7 +462,7 @@ _HERMES_BEHAVIORAL_VARS = frozenset({
 def _hermetic_environment(tmp_path, monkeypatch):
     """Blank out all credential/behavioral env vars so local and CI match.
 
-    Also redirects HOME and HERMES_HOME to per-test tempdirs so code that
+    Also redirects HOME and TINO_HOME to per-test tempdirs so code that
     reads ``~/.hermes/*`` can't touch the real one, and pins TZ/LANG so
     datetime/locale-sensitive tests are deterministic.
     """
@@ -471,8 +471,8 @@ def _hermetic_environment(tmp_path, monkeypatch):
         if _looks_like_credential(name):
             monkeypatch.delenv(name, raising=False)
 
-    # 2. Blank behavioral HERMES_* vars that could change test semantics.
-    for name in _HERMES_BEHAVIORAL_VARS:
+    # 2. Blank behavioral TINO_* vars that could change test semantics.
+    for name in _TINO_BEHAVIORAL_VARS:
         monkeypatch.delenv(name, raising=False)
 
     # Honcho's fallback host/config resolution legitimately reads the user's
@@ -480,9 +480,9 @@ def _hermetic_environment(tmp_path, monkeypatch):
     # on it), but pin the host so ordinary tests cannot inherit a developer's
     # defaultHost and silently select the wrong nested config block. Tests of
     # custom host resolution override/delete this explicitly.
-    monkeypatch.setenv("HERMES_HONCHO_HOST", "hermes")
+    monkeypatch.setenv("TINO_HONCHO_HOST", "hermes")
 
-    # 3. Redirect HERMES_HOME to a per-test tempdir. Code that reads
+    # 3. Redirect TINO_HOME to a per-test tempdir. Code that reads
     #    ``~/.hermes/*`` via ``get_hermes_home()`` now gets the tempdir.
     #
     #    NOTE: We do NOT also redirect HOME. Doing so broke CI because
@@ -498,15 +498,15 @@ def _hermetic_environment(tmp_path, monkeypatch):
     (fake_hermes_home / "cron").mkdir()
     (fake_hermes_home / "memories").mkdir()
     (fake_hermes_home / "skills").mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(fake_hermes_home))
+    monkeypatch.setenv("TINO_HOME", str(fake_hermes_home))
     # Keep the subprocess-surviving isolation marker pointed at THIS test's
     # home (#82770): children spawned by the test inherit it by default, so
     # hermes_state's live-DB guard stays armed in them even when the test
     # strips pytest's own PYTEST_* vars from the child env.
-    monkeypatch.setenv("HERMES_TEST_ISOLATION", str(fake_hermes_home))
+    monkeypatch.setenv("TINO_TEST_ISOLATION", str(fake_hermes_home))
     # And never let a developer-shell (or leaked child) bypass disarm the
     # guard for in-process code under test.
-    monkeypatch.delenv("HERMES_STATE_DB_GUARD_BYPASS", raising=False)
+    monkeypatch.delenv("TINO_STATE_DB_GUARD_BYPASS", raising=False)
 
     # 3b. hermes_state computes ``DEFAULT_DB_PATH = get_hermes_home() / "state.db"``
     #     at import time. When the module is first imported at collection (any
@@ -563,7 +563,7 @@ def _hermetic_environment(tmp_path, monkeypatch):
     # suite timeout under tests that set fake proxy env vars. The kill-switch
     # makes ensure() raise FeatureUnavailable immediately instead.
     # tests/tools/test_lazy_deps.py overrides this var in both directions.
-    monkeypatch.setenv("HERMES_DISABLE_LAZY_INSTALLS", "1")
+    monkeypatch.setenv("TINO_DISABLE_LAZY_INSTALLS", "1")
 
     # 5. Reset plugin singleton so tests don't leak plugins from
     #    ~/.hermes/plugins/ (which, per step 3, is now empty — but the
@@ -573,7 +573,7 @@ def _hermetic_environment(tmp_path, monkeypatch):
         monkeypatch.setattr(_plugins_mod, "_plugin_manager", None)
         # Also clear the keyed per-home manager cache (and any plugin
         # submodules it left in sys.modules) so a manager built for a
-        # previous test's tmp_path HERMES_HOME can't leak forward. Paths
+        # previous test's tmp_path TINO_HOME can't leak forward. Paths
         # are unique per test, so collisions are unlikely, but a full
         # reset keeps this fixture the single source of plugin-state
         # hygiene rather than relying on path uniqueness.
@@ -649,7 +649,7 @@ def _close_leaked_session_dbs():
 
     Rather than editing every test file, ``SessionDB.__init__`` registers each
     instance in ``hermes_state_guard._test_instance_registry`` (a WeakSet,
-    populated only when the ``HERMES_TEST_ISOLATION`` marker is set — i.e.
+    populated only when the ``TINO_TEST_ISOLATION`` marker is set — i.e.
     only under this suite). This teardown closes whatever the test left open.
     ``close()`` is idempotent (``self._conn`` is None afterwards) and also
     unregisters the pinning atexit hook, so instances become collectable.
@@ -746,7 +746,7 @@ def _neutralize_macos_keychain_creds(request, monkeypatch):
 # fixture patches ``kanban_db_connect.connect`` to refuse writes whose resolved DB
 # path lands under the REAL kanban root (captured at import time, before any
 # fixture rewires the environment). A deny-list is used instead of an
-# allow-list because test-level fixtures legitimately move HERMES_HOME to
+# allow-list because test-level fixtures legitimately move TINO_HOME to
 # sibling directories — an allow-list captured at setup time would see the
 # stale autouse-set value and falsely reject hermetic tests (#69385 review).
 
@@ -755,25 +755,25 @@ def _capture_real_kanban_root() -> Path:
     """Resolve the REAL kanban root from the pre-test environment.
 
     Uses the pre-sandbox environment snapshot taken at the very top of this
-    file (before the session HERMES_HOME sandbox rewired the env), so the
+    file (before the session TINO_HOME sandbox rewired the env), so the
     deny-list keeps pointing at the operator's actual root. Mirrors
     ``kanban_db.kanban_home()`` resolution order:
-    1. ``HERMES_KANBAN_HOME`` env var when set and non-empty
-    2. the real (pre-sandbox) Hermes root otherwise
+    1. ``TINO_KANBAN_HOME`` env var when set and non-empty
+    2. the real (pre-sandbox) Tino root otherwise
     """
     if _PRE_SANDBOX_KANBAN_OVERRIDE:
         return Path(_PRE_SANDBOX_KANBAN_OVERRIDE).expanduser().resolve()
-    if _PRE_SANDBOX_HERMES_HOME and not _hermes_home_points_at_production(
-        _PRE_SANDBOX_HERMES_HOME
+    if _PRE_SANDBOX_TINO_HOME and not _hermes_home_points_at_production(
+        _PRE_SANDBOX_TINO_HOME
     ):
-        # HERMES_HOME was genuinely set to a CUSTOM root before the sandbox
+        # TINO_HOME was genuinely set to a CUSTOM root before the sandbox
         # (production-pointing values are sandboxed away above, in which case
         # the env still holds the tempdir and the resolver would be wrong) —
         # honor it via the normal resolver (it may be a profile dir whose
         # root matters).
         from hermes_constants import get_default_hermes_root
         return get_default_hermes_root().resolve()
-    # No pre-existing HERMES_HOME: the real root is the platform default,
+    # No pre-existing TINO_HOME: the real root is the platform default,
     # NOT the sandbox tempdir now sitting in the env.
     return (Path.home() / ".hermes").resolve()
 
@@ -788,7 +788,7 @@ def _kanban_write_guard(_hermetic_environment, monkeypatch):
     Uses a **deny-list**: only blocks writes where the resolved DB path
     (explicit ``db_path`` or ``kanban_db_path()``) lands under the real
     ``~/.hermes`` captured at import time. Hermetic tests that legitimately
-    move HERMES_HOME to sibling tempdirs are unaffected.
+    move TINO_HOME to sibling tempdirs are unaffected.
 
     Only patches when ``hermes_cli.kanban_db_connect`` is *already imported*
     — a ``sys.modules`` probe, not an import — so the guard never drags the
@@ -840,12 +840,12 @@ def _kanban_write_guard(_hermetic_environment, monkeypatch):
 # Companion to the kanban guard above, for the MAIN state database.
 # ``hermes_state._ensure_test_isolation`` (the single choke point every
 # ``SessionDB()`` construction goes through) refuses, under pytest, any DB
-# path that resolves inside the REAL Hermes root. This fixture wires the
+# path that resolves inside the REAL Tino root. This fixture wires the
 # test-side knobs:
 #   • honors ``@pytest.mark.live_system_guard_bypass`` (the established
 #     escape-hatch marker) by disabling the state-db guard for that test;
 #   • injects the pre-sandbox CUSTOM production root (Docker/portable
-#     installs where HERMES_HOME is not ~/.hermes) into the guard's
+#     installs where TINO_HOME is not ~/.hermes) into the guard's
 #     deny-list, mirroring the kanban deny-list capture above.
 # The guard itself is env-activated (PYTEST_CURRENT_TEST / PYTEST_VERSION),
 # so subprocess children that import hermes_state directly are covered even
@@ -863,11 +863,11 @@ def _state_db_write_guard(request, monkeypatch):
         yield
         return
     extra_roots = []
-    if _PRE_SANDBOX_HERMES_HOME and not _hermes_home_points_at_production(
-        _PRE_SANDBOX_HERMES_HOME
+    if _PRE_SANDBOX_TINO_HOME and not _hermes_home_points_at_production(
+        _PRE_SANDBOX_TINO_HOME
     ):
         extra_roots.append(
-            Path(_PRE_SANDBOX_HERMES_HOME).expanduser().resolve()
+            Path(_PRE_SANDBOX_TINO_HOME).expanduser().resolve()
         )
     monkeypatch.setattr(
         _hs, "_STATE_DB_GUARD_EXTRA_DENY_ROOTS", tuple(extra_roots)
@@ -978,7 +978,7 @@ def _reset_tui_gateway_server_state():
         mod._db = None
         mod._db_error = None
 
-    # A leaked context-local Hermes home override redirects every later
+    # A leaked context-local Tino home override redirects every later
     # ``get_hermes_home()`` call (active-session registry, config paths)
     # to a stale per-test tmpdir. Force the main-thread ContextVar back
     # to its default.
@@ -1101,9 +1101,9 @@ _REQUIRES_WAL_MARK = "requires_wal"
 
 
 def _wal_is_usable() -> bool:
-    """True when Hermes will actually put a database into WAL mode here.
+    """True when Tino will actually put a database into WAL mode here.
 
-    Hermes refuses journal_mode=WAL on SQLite builds carrying the upstream
+    Tino refuses journal_mode=WAL on SQLite builds carrying the upstream
     WAL-reset corruption bug (3.7.0–3.51.2, excluding backports 3.50.7 /
     3.44.6) and falls back to DELETE. On such a build NO ``-wal`` sidecar is
     ever created, so a test asserting on WAL frames, ``-wal`` file size, or
@@ -1111,14 +1111,14 @@ def _wal_is_usable() -> bool:
     declined to enable, not a regression.
 
     This matters because the interpreter running the tests and the interpreter
-    running Hermes can link DIFFERENT SQLite versions: a repo ``.venv`` on
-    3.50.4 (vulnerable → DELETE) alongside a Hermes managed runtime on 3.53.1
+    running Tino can link DIFFERENT SQLite versions: a repo ``.venv`` on
+    3.50.4 (vulnerable → DELETE) alongside a Tino managed runtime on 3.53.1
     (fixed → WAL). The same test then passes in one and fails in the other.
 
     IMPORTANT: this must NOT import ``hermes_state``. That module computes
     ``DEFAULT_DB_PATH`` from ``get_hermes_home()`` at import time, so importing
     it during collection — before the per-test ``_isolate_hermes_home`` fixture
-    redirects ``HERMES_HOME`` — permanently caches the DEVELOPER'S REAL
+    redirects ``TINO_HOME`` — permanently caches the DEVELOPER'S REAL
     ``~/.hermes/state.db`` for the whole session. Tests then read live
     production sessions instead of a tempdir. The version predicate is
     duplicated from ``hermes_state._is_sqlite_wal_reset_vulnerable`` (upstream
@@ -1148,7 +1148,7 @@ def _wal_is_usable() -> bool:
 #   1. ``test_voice_toggle_tts_branch_also_carries_record_key`` drives the
 #      ``voice.toggle`` RPC with ``action="tts"``. The handler
 #      (``tui_gateway/server.py``) flips the flag by writing the *real*
-#      process environment: ``os.environ["HERMES_VOICE_TTS"] = "1"``. The
+#      process environment: ``os.environ["TINO_VOICE_TTS"] = "1"``. The
 #      test's ``monkeypatch.delenv(..., raising=False)`` records no undo entry
 #      (pytest only records an undo when the key was present), so the "1"
 #      survives teardown and persists for the rest of the pytest process.
@@ -1185,7 +1185,7 @@ _ALLOW_MACOS_KEYCHAIN_MARK = "allow_macos_keychain"
 # ---------------------------------------------------------------------------
 # OS gating
 #
-# Hermes runs on Linux, macOS and native Windows, and a lot of its behaviour
+# Tino runs on Linux, macOS and native Windows, and a lot of its behaviour
 # genuinely differs per host: PTY vs pywinpty, taskkill vs SIGTERM, launchd
 # vs systemd, Keychain vs libsecret, ``%LOCALAPPDATA%`` vs ``~/.hermes``.
 #
@@ -1242,10 +1242,10 @@ _OS_MARKS = {
 
 
 def _relocate_basetemp_outside_operator_home(config) -> None:
-    """Move pytest's basetemp out of the operator's platform-native Hermes home.
+    """Move pytest's basetemp out of the operator's platform-native Tino home.
 
     Every per-test sandbox is ``<basetemp>/.../hermes_test``. ``get_default_hermes_root()``
-    prefers the platform-native home whenever ``HERMES_HOME`` sits *under* it, so a basetemp
+    prefers the platform-native home whenever ``TINO_HOME`` sits *under* it, so a basetemp
     inside ``~/.hermes`` (or ``%LOCALAPPDATA%\\hermes``, where ``TEMP`` commonly lives on
     Windows) turns the sandbox back into the live install and ``get_profile_dir("default")``
     writes fixtures over the operator's config.yaml / .env / MEMORY.md (#111101).
@@ -1261,13 +1261,13 @@ def _relocate_basetemp_outside_operator_home(config) -> None:
     if not candidate.resolve().is_relative_to(native):
         return
     # The system temp dir may itself be inside the home (Windows TEMP under the
-    # Hermes home). The repo is no escape either: the default install checks it
+    # Tino home). The repo is no escape either: the default install checks it
     # out *inside* the home (~/.hermes/hermes-agent). A sibling of the native
     # home is outside it by construction.
     safe_root = None if not Path(tempfile.gettempdir()).resolve().is_relative_to(native) else native.parent
     safe = Path(tempfile.mkdtemp(prefix="hermes-pytest-basetemp-", dir=safe_root))
     assert not safe.resolve().is_relative_to(native), (
-        f"pytest basetemp {safe} still resolves inside the operator's Hermes home {native}; "
+        f"pytest basetemp {safe} still resolves inside the operator's Tino home {native}; "
         "refusing to run the suite against the live install (pass --basetemp outside it)"
     )
     factory._given_basetemp = safe
@@ -1332,7 +1332,7 @@ def pytest_configure(config):  # noqa: D401 — pytest hook
     config.addinivalue_line(
         "markers",
         f"{_REQUIRES_WAL_MARK}: test needs the runtime to actually enable "
-        "SQLite WAL mode; skipped on builds where Hermes falls back to "
+        "SQLite WAL mode; skipped on builds where Tino falls back to "
         "journal_mode=DELETE for the WAL-reset bug.",
     )
     config.addinivalue_line(
@@ -1455,7 +1455,7 @@ def pytest_collection_modifyitems(config, items):  # noqa: D401 — pytest hook
         return
 
     reason = (
-        f"SQLite {sqlite3.sqlite_version} has the WAL-reset bug — Hermes uses "
+        f"SQLite {sqlite3.sqlite_version} has the WAL-reset bug — Tino uses "
         "journal_mode=DELETE here, so no -wal sidecar exists to assert on"
     )
     skip_marker = pytest.mark.skip(reason=reason)
@@ -1583,7 +1583,7 @@ def _live_system_guard(request, monkeypatch):
         monkeypatch.setattr(_os, "killpg", _guarded_killpg)
 
     # ── Subprocess command-string inspection (whole-line) ──────────
-    _HERMES_TOKENS = (
+    _TINO_TOKENS = (
         "hermes-gateway",
         "hermes.service",
         "hermes_cli.main gateway",
@@ -1631,7 +1631,7 @@ def _live_system_guard(request, monkeypatch):
 
     def _matches_hermes_gateway(cmd_str: str) -> bool:
         low = cmd_str.lower()
-        return any(tok in low for tok in _HERMES_TOKENS)
+        return any(tok in low for tok in _TINO_TOKENS)
 
     def _is_blocked_systemctl(cmd) -> bool:
         cmd_str = _cmd_to_string(cmd)
@@ -1733,7 +1733,7 @@ def _live_system_guard(request, monkeypatch):
         # Block spawning a REAL gateway runtime (``python -m hermes_cli.main
         # gateway run|start|restart``). ``_spawn_hermes_action`` launches it
         # with start_new_session=True, so it outlives the pytest worker; the
-        # child inherits the pytest-tmp HERMES_HOME, resolves the DEVELOPER's
+        # child inherits the pytest-tmp TINO_HOME, resolves the DEVELOPER's
         # ``hermes-gateway`` systemd unit (a tmp home hashes to no profile
         # suffix), restarts the live gateway, and the survivors squat the
         # webhook port. 2026-09-03: 39 such orphans lived 6 days after a
@@ -1875,7 +1875,7 @@ def _audio_playback_guard(request, monkeypatch):
     """Stub TTS synthesis + speaker playback for every test.
 
     See the block comment above for the incident this closes. Defence in
-    depth behind ``_HERMES_BEHAVIORAL_VARS``: the env blanking stops the flag
+    depth behind ``_TINO_BEHAVIORAL_VARS``: the env blanking stops the flag
     leaking *between* tests, this stops the speakers ever opening even when a
     test sets the flag *itself* (which the ``voice.toggle`` RPC handler does,
     by writing ``os.environ`` directly).

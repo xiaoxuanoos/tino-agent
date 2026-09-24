@@ -21,7 +21,7 @@ def worker_setup(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> tuple[Path,
     profile.mkdir(parents=True)
     root.joinpath("config.yaml").write_text("{}\n", encoding="utf-8")
     profile.joinpath("config.yaml").write_text("{}\n", encoding="utf-8")
-    monkeypatch.setenv("HERMES_HOME", str(root))
+    monkeypatch.setenv("TINO_HOME", str(root))
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
     monkeypatch.setattr(kbd, "_resolve_hermes_argv", lambda: ["hermes"])
 
@@ -85,8 +85,8 @@ def test_managed_gateway_worker_is_spawned_in_restart_safe_scope(
     separator = captured_cmd.index("--")
     assert captured_cmd[separator + 1 : separator + 4] == ["hermes", "-p", "coder"]
     assert captured_cwd == str(workspace)
-    assert captured_env["HERMES_KANBAN_TASK"] == task.id
-    assert captured_env["HERMES_KANBAN_RUN_ID"] == "23"
+    assert captured_env["TINO_KANBAN_TASK"] == task.id
+    assert captured_env["TINO_KANBAN_RUN_ID"] == "23"
     assert "ANTHROPIC_API_KEY" not in captured_env
 
 
@@ -203,8 +203,8 @@ def test_real_user_systemd_scope_preserves_worker_context(
         "import json, os, pathlib, sys, time; "
         "pathlib.Path(sys.argv[1]).write_text(json.dumps({"
         "'pid': os.getpid(), 'cwd': os.getcwd(), "
-        "'task': os.environ.get('HERMES_KANBAN_TASK'), "
-        "'run': os.environ.get('HERMES_KANBAN_RUN_ID'), "
+        "'task': os.environ.get('TINO_KANBAN_TASK'), "
+        "'run': os.environ.get('TINO_KANBAN_RUN_ID'), "
         "'cgroup': pathlib.Path('/proc/self/cgroup').read_text()})); time.sleep(0.5)"
     )
     monkeypatch.setattr(kbd, "_resolve_hermes_argv", lambda: [sys.executable, "-c", script, str(receipt)])

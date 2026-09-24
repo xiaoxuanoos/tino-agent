@@ -1,4 +1,4 @@
-"""Tests for the Hermes plugin system (hermes_cli.plugins)."""
+"""Tests for the Tino plugin system (hermes_cli.plugins)."""
 
 import logging
 import json
@@ -63,10 +63,10 @@ def _make_plugin_dir(base: Path, name: str, *, register_body: str = "pass",
     ``<hermes_home>`` from it by walking one level up unless *home* is
     given explicitly.
 
-    Pass *home* explicitly whenever the target Hermes home for this
-    plugin isn't necessarily the current ``HERMES_HOME`` env var — e.g.
+    Pass *home* explicitly whenever the target Tino home for this
+    plugin isn't necessarily the current ``TINO_HOME`` env var — e.g.
     when writing fixtures for two profiles up front and only switching
-    ``HERMES_HOME``/``set_hermes_home_override()`` per-profile afterwards
+    ``TINO_HOME``/``set_hermes_home_override()`` per-profile afterwards
     (as multi-profile regression tests do). Relying on the *current* env
     var here is a bug: if the caller hasn't switched homes yet (or is
     using the context-local override instead of the env var, which this
@@ -87,14 +87,14 @@ def _make_plugin_dir(base: Path, name: str, *, register_body: str = "pass",
     )
 
     if auto_enable:
-        # Write/merge plugins.enabled in <HERMES_HOME>/config.yaml.
-        # Config is always read from HERMES_HOME (not from the project
+        # Write/merge plugins.enabled in <TINO_HOME>/config.yaml.
+        # Config is always read from TINO_HOME (not from the project
         # dir for project plugins), so that's where we opt in.
         if home is not None:
             hermes_home = Path(home)
         else:
             import os
-            hermes_home_str = os.environ.get("HERMES_HOME")
+            hermes_home_str = os.environ.get("TINO_HOME")
             if hermes_home_str:
                 hermes_home = Path(hermes_home_str)
             else:
@@ -155,9 +155,9 @@ class TestPluginDiscovery:
         assert loaded == []
         assert not state.enabled
         assert state.error is not None
-        assert "Relay lifecycle is owned by Hermes core" in state.error
+        assert "Relay lifecycle is owned by Tino core" in state.error
         assert RELAY_PLUGINS_CONFIG_ENV in state.error
-        assert "Refusing to load removed Hermes Relay plugin" in caplog.text
+        assert "Refusing to load removed Tino Relay plugin" in caplog.text
 
     def test_enabled_portable_plugin_registers_components(
         self, tmp_path, monkeypatch
@@ -198,7 +198,7 @@ class TestPluginDiscovery:
         empty_bundled = tmp_path / "bundled"
         empty_bundled.mkdir()
         monkeypatch.setenv("HOME", str(tmp_path / "os-home"))
-        monkeypatch.setenv("HERMES_HOME", str(home))
+        monkeypatch.setenv("TINO_HOME", str(home))
         monkeypatch.setattr(plugins_mod, "get_bundled_plugins_dir", lambda: empty_bundled)
 
         manager = PluginManager()
@@ -236,7 +236,7 @@ class TestPluginDiscovery:
         empty_bundled = tmp_path / "bundled"
         empty_bundled.mkdir()
         monkeypatch.setenv("HOME", str(tmp_path / "os-home"))
-        monkeypatch.setenv("HERMES_HOME", str(home))
+        monkeypatch.setenv("TINO_HOME", str(home))
         monkeypatch.setattr(plugins_mod, "get_bundled_plugins_dir", lambda: empty_bundled)
 
         manager = PluginManager()
@@ -270,8 +270,8 @@ class TestPluginDiscovery:
         )
         bundled = tmp_path / "bundled"
         bundled.mkdir()
-        monkeypatch.setenv("HERMES_HOME", str(home))
-        monkeypatch.setenv("HERMES_BUNDLED_PLUGINS", str(bundled))
+        monkeypatch.setenv("TINO_HOME", str(home))
+        monkeypatch.setenv("TINO_BUNDLED_PLUGINS", str(bundled))
 
         manager = PluginManager()
         manifests = manager._collect_directory_manifests()
@@ -313,7 +313,7 @@ class TestPluginDiscovery:
                 "lambda **kw: {'args': {**kw['args'], 'mw': True}})"
             ),
         )
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path / "hermes_test"))
+        monkeypatch.setenv("TINO_HOME", str(tmp_path / "hermes_test"))
 
         mgr = PluginManager()
         mgr.discover_and_load()
@@ -370,7 +370,7 @@ class TestPluginDiscovery:
         """
         plugins_dir = tmp_path / "hermes_test" / "plugins"
         _make_plugin_dir(plugins_dir, "retry_plugin")
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path / "hermes_test"))
+        monkeypatch.setenv("TINO_HOME", str(tmp_path / "hermes_test"))
 
         mgr = PluginManager()
 
@@ -384,7 +384,7 @@ class TestPluginDiscovery:
 
         # A later call (with discovery healthy again) must do the real scan.
         monkeypatch.undo()
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path / "hermes_test"))
+        monkeypatch.setenv("TINO_HOME", str(tmp_path / "hermes_test"))
         mgr.discover_and_load()
         assert mgr._discovered is True
         non_bundled = {
@@ -452,7 +452,7 @@ class TestPluginLoading:
         """Directory plugins are importable under hermes_plugins.<name>."""
         plugins_dir = tmp_path / "hermes_test" / "plugins"
         _make_plugin_dir(plugins_dir, "ns_plugin")
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path / "hermes_test"))
+        monkeypatch.setenv("TINO_HOME", str(tmp_path / "hermes_test"))
 
         # Clean up any prior namespace module
         sys.modules.pop("hermes_plugins.ns_plugin", None)
@@ -492,7 +492,7 @@ class TestPluginLoading:
         (hermes_home / "config.yaml").write_text(
             yaml.safe_dump({"plugins": {"enabled": ["mempalace"]}})
         )
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        monkeypatch.setenv("TINO_HOME", str(hermes_home))
 
         mgr = PluginManager()
         mgr.discover_and_load()
@@ -554,7 +554,7 @@ class TestPluginLoading:
         (hermes_home / "config.yaml").write_text(
             yaml.safe_dump({"plugins": {"enabled": ["mempalace_ep"]}})
         )
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        monkeypatch.setenv("TINO_HOME", str(hermes_home))
 
         mgr = PluginManager()
         mgr.discover_and_load()
@@ -604,7 +604,7 @@ class TestPluginLoading:
         (hermes_home / "config.yaml").write_text(
             yaml.safe_dump({"plugins": {"enabled": ["fakeprovider"]}})
         )
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        monkeypatch.setenv("TINO_HOME", str(hermes_home))
 
         mgr = PluginManager()
         mgr.discover_and_load()
@@ -662,7 +662,7 @@ class TestPluginLoading:
             ),
         )
 
-        # Same-name directory provider under $HERMES_HOME/plugins/.
+        # Same-name directory provider under $TINO_HOME/plugins/.
         hermes_home = tmp_path / "hermes_test"
         plugins_dir = hermes_home / "plugins"
         provider_dir = plugins_dir / "mempalace_dup"
@@ -684,7 +684,7 @@ class TestPluginLoading:
         (hermes_home / "config.yaml").write_text(
             yaml.safe_dump({"plugins": {"enabled": ["mempalace_dup"]}})
         )
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        monkeypatch.setenv("TINO_HOME", str(hermes_home))
         monkeypatch.setattr(
             "plugins.memory._get_user_plugins_dir", lambda: plugins_dir
         )
@@ -759,7 +759,7 @@ class TestPluginLoading:
         (hermes_home / "config.yaml").write_text(
             yaml.safe_dump({"plugins": {"enabled": ["mempalace_dotted"]}})
         )
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        monkeypatch.setenv("TINO_HOME", str(hermes_home))
 
         mgr = PluginManager()
         mgr.discover_and_load()
@@ -794,7 +794,7 @@ class TestPluginHooks:
                 'lambda **kw: {"action": "skip", "reason": "test"})'
             ),
         )
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path / "hermes_test"))
+        monkeypatch.setenv("TINO_HOME", str(tmp_path / "hermes_test"))
 
         mgr = PluginManager()
         mgr.discover_and_load()
@@ -822,7 +822,7 @@ class TestPluginHooks:
                 '"mc": kw.get("message_count"), "tc": kw.get("tool_count")})'
             ),
         )
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path / "hermes_test"))
+        monkeypatch.setenv("TINO_HOME", str(tmp_path / "hermes_test"))
 
         mgr = PluginManager()
         mgr.discover_and_load()
@@ -1126,7 +1126,7 @@ class TestForceReloadSymmetry:
         (hermes_home / "config.yaml").write_text(
             yaml.safe_dump({"plugins": {"hook_callback_timeout": 0.12}})
         )
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        monkeypatch.setenv("TINO_HOME", str(hermes_home))
 
         import hermes_cli.config as config_mod
 
@@ -1446,18 +1446,18 @@ class TestForceReloadSymmetry:
         import agent.shell_hooks as shell_hooks_mod
 
         cfg = {"hooks": {"on_session_start": [{"command": "/bin/true"}]}}
-        monkeypatch.setenv("HERMES_ACCEPT_HOOKS", "1")
+        monkeypatch.setenv("TINO_ACCEPT_HOOKS", "1")
         monkeypatch.setattr("hermes_cli.config.load_config", lambda: cfg)
         monkeypatch.setattr(
             PluginManager, "_discover_and_load_inner", lambda self_inner: None,
         )
 
-        monkeypatch.setenv("HERMES_HOME", "/tmp/profile-a")
+        monkeypatch.setenv("TINO_HOME", "/tmp/profile-a")
         mgr_a = PluginManager()
         plugins_mod._plugin_manager = mgr_a
         shell_hooks_mod.register_from_config(cfg, accept_hooks=True)
 
-        monkeypatch.setenv("HERMES_HOME", "/tmp/profile-b")
+        monkeypatch.setenv("TINO_HOME", "/tmp/profile-b")
         mgr_b = PluginManager()
         plugins_mod._plugin_manager = mgr_b
         shell_hooks_mod.register_from_config(cfg, accept_hooks=True)
@@ -1475,7 +1475,7 @@ class TestForceReloadSymmetry:
         # B's later adapter reconnect re-runs register_from_config(); its
         # idempotence key must still be intact, so this must be a no-op
         # rather than appending a second callback to B's live manager.
-        monkeypatch.setenv("HERMES_HOME", "/tmp/profile-b")
+        monkeypatch.setenv("TINO_HOME", "/tmp/profile-b")
         second = shell_hooks_mod.register_from_config(cfg, accept_hooks=True)
 
         assert second == []
@@ -1888,7 +1888,7 @@ class TestPluginContext:
             (hermes_home / "config.yaml").write_text(
                 yaml.safe_dump({"plugins": {"enabled": ["evil_override_plugin"]}})
             )
-            monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+            monkeypatch.setenv("TINO_HOME", str(hermes_home))
 
             mgr = PluginManager()
             # PluginManager catches and logs the registration error, so the
@@ -1962,7 +1962,7 @@ class TestPluginContext:
             (hermes_home / "config.yaml").write_text(
                 yaml.safe_dump({"plugins": {"enabled": ["delayed_override_plugin"]}})
             )
-            monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+            monkeypatch.setenv("TINO_HOME", str(hermes_home))
 
             mgr = PluginManager()
             mgr.discover_and_load()
@@ -2019,7 +2019,7 @@ class TestPluginToolVisibility:
         (hermes_home / "config.yaml").write_text(
             yaml.safe_dump({"plugins": {"enabled": ["vis_plugin"]}})
         )
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        monkeypatch.setenv("TINO_HOME", str(hermes_home))
 
         mgr = PluginManager()
         mgr.discover_and_load()
@@ -2065,7 +2065,7 @@ class TestPluginManagerList:
         plugins_dir = tmp_path / "hermes_test" / "plugins"
         _make_plugin_dir(plugins_dir, "zulu")
         _make_plugin_dir(plugins_dir, "alpha")
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path / "hermes_test"))
+        monkeypatch.setenv("TINO_HOME", str(tmp_path / "hermes_test"))
 
         mgr = PluginManager()
         mgr.discover_and_load()
@@ -2096,7 +2096,7 @@ class TestPluginManagerList:
             plugins_dir, "second_hooker",
             register_body='ctx.register_hook("post_tool_call", lambda **kw: None)',
         )
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path / "hermes_test"))
+        monkeypatch.setenv("TINO_HOME", str(tmp_path / "hermes_test"))
 
         mgr = PluginManager()
         mgr.discover_and_load()
@@ -2132,7 +2132,7 @@ class TestPreLlmCallTargetRouting:
             plugins_dir, "basic_plugin",
             '{"context": "basic context"}',
         )
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path / "hermes_test"))
+        monkeypatch.setenv("TINO_HOME", str(tmp_path / "hermes_test"))
 
         mgr = PluginManager()
         mgr.discover_and_load()
@@ -2165,7 +2165,7 @@ class TestPreLlmCallTargetRouting:
             plugins_dir, "ccc_plain",
             '"plain text C"',
         )
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path / "hermes_test"))
+        monkeypatch.setenv("TINO_HOME", str(tmp_path / "hermes_test"))
 
         mgr = PluginManager()
         mgr.discover_and_load()
@@ -2255,7 +2255,7 @@ class TestPluginCommands:
         (hermes_home / "config.yaml").write_text(
             yaml.safe_dump({"plugins": {"enabled": ["engine-plugin"]}})
         )
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        monkeypatch.setenv("TINO_HOME", str(hermes_home))
 
         import hermes_cli.plugins as plugins_mod
 
@@ -2269,11 +2269,11 @@ class TestPluginCommands:
 
         This is the production path used by the gateway multiplexer
         (``gateway/run.py``'s ``_profile_scope`` context manager) and by
-        subagent/embedded callers: it swaps ``HERMES_HOME`` via a
+        subagent/embedded callers: it swaps ``TINO_HOME`` via a
         context-local ContextVar, which — per
         ``hermes_constants.set_hermes_home_override`` — deliberately does
         NOT touch ``os.environ``. A regression test that only flips the
-        ``HERMES_HOME`` env var never exercises this path.
+        ``TINO_HOME`` env var never exercises this path.
         """
         from hermes_constants import set_hermes_home_override, reset_hermes_home_override
         import hermes_cli.plugins as plugins_mod
@@ -2291,7 +2291,7 @@ class TestPluginCommands:
                     "    from agent.context_engine import ContextEngine\n\n"
                     "    class HomeEngine(ContextEngine):\n"
                     "        def __init__(self):\n"
-                    "            self.home = os.environ.get('HERMES_HOME')\n\n"
+                    "            self.home = os.environ.get('TINO_HOME')\n\n"
                     "        @property\n"
                     "        def name(self):\n"
                     "            return 'home-engine'\n\n"
@@ -2310,7 +2310,7 @@ class TestPluginCommands:
         write_engine_plugin(home_a)
         write_engine_plugin(home_b)
 
-        # Note: HomeEngine reads os.environ['HERMES_HOME'] itself (simulating
+        # Note: HomeEngine reads os.environ['TINO_HOME'] itself (simulating
         # a real plugin like hermes-lcm capturing its home at registration),
         # so we set the env var to home_a as a baseline and only use the
         # context-local override to *switch away* to home_b — proving the
@@ -2507,11 +2507,11 @@ class TestPluginDispatchTool:
 
 
 class TestPluginDebugLogging:
-    """HERMES_PLUGINS_DEBUG opt-in stderr handler for plugin developers."""
+    """TINO_PLUGINS_DEBUG opt-in stderr handler for plugin developers."""
 
     def test_debug_handler_not_installed_when_env_var_absent(self, monkeypatch):
         """Without the env var, no stderr handler is attached."""
-        monkeypatch.delenv("HERMES_PLUGINS_DEBUG", raising=False)
+        monkeypatch.delenv("TINO_PLUGINS_DEBUG", raising=False)
         from hermes_cli import plugins as plugins_mod
 
         # Snapshot, then force a re-evaluation.
@@ -2532,7 +2532,7 @@ class TestPluginDebugLogging:
 
 
 class TestPluginContextProfileName:
-    """ctx.profile_name resolves from HERMES_HOME in every context."""
+    """ctx.profile_name resolves from TINO_HOME in every context."""
 
     def _ctx(self):
         mgr = PluginManager()
@@ -2540,19 +2540,19 @@ class TestPluginContextProfileName:
         return PluginContext(manifest, mgr)
 
     def test_default_profile(self, tmp_path, monkeypatch):
-        """HERMES_HOME at the root resolves to 'default'."""
+        """TINO_HOME at the root resolves to 'default'."""
         home = tmp_path / ".hermes"
         home.mkdir()
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
-        monkeypatch.setenv("HERMES_HOME", str(home))
+        monkeypatch.setenv("TINO_HOME", str(home))
         assert self._ctx().profile_name == "default"
 
     def test_named_profile(self, tmp_path, monkeypatch):
-        """HERMES_HOME under profiles/<name> resolves to that name."""
+        """TINO_HOME under profiles/<name> resolves to that name."""
         prof = tmp_path / ".hermes" / "profiles" / "coder"
         prof.mkdir(parents=True)
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
-        monkeypatch.setenv("HERMES_HOME", str(prof))
+        monkeypatch.setenv("TINO_HOME", str(prof))
         assert self._ctx().profile_name == "coder"
 
 

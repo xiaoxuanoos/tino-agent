@@ -170,7 +170,7 @@ def _make_execute_only_env(forward_env=None):
     env._session_id = "test123"
     env._snapshot_path = "/tmp/hermes-snap-test123.sh"
     env._cwd_file = "/tmp/hermes-cwd-test123.txt"
-    env._cwd_marker = "__HERMES_CWD_test123__"
+    env._cwd_marker = "__TINO_CWD_test123__"
     env._snapshot_ready = True
     env._last_sync_time = None
     env._init_env_args = []
@@ -179,7 +179,7 @@ def _make_execute_only_env(forward_env=None):
 
 def test_init_env_args_uses_hermes_dotenv_for_allowlisted_env(monkeypatch):
     """_build_init_env_args picks up forwarded env vars from .env file at init time."""
-    # Use a var that is NOT in _HERMES_PROVIDER_ENV_BLOCKLIST (GITHUB_TOKEN
+    # Use a var that is NOT in _TINO_PROVIDER_ENV_BLOCKLIST (GITHUB_TOKEN
     # is in the copilot provider's api_key_env_vars and gets stripped).
     env = _make_execute_only_env(["DATABASE_URL"])
 
@@ -415,7 +415,7 @@ def test_egress_node_options_overrides_conflicting_ca_flag(monkeypatch):
     monkeypatch.setattr(docker_env, "find_docker", lambda: "/usr/bin/docker")
     monkeypatch.setattr(
         docker_env, "_egress_proxy_args_for_docker",
-        lambda: ([], {"_HERMES_EGRESS_NODE_OPTIONS_APPEND": "--use-openssl-ca"}, []),
+        lambda: ([], {"_TINO_EGRESS_NODE_OPTIONS_APPEND": "--use-openssl-ca"}, []),
     )
     calls = _mock_subprocess_run(monkeypatch)
 
@@ -458,7 +458,7 @@ def test_normalize_env_dict_filters_invalid_keys():
 def test_security_args_include_setuid_setgid_for_privdrop(monkeypatch):
     """The default (run_as_host_user=False) invocation must include SETUID and
     SETGID caps so the image's init can drop from root to a non-root user
-    (e.g. via ``s6-setuidgid`` in the bundled Hermes image, or ``gosu``/``su``
+    (e.g. via ``s6-setuidgid`` in the bundled Tino image, or ``gosu``/``su``
     in user-provided images).
 
     Without these caps the privilege-drop helper fails with
@@ -861,7 +861,7 @@ def _mock_subprocess_run_with_reuse(monkeypatch, ps_state: str | None,
 def test_reuse_attaches_to_running_container_without_docker_run(monkeypatch):
     """When a labeled container is already ``running``, the reuse probe
     must pick it up and skip ``docker run`` entirely. Regression for the
-    issue #20561 root cause: every Hermes process spawning a new container
+    issue #20561 root cause: every Tino process spawning a new container
     despite docs claiming "ONE long-lived container shared across sessions"."""
     monkeypatch.setattr(docker_env, "find_docker", lambda: "/usr/bin/docker")
     monkeypatch.setattr(docker_env, "_get_active_profile_name", lambda: "default")
@@ -982,7 +982,7 @@ def test_reuse_probe_format_is_podman_compatible(monkeypatch):
 
 
 def test_extra_args_proxy_override_refuses_under_egress(monkeypatch):
-    """docker_extra_args are appended after Hermes args, so egress enforcement
+    """docker_extra_args are appended after Tino args, so egress enforcement
     must reject critical overrides before Docker sees them."""
 
     monkeypatch.setattr(docker_env, "find_docker", lambda: "/usr/bin/docker")
@@ -1076,7 +1076,7 @@ def test_extra_args_joined_shorthand_refuses_under_egress(monkeypatch):
 
 def test_reuse_starts_stopped_container_before_attaching(monkeypatch):
     """A labeled container in ``exited`` state must be restarted via
-    ``docker start`` before the new Hermes process uses it. Without this
+    ``docker start`` before the new Tino process uses it. Without this
     step, ``docker exec`` against a stopped container errors out and the
     first agent command fails opaquely."""
     monkeypatch.setattr(docker_env, "find_docker", lambda: "/usr/bin/docker")
@@ -1238,7 +1238,7 @@ def test_cleanup_with_persist_is_noop_for_container(monkeypatch):
     processes inside the container (npm watchers, pytest watchers, etc.).
 
     Resource reclamation in this mode happens via the orphan reaper on next
-    Hermes startup, not on graceful exit. Issue #20561 — the first iteration
+    Tino startup, not on graceful exit. Issue #20561 — the first iteration
     of this PR did docker stop here, which Ben caught as contradicting the
     "ONE long-lived container" semantics."""
     monkeypatch.setattr(docker_env, "find_docker", lambda: "/usr/bin/docker")

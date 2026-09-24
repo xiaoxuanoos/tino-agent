@@ -88,7 +88,7 @@ test('normalizeRemoteHeaders keeps safe proxy headers and drops transport/auth h
       Authorization: { encoding: 'plain', value: 'bearer' },
       Cookie: { encoding: 'plain', value: 'a=b' },
       Host: { encoding: 'plain', value: 'example.com' },
-      'X-Hermes-Session-Token': { encoding: 'plain', value: 'token' },
+      'X-Tino-Session-Token': { encoding: 'plain', value: 'token' },
       'Bad Header': { encoding: 'plain', value: 'bad' },
       Empty: { encoding: 'plain', value: '' }
     }),
@@ -1257,7 +1257,7 @@ test('gateway WS URL IPC result serializes success and the auth-vs-transport mat
 
   for (const error of [
     Object.assign(new Error('500: unavailable'), { statusCode: 500 }),
-    new Error('Timed out connecting to Hermes backend after 8000ms'),
+    new Error('Timed out connecting to Tino backend after 8000ms'),
     Object.assign(new Error('socket reset'), { code: 'ECONNRESET' })
   ]) {
     assert.deepEqual(await gatewayWsUrlIpcResult(async () => Promise.reject(error)), {
@@ -1374,7 +1374,7 @@ test('FIX #95701: a confirmed 401/403 ticket rejection is tagged isReauthRequire
 test('FIX #95701: transport and server failures at the ticket mint stay retryable — never reauth', () => {
   for (const source of [
     Object.assign(new Error('503: unavailable'), { statusCode: 503 }),
-    new Error('Timed out connecting to Hermes backend after 8000ms'),
+    new Error('Timed out connecting to Tino backend after 8000ms'),
     Object.assign(new Error('read ECONNRESET'), { code: 'ECONNRESET' })
   ]) {
     const wrapped = gatewayTicketFailure(source, 'auth copy', 'transport copy') as any

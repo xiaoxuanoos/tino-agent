@@ -1,4 +1,4 @@
-"""Hermes CLI - Unified command-line interface for Hermes Agent."""
+"""Tino CLI - Unified command-line interface for Tino Agent."""
 
 import os
 import sys

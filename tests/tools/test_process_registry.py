@@ -12,7 +12,7 @@ import time
 import pytest
 from unittest.mock import MagicMock, patch
 
-from tools.environments.local_env_policy import _HERMES_PROVIDER_ENV_FORCE_PREFIX
+from tools.environments.local_env_policy import _TINO_PROVIDER_ENV_FORCE_PREFIX
 from tools.process_registry import (
     ProcessRegistry,
     ProcessSession,
@@ -917,7 +917,7 @@ class TestSpawnEnvSanitization:
                 env_vars={
                     "MY_CUSTOM_VAR": "keep-me",
                     "TELEGRAM_BOT_TOKEN": "drop-me",
-                    f"{_HERMES_PROVIDER_ENV_FORCE_PREFIX}TELEGRAM_BOT_TOKEN": "forced-bot-token",
+                    f"{_TINO_PROVIDER_ENV_FORCE_PREFIX}TELEGRAM_BOT_TOKEN": "forced-bot-token",
                 },
             )
 
@@ -925,7 +925,7 @@ class TestSpawnEnvSanitization:
         assert env["MY_CUSTOM_VAR"] == "keep-me"
         assert env["TELEGRAM_BOT_TOKEN"] == "forced-bot-token"
         assert "FIRECRAWL_API_KEY" not in env
-        assert f"{_HERMES_PROVIDER_ENV_FORCE_PREFIX}TELEGRAM_BOT_TOKEN" not in env
+        assert f"{_TINO_PROVIDER_ENV_FORCE_PREFIX}TELEGRAM_BOT_TOKEN" not in env
         assert env["PYTHONUNBUFFERED"] == "1"
 
     def test_spawn_via_env_checks_returncode_when_wrapper_fails(self, registry):
@@ -2158,7 +2158,7 @@ class TestSystemdCgroupIsolation:
     @pytest.fixture()
     def _gateway_identity(self, monkeypatch):
         """Opt-in: mark this test as running AS the live gateway process."""
-        monkeypatch.setenv("_HERMES_GATEWAY", "1")
+        monkeypatch.setenv("_TINO_GATEWAY", "1")
         monkeypatch.setattr(
             "gateway.status.get_running_pid",
             lambda *, cleanup_stale=False: os.getpid(),
@@ -2315,7 +2315,7 @@ class TestSystemdCgroupIsolation:
         alone must not activate the gateway-only systemd scope path.
         """
         monkeypatch.setenv("INVOCATION_ID", "herdr-service-inherited-marker")
-        monkeypatch.delenv("_HERMES_GATEWAY", raising=False)
+        monkeypatch.delenv("_TINO_GATEWAY", raising=False)
         monkeypatch.setattr("tools.process_registry._find_shell", lambda: "/bin/bash")
         monkeypatch.setattr(
             "tools.process_registry._systemd_run_user_scope_available",
@@ -2357,12 +2357,12 @@ class TestSystemdCgroupIsolation:
     ):
         """Gateway descendants are not the gateway process that owns the PID file.
 
-        _HERMES_GATEWAY is inherited (and set by importing gateway.run), so
+        _TINO_GATEWAY is inherited (and set by importing gateway.run), so
         both it and INVOCATION_ID may be present in a child process. The
         PID-ownership gate must still keep the scope path off.
         """
         monkeypatch.setenv("INVOCATION_ID", "inherited-systemd-marker")
-        monkeypatch.setenv("_HERMES_GATEWAY", "1")
+        monkeypatch.setenv("_TINO_GATEWAY", "1")
         monkeypatch.setattr(
             "gateway.status.get_running_pid",
             lambda *, cleanup_stale=False: os.getpid() + 1,

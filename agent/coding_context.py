@@ -1,6 +1,6 @@
 """Coding-context awareness: the single place that decides "are we coding?".
 
-In a code workspace on an interactive surface Hermes adopts a **coding posture**: a
+In a code workspace on an interactive surface Tino adopts a **coding posture**: a
 frozen :class:`RuntimeMode` built from a :class:`ContextProfile` (pure data). The
 system prompt reads ``system_prompt_parts()``; the toolset collapses ONLY under opt-in
 ``focus`` (never strips a user-enabled toolset). ``agent.coding_context``: ``auto``
@@ -80,7 +80,7 @@ _EDIT_FORMAT_GUIDANCE: dict[str, tuple[tuple[str, ...], str]] = {
     ),
 }
 
-# Operating brief. Tool names referenced here are in the coding toolset and _HERMES_CORE_TOOLS.
+# Operating brief. Tool names referenced here are in the coding toolset and _TINO_CORE_TOOLS.
 CODING_AGENT_GUIDANCE = (
     "You are a coding agent pairing with the user inside their codebase. "
     "Operate like a careful senior engineer.\n"
@@ -318,7 +318,7 @@ class RuntimeMode:
 
     def toolset_selection(self, config: Optional[dict[str, Any]] = None) -> Optional[list[str]]:
         """Toolset list (only under ``focus``), or ``None`` to keep the platform default. Callers
-        apply it only when the user hasn't pinned a selection (``--toolsets``, ``HERMES_TUI_TOOLSETS``)."""
+        apply it only when the user hasn't pinned a selection (``--toolsets``, ``TINO_TUI_TOOLSETS``)."""
         if self.config_mode != "focus" or self.profile.toolset is None:
             return None
         return [self.profile.toolset, *_enabled_mcp_servers(config)]
@@ -387,7 +387,7 @@ def resolve_runtime_mode(
 # ── Functional API (thin wrappers over RuntimeMode) ──────────────────────────
 
 def is_coding_context(*, platform: Optional[str] = None, cwd: Optional[str | Path] = None, config: Optional[dict[str, Any]] = None) -> bool:
-    """Whether Hermes should operate in its coding posture right now."""
+    """Whether Tino should operate in its coding posture right now."""
     return resolve_runtime_mode(platform=platform, cwd=cwd, config=config).is_coding
 
 

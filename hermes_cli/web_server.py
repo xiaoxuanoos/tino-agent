@@ -1,4 +1,4 @@
-"""Hermes Agent — Web UI server: FastAPI app assembly, auth/host middleware, ``start_server``.
+"""Tino Agent — Web UI server: FastAPI app assembly, auth/host middleware, ``start_server``.
 
 Route handlers live in ``web_routers/``; their helpers live in the sibling
 ``web_server_<concern>`` modules and are re-imported here so ``web_server.<name>``
@@ -55,7 +55,7 @@ except ImportError:
             f"Install with: {sys.executable} -m pip install 'fastapi' 'uvicorn[standard]'"
         )
 
-WEB_DIST = Path(os.environ["HERMES_WEB_DIST"]) if "HERMES_WEB_DIST" in os.environ else Path(__file__).parent / "web_dist"
+WEB_DIST = Path(os.environ["TINO_WEB_DIST"]) if "TINO_WEB_DIST" in os.environ else Path(__file__).parent / "web_dist"
 _log = logging.getLogger(__name__)
 
 
@@ -201,12 +201,12 @@ async def _lifespan(app: "FastAPI"):
     )
     hosted_room_start_thread.start()
 
-    # Desktop-spawned backends (HERMES_DESKTOP=1) fire cron jobs themselves,
+    # Desktop-spawned backends (TINO_DESKTOP=1) fire cron jobs themselves,
     # since the app has no gateway running the scheduler. Server `hermes
     # dashboard` is unaffected — it relies on its own gateway.
     cron_stop: "threading.Event | None" = None
     cron_thread: "threading.Thread | None" = None
-    if os.getenv("HERMES_DESKTOP") == "1":
+    if os.getenv("TINO_DESKTOP") == "1":
         # Reap an orphaned gateway from an abnormal previous exit (reparented to
         # launchd, still holding the platform WebSocket) before forking a fresh
         # one that would race the same credential (#77276). Runs
@@ -251,7 +251,7 @@ async def _lifespan(app: "FastAPI"):
     threading.Thread(target=_boot_local_runtime, daemon=True, name="local-runtime-boot").start()
 
     # Nous free tier: the ONE place its identity is created. Inventories credentials, mints only
-    # when HERMES_GUEST_ONBOARDING=1, records the answer for setup.status / free_tier.status and
+    # when TINO_GUEST_ONBOARDING=1, records the answer for setup.status / free_tier.status and
     # broadcasts `setup.ready`. Off-thread so a slow portal never delays the socket; the desktop's
     # first setup.status waits on the record (bounded) instead.
     from hermes_cli.free_tier_bootstrap import start_background_bootstrap
@@ -277,7 +277,7 @@ async def _lifespan(app: "FastAPI"):
             shutdown_local_runtime()
         except Exception:  # noqa: BLE001
             pass
-        if os.getenv("HERMES_DESKTOP") == "1":
+        if os.getenv("TINO_DESKTOP") == "1":
             _terminate_desktop_managed_gateway()
         eager_reconcile_thread.join()
 
@@ -304,7 +304,16 @@ def _get_pty_active_session_files(app: "FastAPI") -> dict[str, Path]:
     return _app_state_default(app, "pty_active_session_files", dict)
 
 
-app = FastAPI(title="Hermes Agent", version=__version__, lifespan=_lifespan)
+app = FastAPI(
+    title="Tino Agent",
+    version=__version__,
+    lifespan=_lifespan,
+    # Keep /docs for the first-party workspace help page. API docs are
+    # sensitive on an agent server and must pass through the normal API gate.
+    docs_url="/api/docs",
+    redoc_url="/api/redoc",
+    openapi_url="/api/openapi.json",
+)
 
 
 # Memory-provider OAuth connect routes live in the memory layer, not here.
@@ -313,14 +322,14 @@ from hermes_cli.memory_oauth import router as _memory_oauth_router  # noqa: E402
 app.include_router(_memory_oauth_router)
 
 # Session token for sensitive endpoints. The desktop shell mints it via
-# HERMES_DASHBOARD_SESSION_TOKEN; otherwise fresh per server start. It dies with
+# TINO_DASHBOARD_SESSION_TOKEN; otherwise fresh per server start. It dies with
 # the process and is injected into the SPA HTML so only the web UI can use it.
 def _resolve_session_token() -> str:
-    return os.environ.get("HERMES_DASHBOARD_SESSION_TOKEN") or secrets.token_urlsafe(32)
+    return os.environ.get("TINO_DASHBOARD_SESSION_TOKEN") or secrets.token_urlsafe(32)
 
 
 _SESSION_TOKEN = _resolve_session_token()
-_SESSION_HEADER_NAME = "X-Hermes-Session-Token"
+_SESSION_HEADER_NAME = "X-Tino-Session-Token"
 _SSH_OWNER_NONCE: Optional[str] = None
 _SSH_RUNTIME_PURELIB: Optional[Tuple[str, int, int]] = None
 _SSH_RUNTIME_MARKER: Optional[str] = None
@@ -501,13 +510,13 @@ def _desktop_loopback_auth_exempt(
     per-spawn session token the gate's WS path refuses — Desktop could not boot.
     The public dashboard is a separate non-loopback process that stays gated, so
     this never opens the public surface. Requires ALL of: loopback bind,
-    ``HERMES_DESKTOP=1``, and an operator-minted credential (env token, SSH
+    ``TINO_DESKTOP=1``, and an operator-minted credential (env token, SSH
     session token, or owner nonce).
     """
     return (
         host in _LOOPBACK_HOST_VALUES
-        and os.environ.get("HERMES_DESKTOP") == "1"
-        and bool(os.environ.get("HERMES_DASHBOARD_SESSION_TOKEN") or ssh_session_token or ssh_owner_nonce)
+        and os.environ.get("TINO_DESKTOP") == "1"
+        and bool(os.environ.get("TINO_DASHBOARD_SESSION_TOKEN") or ssh_session_token or ssh_owner_nonce)
     )
 
 
@@ -825,7 +834,7 @@ _FS_DATA_URL_MAX_BYTES = 16 * 1024 * 1024
 _UPLOAD_CHUNK_BYTES = 1024 * 1024
 
 # Stable install identity for /api/status: one uuid4 hex per physical install,
-# persisted under the ROOT Hermes home (not the profile HERMES_HOME) so every
+# persisted under the ROOT Tino home (not the profile TINO_HOME) so every
 # profile reports the same id and the desktop can collapse duplicate roster rows
 # for one backend. Must never change across restarts, so cached per process.
 _INSTALL_ID_CACHE: Dict[str, Optional[str]] = {"root": None, "value": None}
@@ -1033,7 +1042,7 @@ def _no_auth_provider_message(host: str) -> str:
         fix_hint = (
             "If this dashboard should be LOCAL-ONLY (no reverse "
             "proxy), remove dashboard.public_url from config.yaml "
-            "(and unset HERMES_DASHBOARD_PUBLIC_URL) to restore the "
+            "(and unset TINO_DASHBOARD_PUBLIC_URL) to restore the "
             "unauthenticated loopback mode.\n"
         )
     else:
@@ -1237,13 +1246,13 @@ def _on_server_started(
 
         reap_orphaned_mcp_helpers()
 
-    if os.getenv("HERMES_DESKTOP") == "1":
+    if os.getenv("TINO_DESKTOP") == "1":
         _best_effort("orphan desktop-local serve reap", _reap_desktop_serves)
     # Same sweep for stdio MCP helpers (#61514): positive identity only (spawn
     # ledger + spawner provably dead); anything alive or unprovable is untouched.
     _best_effort("orphan MCP helper reap", _reap_mcp_helpers)
 
-    # No-op for standalone `hermes serve` (no HERMES_PARENT_PID).
+    # No-op for standalone `hermes serve` (no TINO_PARENT_PID).
     _start_parent_death_watchdog()
     # SSH-isolated backends are detached from any parent on purpose (#91668); their liveness signal
     # is "does a client still hold a WebSocket" (#101626).
@@ -1277,14 +1286,14 @@ def _on_server_started(
     # Port-discovery sentinel parsed by the Desktop spawn (matches either
     # token). Written to fd 1: tui_gateway.server redirects sys.stdout to
     # stderr at import, and the Desktop watches child.stdout (#96282).
-    ready_token = "HERMES_BACKEND_READY" if headless else "HERMES_DASHBOARD_READY"
+    ready_token = "TINO_BACKEND_READY" if headless else "TINO_DASHBOARD_READY"
     _write_machine_sentinel_line(f"{ready_token} port={actual_port}")
     if headless:
         # Auth-gated JSON-RPC/WS only — announce the bind, not a URL. flush:
         # a piped stdout otherwise surfaces this minutes after the sentinel.
-        print(f"  Hermes backend listening on {host}:{actual_port}", flush=True)
+        print(f"  Tino backend listening on {host}:{actual_port}", flush=True)
     else:
-        print(f"  Hermes Web UI → http://{host}:{actual_port}")
+        print(f"  Tino Web UI → http://{host}:{actual_port}")
     _maybe_open_browser(host, actual_port, open_browser, initial_profile)
 
     if start_mcp_discovery_after_bind:
@@ -1388,7 +1397,7 @@ def start_server(
 
     ``initial_profile`` is appended to the auto-opened URL as ``?profile=<name>``
     (profile alias ``<profile> dashboard``). ``headless`` is the ``serve`` path:
-    JSON-RPC/WS backend, no UI build, no SPA mount (``HERMES_SERVE_HEADLESS``).
+    JSON-RPC/WS backend, no UI build, no SPA mount (``TINO_SERVE_HEADLESS``).
     ``ssh_session_token``/``ssh_owner_nonce`` are process-local Desktop SSH
     bootstrap state, never persisted or exported to children.
     ``start_mcp_discovery_after_bind`` (Desktop ``serve``) defers MCP discovery

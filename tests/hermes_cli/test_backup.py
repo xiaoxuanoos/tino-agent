@@ -193,7 +193,7 @@ class TestShouldExclude:
 
     def test_excludes_desktop_emergency_state_db_baks(self):
         """The desktop updater's pre-flight drops timestamped
-        state.db.pre-update-emergency-*.bak files at the HERMES_HOME root —
+        state.db.pre-update-emergency-*.bak files at the TINO_HOME root —
         backup artifacts in the same class as backups/, so a full backup
         must not re-ship them."""
         from hermes_cli.backup import _should_exclude
@@ -316,7 +316,7 @@ class TestBackup:
         hermes_home.mkdir()
         _make_hermes_tree(hermes_home)
 
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        monkeypatch.setenv("TINO_HOME", str(hermes_home))
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
 
         out_dir = tmp_path / "external-drive"
@@ -347,7 +347,7 @@ class TestBackup:
         hermes_home.mkdir()
         _make_hermes_tree(hermes_home)
 
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        monkeypatch.setenv("TINO_HOME", str(hermes_home))
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
 
         out_zip = hermes_home / "backups" / "pre-update-test.zip"
@@ -374,7 +374,7 @@ class TestBackup:
 
 
     def test_skips_symlinked_files(self, tmp_path, monkeypatch):
-        """Backup must not dereference symlinks and leak files outside HERMES_HOME."""
+        """Backup must not dereference symlinks and leak files outside TINO_HOME."""
         hermes_home = tmp_path / ".hermes"
         hermes_home.mkdir()
         _make_hermes_tree(hermes_home)
@@ -382,7 +382,7 @@ class TestBackup:
         outside.write_text("outside secret\n")
         _symlink_file_or_skip(hermes_home / "skills" / "outside-link.txt", outside)
 
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        monkeypatch.setenv("TINO_HOME", str(hermes_home))
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
 
         out_zip = tmp_path / "backup.zip"
@@ -414,7 +414,7 @@ class TestBackup:
         snap_id = create_quick_snapshot(hermes_home=hermes_home)
         assert snap_id and (hermes_home / _QUICK_SNAPSHOTS_DIR / snap_id / "state.db").exists()
 
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        monkeypatch.setenv("TINO_HOME", str(hermes_home))
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
         out_zip = tmp_path / "backup.zip"
         run_backup(Namespace(output=str(out_zip)))
@@ -437,7 +437,7 @@ class TestValidateBackupZip:
                 zf.writestr(name, "dummy")
 
     def test_state_db_passes(self, tmp_path):
-        """A zip containing state.db is accepted as a valid Hermes backup."""
+        """A zip containing state.db is accepted as a valid Tino backup."""
         from hermes_cli.backup import _validate_backup_zip
         zip_path = tmp_path / "backup.zip"
         self._make_zip(zip_path, ["state.db", "sessions/abc.json"])
@@ -468,7 +468,7 @@ class TestImport:
 
         hermes_home = tmp_path / ".hermes"
         hermes_home.mkdir()
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        monkeypatch.setenv("TINO_HOME", str(hermes_home))
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
 
         calls = []
@@ -492,7 +492,7 @@ class TestImport:
 
         hermes_home = tmp_path / ".hermes"
         hermes_home.mkdir()
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        monkeypatch.setenv("TINO_HOME", str(hermes_home))
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
 
         calls = []
@@ -515,7 +515,7 @@ class TestImport:
         and prints the manual fallback."""
         hermes_home = tmp_path / ".hermes"
         hermes_home.mkdir()
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        monkeypatch.setenv("TINO_HOME", str(hermes_home))
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
 
         import hermes_cli.gateway as gateway_mod
@@ -532,7 +532,7 @@ class TestImport:
         run_import(Namespace(zipfile=str(zip_path), force=True))
 
         out = capsys.readouterr().out
-        assert "Done. Your Hermes configuration has been restored." in out
+        assert "Done. Your Tino configuration has been restored." in out
         assert "hermes gateway install" in out
 
 
@@ -547,7 +547,7 @@ class TestImport:
         the same way the root profile's is."""
         hermes_home = tmp_path / ".hermes"
         (hermes_home / "profiles" / "coder").mkdir(parents=True)
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        monkeypatch.setenv("TINO_HOME", str(hermes_home))
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
 
         live_state = '{"gateway_state": "running"}'
@@ -577,7 +577,7 @@ class TestImport:
         written over the target's."""
         hermes_home = tmp_path / ".hermes"
         hermes_home.mkdir()
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        monkeypatch.setenv("TINO_HOME", str(hermes_home))
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
 
         # Live runtime files belonging to the target's own processes.
@@ -612,7 +612,7 @@ class TestImport:
         """Secret files must end up at 0600 after restore (zipfile drops mode bits)."""
         hermes_home = tmp_path / ".hermes"
         hermes_home.mkdir()
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        monkeypatch.setenv("TINO_HOME", str(hermes_home))
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
 
         zip_path = tmp_path / "backup.zip"
@@ -646,7 +646,7 @@ class TestRoundTrip:
         src_home.mkdir(parents=True)
         _make_hermes_tree(src_home)
 
-        monkeypatch.setenv("HERMES_HOME", str(src_home))
+        monkeypatch.setenv("TINO_HOME", str(src_home))
         monkeypatch.setattr(Path, "home", lambda: tmp_path / "source")
 
         # Backup
@@ -659,7 +659,7 @@ class TestRoundTrip:
         # Import into a different location
         dst_home = tmp_path / "dest" / ".hermes"
         dst_home.mkdir(parents=True)
-        monkeypatch.setenv("HERMES_HOME", str(dst_home))
+        monkeypatch.setenv("TINO_HOME", str(dst_home))
         monkeypatch.setattr(Path, "home", lambda: tmp_path / "dest")
 
         run_import(Namespace(zipfile=str(out_zip), force=True))
@@ -747,7 +747,7 @@ class TestBackupEdgeCases:
         unreadable.chmod(0)
         if os.access(unreadable, os.R_OK):
             pytest.skip("running as root: chmod 0 does not make the file unreadable")
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        monkeypatch.setenv("TINO_HOME", str(hermes_home))
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
         from hermes_cli.backup import _RUN_BACKUP_PREFIX, run_backup
         from hermes_cli.main import cmd_backup
@@ -776,7 +776,7 @@ class TestBackupEdgeCases:
         (hermes_home / "__pycache__").mkdir()
         (hermes_home / "__pycache__" / "foo.pyc").write_bytes(b"\x00")
 
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        monkeypatch.setenv("TINO_HOME", str(hermes_home))
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
 
         args = Namespace(output=str(tmp_path / "out.zip"))
@@ -799,7 +799,7 @@ class TestBackupEdgeCases:
         old_file.write_text("old data")
         os.utime(old_file, (0, 0))
 
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        monkeypatch.setenv("TINO_HOME", str(hermes_home))
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
 
         out_zip = tmp_path / "out.zip"
@@ -830,7 +830,7 @@ class TestImportEdgeCases:
         hermes_home = tmp_path / ".hermes"
         hermes_home.mkdir()
         (hermes_home / "config.yaml").write_text("existing\n")
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        monkeypatch.setenv("TINO_HOME", str(hermes_home))
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
 
         zip_path = tmp_path / "backup.zip"
@@ -849,7 +849,7 @@ class TestImportEdgeCases:
         """Import shows progress with 500+ files."""
         hermes_home = tmp_path / ".hermes"
         hermes_home.mkdir()
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        monkeypatch.setenv("TINO_HOME", str(hermes_home))
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
 
         zip_path = tmp_path / "big.zip"
@@ -907,7 +907,7 @@ class TestImportAtomicWrites:
 
     The pre-fix code did ``open(target, "wb")`` then ``dst.write(src.read())``,
     which zeroes the existing file *before* any replacement bytes exist. These
-    tests pin the invariant for both restore branches: the HERMES_HOME branch
+    tests pin the invariant for both restore branches: the TINO_HOME branch
     and the ``_external/`` branch that writes into third-party configs under
     the user's home.
     """
@@ -923,7 +923,7 @@ class TestImportAtomicWrites:
         hermes_home.mkdir()
         original = "model: original\napi_key: keep-me\n"
         (hermes_home / "config.yaml").write_text(original)
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        monkeypatch.setenv("TINO_HOME", str(hermes_home))
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
 
         zip_path = tmp_path / "backup.zip"
@@ -939,7 +939,7 @@ class TestImportAtomicWrites:
         assert list(hermes_home.glob(".config.yaml.*")) == []
 
     def test_failed_external_member_leaves_existing_file_intact(self, tmp_path, monkeypatch):
-        """Same invariant on the `_external/` branch, which writes outside HERMES_HOME."""
+        """Same invariant on the `_external/` branch, which writes outside TINO_HOME."""
         dst_home = tmp_path / "dst"
         dst_home.mkdir()
         hermes_home = dst_home / ".hermes"
@@ -955,7 +955,7 @@ class TestImportAtomicWrites:
             "_external/.honcho/config.json": '{"peer":"replacement"}',
         })
 
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        monkeypatch.setenv("TINO_HOME", str(hermes_home))
         monkeypatch.setattr(Path, "home", lambda: dst_home)
         _break_member(monkeypatch, "_external/.honcho/config.json")
 
@@ -982,7 +982,7 @@ class TestImportAtomicWrites:
         link = hermes_home / "config.yaml"
         link.symlink_to(real)
 
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        monkeypatch.setenv("TINO_HOME", str(hermes_home))
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
 
         zip_path = tmp_path / "backup.zip"
@@ -1010,7 +1010,7 @@ class TestImportAtomicWrites:
         link = honcho / "config.json"
         link.symlink_to(real)
 
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        monkeypatch.setenv("TINO_HOME", str(hermes_home))
         monkeypatch.setattr(Path, "home", lambda: dst_home)
 
         zip_path = tmp_path / "backup.zip"
@@ -1038,7 +1038,7 @@ class TestImportAtomicWrites:
         target = hermes_home / "config.yaml"
         target.write_text("model: original\n")
         os.chmod(target, 0o644)
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        monkeypatch.setenv("TINO_HOME", str(hermes_home))
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
 
         zip_path = tmp_path / "backup.zip"
@@ -1056,14 +1056,14 @@ class TestImportAtomicWrites:
 
         ``os.replace`` swaps in a temp file owned by the *writing* user, so a
         ``sudo hermes import`` onto a user-owned (or Docker/NAS volume-owned)
-        HERMES_HOME would hand every restored file to root. The uid/gid is
+        TINO_HOME would hand every restored file to root. The uid/gid is
         forced so the assertion does not require running as root.
         """
         hermes_home = tmp_path / ".hermes"
         hermes_home.mkdir()
         target = hermes_home / "config.yaml"
         target.write_text("model: original\n")
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        monkeypatch.setenv("TINO_HOME", str(hermes_home))
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
 
         zip_path = tmp_path / "backup.zip"
@@ -1102,7 +1102,7 @@ class TestImportAtomicWrites:
         target = hermes_home / "config.yaml"
         target.write_text("model: original\n")
         os.chmod(target, 0o644)
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        monkeypatch.setenv("TINO_HOME", str(hermes_home))
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
 
         zip_path = tmp_path / "backup.zip"
@@ -1154,7 +1154,7 @@ class TestImportAtomicWrites:
         os.chmod(target, 0o6755)
         if stat.S_IMODE(target.stat().st_mode) != 0o6755:
             pytest.skip("filesystem refuses setuid/setgid on a user-owned file")
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        monkeypatch.setenv("TINO_HOME", str(hermes_home))
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
 
         zip_path = tmp_path / "backup.zip"
@@ -1211,7 +1211,7 @@ class TestProfileRestoration:
         """Import doesn't create wrappers for profile dirs without config."""
         hermes_home = tmp_path / ".hermes"
         hermes_home.mkdir()
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        monkeypatch.setenv("TINO_HOME", str(hermes_home))
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
 
         wrapper_dir = tmp_path / ".local" / "bin"
@@ -1367,7 +1367,7 @@ class TestSafeCopyDb:
 class TestQuickSnapshot:
     @pytest.fixture
     def hermes_home(self, tmp_path):
-        """Create a fake HERMES_HOME with critical state files."""
+        """Create a fake TINO_HOME with critical state files."""
         home = tmp_path / ".hermes"
         home.mkdir()
         (home / "config.yaml").write_text("model:\n  provider: openrouter\n")
@@ -1782,7 +1782,7 @@ class TestPreUpdateBackup:
 
 
     def test_skips_symlinked_files(self, hermes_home, tmp_path):
-        """Pre-update backups must not dereference symlinks outside HERMES_HOME."""
+        """Pre-update backups must not dereference symlinks outside TINO_HOME."""
         from hermes_cli.backup import create_pre_update_backup
 
         outside = tmp_path / "outside-secret.txt"
@@ -1807,11 +1807,11 @@ class TestRunPreUpdateBackup:
         root = tmp_path / ".hermes"
         root.mkdir()
         _make_hermes_tree(root)
-        # Point HERMES_HOME at the temp dir so config + backup paths resolve here
-        monkeypatch.setenv("HERMES_HOME", str(root))
+        # Point TINO_HOME at the temp dir so config + backup paths resolve here
+        monkeypatch.setenv("TINO_HOME", str(root))
         # Make Path.home() point at tmp_path for anything that uses it
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
-        # Config reads resolve HERMES_HOME dynamically and their caches are
+        # Config reads resolve TINO_HOME dynamically and their caches are
         # keyed by config path. Do not remove shared modules from sys.modules:
         # other test modules may retain imports from the existing module object.
         return root
@@ -1881,7 +1881,7 @@ class TestPreMigrationBackup:
 
 
     def test_restorable_with_hermes_import(self, hermes_home, tmp_path):
-        """The zip produced by pre-migration backup must be a valid Hermes
+        """The zip produced by pre-migration backup must be a valid Tino
         backup — `hermes import` should accept it."""
         from hermes_cli.backup import create_pre_migration_backup, _validate_backup_zip
         out = create_pre_migration_backup(hermes_home=hermes_home)
@@ -2138,7 +2138,7 @@ class TestRestoreConfigModelSettingsIfRewritten:
 # ---------------------------------------------------------------------------
 # Memory-provider external paths (~/.honcho, ~/.hindsight, ...) — captured via
 # MemoryProvider.backup_paths() and restored to their original home-relative
-# location, NOT under HERMES_HOME. (backup/import cycle data-loss fix)
+# location, NOT under TINO_HOME. (backup/import cycle data-loss fix)
 # ---------------------------------------------------------------------------
 
 class TestMemoryProviderExternalPaths:
@@ -2158,7 +2158,7 @@ class TestMemoryProviderExternalPaths:
         outside.mkdir(exist_ok=True)
         (outside / "leak.json").write_text('{"secret":1}')
 
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        monkeypatch.setenv("TINO_HOME", str(hermes_home))
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
 
         import hermes_cli.backup as backup_mod
@@ -2177,7 +2177,7 @@ class TestMemoryProviderExternalPaths:
         outside.rmdir()
 
     def test_import_restores_external_to_home_relative_location(self, tmp_path, monkeypatch):
-        """_external/ members restore to ~/<relpath>, not under HERMES_HOME,
+        """_external/ members restore to ~/<relpath>, not under TINO_HOME,
         and credential-shaped files get 0600."""
         dst_home = tmp_path / "dst"
         dst_home.mkdir()
@@ -2191,7 +2191,7 @@ class TestMemoryProviderExternalPaths:
             zf.writestr("state.db", "")
             zf.writestr("_external/.honcho/config.json", '{"peer":"bob"}')
 
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        monkeypatch.setenv("TINO_HOME", str(hermes_home))
         monkeypatch.setattr(Path, "home", lambda: dst_home)
 
         from hermes_cli.backup import run_import
@@ -2202,12 +2202,12 @@ class TestMemoryProviderExternalPaths:
         assert restored.read_text() == '{"peer":"bob"}'
         # Credential-shaped file tightened.
         assert (restored.stat().st_mode & 0o777) == 0o600
-        # External state did NOT leak into HERMES_HOME.
+        # External state did NOT leak into TINO_HOME.
         assert not (hermes_home / "_external").exists()
 
 
 # ---------------------------------------------------------------------------
-# run_import: HERMES_HOME override handling (issue #99839)
+# run_import: TINO_HOME override handling (issue #99839)
 # ---------------------------------------------------------------------------
 
 
@@ -2234,7 +2234,7 @@ class TestImportHonorsHermesHomeOverride:
         return zip_path
 
     def test_import_targets_named_profile_home(self, tmp_path, monkeypatch):
-        """HERMES_HOME=<root>/profiles/<name> must restore INTO the profile,
+        """TINO_HOME=<root>/profiles/<name> must restore INTO the profile,
         not into <root> (which would clobber the live root config)."""
         root = tmp_path / "hermes-root"
         profile = root / "profiles" / "coder"
@@ -2242,7 +2242,7 @@ class TestImportHonorsHermesHomeOverride:
         # Live root config that must survive untouched.
         (root / "config.yaml").write_text("model:\n  provider: openai\n")
 
-        monkeypatch.setenv("HERMES_HOME", str(profile))
+        monkeypatch.setenv("TINO_HOME", str(profile))
         from hermes_constants import get_hermes_home
 
         assert get_hermes_home() == profile
@@ -2274,7 +2274,7 @@ class TestImportHonorsHermesHomeOverride:
         native_default.mkdir()
         (native_default / "config.yaml").write_text("model:\n  provider: openai\n")
 
-        monkeypatch.setenv("HERMES_HOME", str(sandbox))
+        monkeypatch.setenv("TINO_HOME", str(sandbox))
 
         import argparse
 
@@ -2309,7 +2309,7 @@ class TestImportHonorsHermesHomeOverride:
         """Restoring into the default home keeps the auto-install behavior."""
         native_default = tmp_path / "native-default"
         native_default.mkdir()
-        monkeypatch.setenv("HERMES_HOME", str(native_default))
+        monkeypatch.setenv("TINO_HOME", str(native_default))
 
         import argparse
 
@@ -2343,7 +2343,7 @@ class TestImportHonorsHermesHomeOverride:
 # ---------------------------------------------------------------------------
 
 def _write_session_db(path: Path, sessions: int, messages_per_session: int) -> None:
-    """Create a minimal Hermes-shaped session database at *path*."""
+    """Create a minimal Tino-shaped session database at *path*."""
     conn = sqlite3.connect(str(path))
     try:
         conn.execute(
@@ -2370,7 +2370,7 @@ def _write_session_db(path: Path, sessions: int, messages_per_session: int) -> N
 
 
 class TestImportLiveSessionDatabase:
-    """`hermes import` must not swap the inode of a database Hermes holds open.
+    """`hermes import` must not swap the inode of a database Tino holds open.
 
     Publishing state.db with a rename leaves any live gateway/dashboard/WebUI
     connection reading and writing the unlinked inode, so its sessions vanish
@@ -2384,7 +2384,7 @@ class TestImportLiveSessionDatabase:
     def _prepare(self, tmp_path, monkeypatch, live=(3, 4), backup=(2, 2)):
         home = tmp_path / ".hermes"
         home.mkdir()
-        monkeypatch.setenv("HERMES_HOME", str(home))
+        monkeypatch.setenv("TINO_HOME", str(home))
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
 
         live_db = home / "state.db"
@@ -2487,7 +2487,7 @@ class TestImportLiveSessionDatabase:
 
         home = tmp_path / ".hermes"
         home.mkdir()
-        monkeypatch.setenv("HERMES_HOME", str(home))
+        monkeypatch.setenv("TINO_HOME", str(home))
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
 
         staged = tmp_path / "backup-state.db"
@@ -2519,7 +2519,7 @@ def test_run_backup_prunes_older_default_named_zips_but_not_others(tmp_path, mon
     home = tmp_path / ".hermes"
     home.mkdir()
     (home / "config.yaml").write_text("model: x\n")
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("TINO_HOME", str(home))
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
     for i in range(4):
         (tmp_path / f"hermes-backup-2026-01-0{i + 1}-000000.zip").write_bytes(b"old")

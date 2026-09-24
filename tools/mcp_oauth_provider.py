@@ -1,4 +1,4 @@
-"""Shared ``OAuthClientProvider`` customizations for Hermes MCP OAuth.
+"""Shared ``OAuthClientProvider`` customizations for Tino MCP OAuth.
 
 Two code paths build an SDK provider — ``tools.mcp_oauth.build_oauth_auth`` (legacy public
 API) and ``tools.mcp_oauth_manager.MCPOAuthManager`` — and both need the same real-world
@@ -26,10 +26,10 @@ _DISCOVERY_CONTEXT_LEAD = "Could not read authorization-server metadata"
 
 
 def _default_auth_request_user_agent() -> str:
-    """``Hermes-Agent/<version>`` for SDK-built OAuth requests that would otherwise carry no User-Agent at
+    """``Tino-Agent/<version>`` for SDK-built OAuth requests that would otherwise carry no User-Agent at
     all; versioned so an operator debugging a WAF block can tell which client they are looking at."""
     from hermes_cli import __version__
-    return f"Hermes-Agent/{__version__}"
+    return f"Tino-Agent/{__version__}"
 
 
 DEFAULT_AUTH_REQUEST_USER_AGENT = _default_auth_request_user_agent()
@@ -80,7 +80,7 @@ class HermesProviderMixin:
       endpoint rejects the exchange (looping the browser page) — coerce ``client_secret_post``.
     - ``token_user_agent`` (``oauth.user_agent``) is stamped onto token-endpoint requests only
       (some authorization servers/WAFs reject httpx's default); unset falls back to the shared
-      ``Hermes-Agent/<version>`` default, since a header-less token POST is 403'd by WAF-fronted
+      ``Tino-Agent/<version>`` default, since a header-less token POST is 403'd by WAF-fronted
       authorization servers (#115329).
     - Any 2xx token/refresh response is accepted; token bodies never leak into errors/logs."""
 
@@ -134,7 +134,7 @@ class HermesProviderMixin:
         installed on the context here and the SDK is handed an empty 204: ``handle_auth_metadata_response``
         reads that as "stop trying", leaving the installed document in place. ``auth_server_url`` is left
         untouched, so the SEP-2352 credential binding still uses the advertised identifier (stable across
-        runs), while the RFC 9207 ``iss`` check and Hermes' refresh-token binding use the document's issuer.
+        runs), while the RFC 9207 ``iss`` check and Tino's refresh-token binding use the document's issuer.
         Every other response goes back to the SDK unchanged, including its issuer check."""
         from mcp.shared.auth import OAuthMetadata
         from pydantic import ValidationError
@@ -152,7 +152,7 @@ class HermesProviderMixin:
 
     def _prepare_token_request(self, request):
         """Stamp a token/refresh request's User-Agent: the configured ``oauth.user_agent`` when set,
-        else the shared ``Hermes-Agent/<version>`` default. These requests are built by hand — the
+        else the shared ``Tino-Agent/<version>`` default. These requests are built by hand — the
         SDK's ``_exchange_token_authorization_code``/``_refresh_token`` and ``tools.mcp_oauth_device``
         — and travel through ``client.send()``, which never merges the client's default headers, so
         without a stamp the POST leaves with NO ``User-Agent`` at all and a WAF-fronted authorization
@@ -312,7 +312,7 @@ class HermesProviderMixin:
         await self._hermes_release_refresh_fence()
         storage = self.context.storage
         tokens_path = getattr(storage, "_tokens_path", None)
-        if tokens_path is None:  # pragma: no cover - non-Hermes storage
+        if tokens_path is None:  # pragma: no cover - non-Tino storage
             return
         self._hermes_fence = await acquire_refresh_fence(tokens_path())
 
@@ -410,7 +410,7 @@ class HermesProviderMixin:
         if not (200 <= response.status_code < 300):
             self._hermes_logger.warning("Token refresh failed: %s", response.status_code)
             # A writer outside the fence (interactive `hermes mcp login`, or a
-            # pre-fence Hermes sharing this HERMES_HOME) may have rotated the
+            # pre-fence Tino sharing this TINO_HOME) may have rotated the
             # grant and persisted the replacement. Providers issuing single-use
             # refresh tokens reject our stale copy with a 400. Re-read disk
             # before destroying the session.
@@ -449,7 +449,7 @@ class HermesProviderMixin:
         Returns True only when disk holds a pair that is BOTH different from
         the one we just failed with AND still live. That is the signature of
         a writer outside the fence (an interactive ``hermes mcp login`` or a
-        pre-fence Hermes) having rotated the grant between our read and our
+        pre-fence Tino) having rotated the grant between our read and our
         POST -- a recoverable race, not a dead credential.
 
         Returns False for the genuinely-expired case (nobody wrote a newer
@@ -513,7 +513,7 @@ def metadata_issued_by_origin(metadata: Any, auth_server_url: str | None, respon
 
 def bind_issuer_from_context(context: Any) -> None:
     """Record the discovered issuer so the next ``storage.set_tokens`` (exchange or refresh) carries
-    it. No-op when metadata is not discovered yet or storage is not Hermes'."""
+    it. No-op when metadata is not discovered yet or storage is not Tino'."""
     from tools.mcp_oauth import HermesTokenStorage
     storage = getattr(context, "storage", None)
     issuer = _metadata_issuer(context)

@@ -6,7 +6,7 @@ dispatcher ``start_oauth_login`` hardcoded ``_start_anthropic_pkce()``
 for any pkce-flagged provider. So clicking "Login" next to MiniMax in
 the dashboard's Keys tab silently launched the Anthropic/Claude OAuth
 flow. The Anthropic dashboard flow was later removed entirely because
-Hermes must not mint subscription OAuth tokens from an unattended HTTP
+Tino must not mint subscription OAuth tokens from an unattended HTTP
 endpoint; only the approved external CLI path remains.
 
 The fix:
@@ -36,11 +36,11 @@ import hermes_cli.web_routers.oauth as _rt_oauth
 import hermes_cli.web_server_oauth as _web_server_oauth
 
 client = TestClient(app)
-HEADERS = {"X-Hermes-Session-Token": _SESSION_TOKEN}
+HEADERS = {"X-Tino-Session-Token": _SESSION_TOKEN}
 
 
 def _make_profile_home(tmp_path, monkeypatch, profile="coder"):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("TINO_HOME", str(tmp_path))
     profile_home = tmp_path / "profiles" / profile
     profile_home.mkdir(parents=True)
     (profile_home / "config.yaml").write_text("{}\n")  # identity marker: a bare dir is not a profile
@@ -127,7 +127,7 @@ def test_minimax_start_route_honors_poller_mock_on_owning_module(tmp_path, monke
     """
     import threading
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("TINO_HOME", str(tmp_path))
     fake_user_code_resp = {
         "user_code": "ABCD-1234",
         "verification_uri": "https://api.minimax.io/oauth/verify",
@@ -232,7 +232,7 @@ def test_oauth_session_cannot_be_polled_or_cancelled_from_another_profile(
     """A named-profile OAuth session must reject default-profile retargeting."""
     from hermes_cli import web_server as ws
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("TINO_HOME", str(tmp_path))
     (tmp_path / "profiles" / "worker").mkdir(parents=True)
     (tmp_path / "profiles" / "worker" / "config.yaml").write_text("{}\n")  # identity marker
     session_id, _session = _rt_oauth._new_oauth_session(
@@ -646,7 +646,7 @@ def test_accounts_offers_every_oauth_provider_from_catalog():
 
 
 def test_oauth_catalog_marks_external_providers_not_disconnectable():
-    """External CLI credentials are visible in Accounts but cannot be removed by Hermes."""
+    """External CLI credentials are visible in Accounts but cannot be removed by Tino."""
     resp = client.get("/api/providers/oauth", headers=HEADERS)
     assert resp.status_code == 200, resp.text
     providers = {p["id"]: p for p in resp.json()["providers"]}
@@ -719,8 +719,8 @@ def test_xai_dashboard_poller_seeds_single_entry_and_clears_suppression(tmp_path
     from hermes_cli import web_server as ws
     from agent.credential_pool import load_pool
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
-    monkeypatch.delenv("HERMES_XAI_BASE_URL", raising=False)
+    monkeypatch.setenv("TINO_HOME", str(tmp_path))
+    monkeypatch.delenv("TINO_XAI_BASE_URL", raising=False)
     monkeypatch.delenv("XAI_BASE_URL", raising=False)
 
     # Existing chat provider must not be overwritten by dashboard OAuth.

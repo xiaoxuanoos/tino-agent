@@ -1,6 +1,6 @@
 """Regression coverage for Windows updater self-locking native dependencies.
 
-External secret backends are useful during normal Hermes startup, but the
+External secret backends are useful during normal Tino startup, but the
 updater must not load them before replacing packages in its own environment.
 On Windows, importing Bitwarden's ``cryptography`` dependency maps
 ``_rust.pyd`` into the updater process and prevents ``uv`` from replacing it.
@@ -56,7 +56,7 @@ secrets:
         text=True,
         timeout=120,
         cwd=REPO_ROOT,
-        env={**os.environ, "HERMES_HOME": str(home), "BWS_ACCESS_TOKEN": ""},
+        env={**os.environ, "TINO_HOME": str(home), "BWS_ACCESS_TOKEN": ""},
     )
     assert result.returncode == 0, result.stderr
     line = next(
@@ -136,7 +136,7 @@ def test_update_probe_children_skip_external_secret_sources(tmp_path):
          "from hermes_cli.update_cmd_deps import _validate_critical_modules_import\n"
          "print('PROBE=' + repr(_validate_critical_modules_import(__import__('os').getcwd())))"],
         capture_output=True, text=True, timeout=180, cwd=REPO_ROOT,
-        env={**os.environ, "HERMES_HOME": str(home)},
+        env={**os.environ, "TINO_HOME": str(home)},
     )
     assert result.returncode == 0, result.stderr
     assert "PROBE=(True, None, None)" in result.stdout, result.stdout + result.stderr

@@ -1,12 +1,12 @@
 """Tests for hermes_cli.agent_import — ``hermes import-agent``.
 
 Covers: source detection, Claude Code and Codex parsing, mapping into the
-real Hermes stores (memories/MEMORY.md, config.yaml command_allowlist /
+real Tino stores (memories/MEMORY.md, config.yaml command_allowlist /
 approvals.deny / mcp_servers, skills/), dry-run write-nothing guarantees,
 malformed-input skip reports, and the never-import-secrets rule.
 
 Uses the profile_env fixture pattern from tests/hermes_cli/test_profiles.py:
-Path.home() and HERMES_HOME are redirected to tmp_path so nothing touches
+Path.home() and TINO_HOME are redirected to tmp_path so nothing touches
 the real ~/.hermes.
 """
 
@@ -29,16 +29,16 @@ from hermes_cli.agent_import import (
 
 
 # ---------------------------------------------------------------------------
-# Shared fixture: redirect Path.home() and HERMES_HOME (profile_env pattern)
+# Shared fixture: redirect Path.home() and TINO_HOME (profile_env pattern)
 # ---------------------------------------------------------------------------
 
 @pytest.fixture()
 def profile_env(tmp_path, monkeypatch):
-    """Isolated environment: Path.home() -> tmp_path, HERMES_HOME -> tmp/.hermes."""
+    """Isolated environment: Path.home() -> tmp_path, TINO_HOME -> tmp/.hermes."""
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
     default_home = tmp_path / ".hermes"
     default_home.mkdir(exist_ok=True)
-    monkeypatch.setenv("HERMES_HOME", str(default_home))
+    monkeypatch.setenv("TINO_HOME", str(default_home))
     return tmp_path
 
 
@@ -782,7 +782,7 @@ class TestSyncManifest:
         assert "Deploy v2." in (imports / "deploy-helper" / "SKILL.md").read_text(encoding="utf-8")
         assert (user_skill / "SKILL.md").read_text(encoding="utf-8") == "user content"
 
-        # An imported skill the user then EDITED locally is no longer Hermes-owned: the next sync
+        # An imported skill the user then EDITED locally is no longer Tino-owned: the next sync
         # records a conflict for it instead of overwriting the edit (the docs promise this).
         (imports / "deploy-helper" / "SKILL.md").write_text("my local tweaks", encoding="utf-8")
         (claude_tree / "skills" / "deploy-helper" / "SKILL.md").write_text(

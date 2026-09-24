@@ -1,10 +1,10 @@
 """Headless Google Meet bot — Playwright + live-caption scraping.
 
-Standalone subprocess spawned by ``process_manager.py``; configured via ``HERMES_MEET_*`` env,
-status + transcript written under ``$HERMES_MEET_OUT_DIR`` (filesystem is the only IPC).
+Standalone subprocess spawned by ``process_manager.py``; configured via ``TINO_MEET_*`` env,
+status + transcript written under ``$TINO_MEET_OUT_DIR`` (filesystem is the only IPC).
 No WebRTC audio parsing: Meet's live captions are watched via a MutationObserver — lossy and
 English-biased, but deterministic (no STT billing) and stable thanks to the ARIA role.
-Debug: ``HERMES_MEET_URL=... HERMES_MEET_OUT_DIR=./meet-out HERMES_MEET_HEADED=1 \\
+Debug: ``TINO_MEET_URL=... TINO_MEET_OUT_DIR=./meet-out TINO_MEET_HEADED=1 \\
     python -m plugins.google_meet.meet_bot``
 """
 
@@ -304,7 +304,7 @@ def _mac_audio_device_index(device_name: str) -> str:
 def _setup_realtime(rt: dict, api_key: str, state: _BotState) -> None:
     """Provision the virtual audio bridge; on any failure fall back to transcribe mode."""
     if not api_key:
-        state.set(error="realtime mode requested but no API key in HERMES_MEET_REALTIME_KEY/OPENAI_API_KEY — falling back to transcribe")
+        state.set(error="realtime mode requested but no API key in TINO_MEET_REALTIME_KEY/OPENAI_API_KEY — falling back to transcribe")
         rt["enabled"] = False
         return
     try:
@@ -328,27 +328,27 @@ def _teardown_realtime(rt: dict) -> None:
             _quiet(getattr(rt[key], method), **kw)
 
 
-_BotConfig = SimpleNamespace  # everything the bot reads from ``HERMES_MEET_*`` env vars
+_BotConfig = SimpleNamespace  # everything the bot reads from ``TINO_MEET_*`` env vars
 
 
 def _config_from_env() -> _BotConfig:
     env = os.environ.get
-    out_raw = env("HERMES_MEET_OUT_DIR", "").strip()
+    out_raw = env("TINO_MEET_OUT_DIR", "").strip()
     return _BotConfig(
-        url=env("HERMES_MEET_URL", "").strip(),
+        url=env("TINO_MEET_URL", "").strip(),
         out_dir=Path(out_raw) if out_raw else None,
-        headed=env("HERMES_MEET_HEADED", "").lower() in {"1", "true", "yes"},
-        auth_state=env("HERMES_MEET_AUTH_STATE", "").strip(),
-        guest_name=env("HERMES_MEET_GUEST_NAME", "Hermes Agent"),
-        duration_s=_parse_duration(env("HERMES_MEET_DURATION", "")),
-        realtime=env("HERMES_MEET_MODE", "transcribe").strip().lower() == "realtime",
-        # HERMES_MEET_REALTIME_KEY is resolved by process_manager.start() via the parent's
+        headed=env("TINO_MEET_HEADED", "").lower() in {"1", "true", "yes"},
+        auth_state=env("TINO_MEET_AUTH_STATE", "").strip(),
+        guest_name=env("TINO_MEET_GUEST_NAME", "Tino Agent"),
+        duration_s=_parse_duration(env("TINO_MEET_DURATION", "")),
+        realtime=env("TINO_MEET_MODE", "transcribe").strip().lower() == "realtime",
+        # TINO_MEET_REALTIME_KEY is resolved by process_manager.start() via the parent's
         # profile secret scope; OPENAI_API_KEY only serves standalone `python -m` runs.
-        realtime_api_key=env("HERMES_MEET_REALTIME_KEY") or env("OPENAI_API_KEY", ""),
-        realtime_model=env("HERMES_MEET_REALTIME_MODEL", "gpt-realtime"),
-        realtime_voice=env("HERMES_MEET_REALTIME_VOICE", "alloy"),
-        realtime_instructions=env("HERMES_MEET_REALTIME_INSTRUCTIONS", ""),
-        lobby_timeout=float(env("HERMES_MEET_LOBBY_TIMEOUT", "300")))
+        realtime_api_key=env("TINO_MEET_REALTIME_KEY") or env("OPENAI_API_KEY", ""),
+        realtime_model=env("TINO_MEET_REALTIME_MODEL", "gpt-realtime"),
+        realtime_voice=env("TINO_MEET_REALTIME_VOICE", "alloy"),
+        realtime_instructions=env("TINO_MEET_REALTIME_INSTRUCTIONS", ""),
+        lobby_timeout=float(env("TINO_MEET_LOBBY_TIMEOUT", "300")))
 
 
 def _join(page, cfg: _BotConfig, state: _BotState, timeout: float = 30.0) -> None:
@@ -436,11 +436,11 @@ _CONTEXT_ARGS = {
 def run_bot() -> int:
     cfg = _config_from_env()
     if not _is_safe_meet_url(cfg.url):
-        sys.stderr.write("google_meet bot: refusing to launch — HERMES_MEET_URL must be a "
+        sys.stderr.write("google_meet bot: refusing to launch — TINO_MEET_URL must be a "
                          "meet.google.com URL. got: %r\n" % cfg.url)
         return 2
     if cfg.out_dir is None:
-        sys.stderr.write("google_meet bot: HERMES_MEET_OUT_DIR is required\n")
+        sys.stderr.write("google_meet bot: TINO_MEET_OUT_DIR is required\n")
         return 2
     state = _BotState(out_dir=cfg.out_dir, meeting_id=_meeting_id_from_url(cfg.url), url=cfg.url)
     # SIGTERM sets a flag (not an exception) so the Playwright teardown below still runs

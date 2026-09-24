@@ -324,8 +324,8 @@ class TestSendMessageTool:
         # not auto-accepted by the trust window. (Recency trust is covered
         # in test_platform_base.py. The public default flipped to non-strict
         # in 2026-05; this test pins strict on explicitly.)
-        monkeypatch.setenv("HERMES_MEDIA_DELIVERY_STRICT", "1")
-        monkeypatch.setenv("HERMES_MEDIA_TRUST_RECENT_FILES", "0")
+        monkeypatch.setenv("TINO_MEDIA_DELIVERY_STRICT", "1")
+        monkeypatch.setenv("TINO_MEDIA_TRUST_RECENT_FILES", "0")
         config, telegram_cfg = _make_config()
         secret = tmp_path / "secret.pdf"
         secret.write_bytes(b"%PDF secret")
@@ -1833,7 +1833,7 @@ def test_not_configured_error_names_resolved_home_and_consulted_sources(tmp_path
     home.mkdir(parents=True)
     (home / ".env").write_text("FIRECRAWL_API_KEY=x\n", encoding="utf-8")
     (home / "config.yaml").write_text("platforms:\n  discord:\n    enabled: false\n", encoding="utf-8")
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("TINO_HOME", str(home))
     monkeypatch.delenv("DISCORD_BOT_TOKEN", raising=False)
 
     _, _, _, err = _resolve_platform_config("discord", GatewayConfig())
@@ -1845,7 +1845,7 @@ def test_not_configured_error_names_resolved_home_and_consulted_sources(tmp_path
 
 
 def test_not_configured_error_names_default_root_gateway_and_secret_sources(tmp_path, monkeypatch):
-    """Under ``HERMES_HOME=<root>/profiles/<p>`` the error says a live gateway from the default root has the
+    """Under ``TINO_HOME=<root>/profiles/<p>`` the error says a live gateway from the default root has the
     platform connected (its credentials never came from this profile's ``.env``) and lists external secret
     sources by name only (#114272 step 5)."""
     import json
@@ -1862,7 +1862,7 @@ def test_not_configured_error_names_default_root_gateway_and_secret_sources(tmp_
     (profile / ".env").write_text("FIRECRAWL_API_KEY=x\n", encoding="utf-8")
     (profile / "config.yaml").write_text(
         "secrets:\n  bitwarden:\n    enabled: false\n    session_token: SECRET-VALUE\n", encoding="utf-8")
-    monkeypatch.setenv("HERMES_HOME", str(profile))
+    monkeypatch.setenv("TINO_HOME", str(profile))
     monkeypatch.delenv("DISCORD_BOT_TOKEN", raising=False)
 
     _, _, _, err = _resolve_platform_config("discord", GatewayConfig())

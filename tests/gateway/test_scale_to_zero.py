@@ -21,7 +21,7 @@ from gateway.scale_to_zero import (
 )
 
 
-# ── scale_to_zero_enabled (the Labs HERMES_SCALE_TO_ZERO stamp, D11/Q8=A) ────
+# ── scale_to_zero_enabled (the Labs TINO_SCALE_TO_ZERO stamp, D11/Q8=A) ────
 
 
 @pytest.mark.parametrize("value", ["1", "true", "TRUE", "yes", "on", " On "])
@@ -71,7 +71,7 @@ def test_scale_to_zero_gate_accounts_for_secondary_profile_direct_adapter(monkey
     from gateway.config import GatewayConfig, Platform, PlatformConfig
     from gateway.run_shutdown import GatewayShutdownMixin
 
-    monkeypatch.setenv("HERMES_SCALE_TO_ZERO", "1")
+    monkeypatch.setenv("TINO_SCALE_TO_ZERO", "1")
     monkeypatch.setenv("GATEWAY_RELAY_WAKE_URL", "https://wake.example.test/instance")
     runner = object.__new__(GatewayShutdownMixin)
     runner.config = GatewayConfig(platforms={Platform.RELAY: PlatformConfig(enabled=True)})

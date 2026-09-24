@@ -18,7 +18,7 @@ from hermes_cli import update_cmd
 
 @pytest.fixture(autouse=True)
 def _no_stale_module_purge(monkeypatch):
-    """The migration step evicts every cached Hermes module first (#111271); a real purge
+    """The migration step evicts every cached Tino module first (#111271); a real purge
     would discard the ``hermes_cli.config`` object these tests patch."""
 
 

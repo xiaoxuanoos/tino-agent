@@ -3,8 +3,8 @@
 We react to the failure rather than predict it: npm states the required range in the error, so the
 recovery reads the constraint out of the output it just produced (no semver matcher, no probe).
 
-Scope is deliberately narrow: Hermes only upgrades an npm inside its **own** managed Node tree
-(``$HERMES_HOME/node``), installing in place with ``--prefix`` so ``bin/npm`` keeps resolving to
+Scope is deliberately narrow: Tino only upgrades an npm inside its **own** managed Node tree
+(``$TINO_HOME/node``), installing in place with ``--prefix`` so ``bin/npm`` keeps resolving to
 the upgraded ``lib/node_modules/npm``.
 """
 
@@ -98,9 +98,9 @@ def _repo_npm_range() -> str | None:
 
 
 def managed_npm_prefix(npm: str | os.PathLike[str] | None) -> Path | None:
-    """Return the Hermes-managed Node root *npm* lives in, else ``None``.
+    """Return the Tino-managed Node root *npm* lives in, else ``None``.
 
-    Symlinks are resolved first: ``~/.local/bin/npm`` → ``$HERMES_HOME/node/bin/npm`` →
+    Symlinks are resolved first: ``~/.local/bin/npm`` → ``$TINO_HOME/node/bin/npm`` →
     ``lib/node_modules/npm/bin/npm-cli.js`` are all the managed npm, or the repair silently declines
     to fix the very install it owns.
     """
@@ -131,11 +131,11 @@ def upgrade_managed_npm(npm: str, npm_range: str, *, prefix: Path, quiet: bool =
     """Upgrade the managed npm at *npm* in place to satisfy *npm_range*.
 
     ``--prefix`` targets the managed tree explicitly: a managed install writes ``prefix=~/.local``
-    into ``$HERMES_HOME/node/etc/npmrc`` (so global installs land on PATH), and without the override
+    into ``$TINO_HOME/node/etc/npmrc`` (so global installs land on PATH), and without the override
     the "upgrade" would install a second npm elsewhere while the managed one stayed stale.
     """
     if not quiet:
-        print(f"→ Upgrading Hermes-managed npm to satisfy {npm_range}…", flush=True)
+        print(f"→ Upgrading Tino-managed npm to satisfy {npm_range}…", flush=True)
     # The desktop app's Node processes execute from this tree; an in-place upgrade while in use
     # fails with PermissionError on npm.cmd. Defer — the upgrade re-triggers on the next resolution.
     # Defer instead of forcing the write — the upgrade re-triggers on the next resolution (e.g. the next
@@ -143,7 +143,7 @@ def upgrade_managed_npm(npm: str, npm_range: str, *, prefix: Path, quiet: bool =
     if managed_node_tree_in_use():
         if not quiet:
             print(
-                "  ⚠ deferred: the Hermes-managed Node.js tree is in use by a "
+                "  ⚠ deferred: the Tino-managed Node.js tree is in use by a "
                 "running app; the npm upgrade will apply on a later update "
                 "once the app is closed.",
                 file=sys.stderr,
@@ -193,7 +193,7 @@ def _print_manual_fix(npm: str, npm_range: str, actual: str | None) -> None:
     print(
         f"\n✗ {have}does not satisfy the range this project requires: {npm_range}\n"
         f"  Resolved npm: {npm}\n"
-        "  Hermes could not provision its own Node.js runtime and never\n"
+        "  Tino could not provision its own Node.js runtime and never\n"
         "  modifies a system/nvm/brew/Nix npm. Upgrade yours yourself with:\n"
         f'      npm install -g npm@"{npm_range}"',
         file=sys.stderr,
@@ -201,7 +201,7 @@ def _print_manual_fix(npm: str, npm_range: str, actual: str | None) -> None:
 
 
 def _provision_managed_npm(npm_range: str | None, *, quiet: bool = False) -> str | None:
-    """Provision (or reuse) the managed tree under ``$HERMES_HOME/node`` and return a satisfying npm.
+    """Provision (or reuse) the managed tree under ``$TINO_HOME/node`` and return a satisfying npm.
 
     Its bundled npm is upgraded to *npm_range* (a fresh Node LTS may bundle an out-of-range npm, and
     the caller's single retry would fail the same way), falling back to the checkout's
@@ -209,7 +209,7 @@ def _provision_managed_npm(npm_range: str | None, *, quiet: bool = False) -> str
     """
     if not quiet:
         print(
-            "→ Provisioning a Hermes-managed Node.js runtime "
+            "→ Provisioning a Tino-managed Node.js runtime "
             "(the resolved npm belongs to your system and is left alone)…",
             flush=True,
         )
@@ -241,7 +241,7 @@ def maybe_repair_npm_engine(npm: str | None, output: str, *, quiet: bool = False
     prefix = managed_npm_prefix(npm)
 
     if prefix is not None:
-        # Hermes owns this npm — upgrade in place. Only an npm-range failure is fixable this way.
+        # Tino owns this npm — upgrade in place. Only an npm-range failure is fixable this way.
         if npm_range and upgrade_managed_npm(npm, npm_range, prefix=prefix, quiet=quiet):
             return npm
         return None

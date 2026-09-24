@@ -102,30 +102,30 @@ _PERSISTENCE_CAUSE_EXPLANATIONS: Dict[str, str] = {
         "session id, then send your message again."
     ),
     "turn_lease": (
-        "the turn was stopped because another Hermes process "
+        "the turn was stopped because another Tino process "
         "took over this session. Your reply was not saved — wait "
         "for the other process to finish, then send your message "
         "again."
     ),
     "locked": (
         "the turn was stopped because session storage was busy "
-        "(another Hermes process was writing to the state "
+        "(another Tino process was writing to the state "
         "database). Your message should already be saved — "
         "please send it again in a moment."
     ),
     # The forensic runbook for both (WAL generations, manifest.json, sidecars) lives in the
     # logger.error at hermes_state.py::_raise_if_db_replaced — never in the chat reply.
     "replaced": (
-        "the session database file was replaced while Hermes was running, so this "
-        "message was not saved (a copy is kept in {home}/sessions/). Stop Hermes "
+        "the session database file was replaced while Tino was running, so this "
+        "message was not saved (a copy is kept in {home}/sessions/). Stop Tino "
         "(`hermes {profile_arg}gateway stop`), run `hermes {profile_arg}doctor` — not "
         "`hermes {profile_arg}doctor --fix`, which would repair the wrong file in place — "
         "then start it again and send your message once more. Advanced recovery steps are "
         "in the log."
     ),
     "deleted_wal": (
-        "the session database was changed or replaced while Hermes was running, so this "
-        "message was not saved (a copy is kept in {home}/sessions/). Stop Hermes "
+        "the session database was changed or replaced while Tino was running, so this "
+        "message was not saved (a copy is kept in {home}/sessions/). Stop Tino "
         "(`hermes {profile_arg}gateway stop`), run `hermes {profile_arg}doctor`, then start "
         "it again and send your message once more. Advanced recovery steps are in the log."
     ),
@@ -153,19 +153,19 @@ _PERSISTENCE_CAUSE_EXPLANATIONS: Dict[str, str] = {
         "is corrupt and could not be detached, so this message was not "
         "saved. The message store itself is not damaged: do not run "
         "recovery tools or restore a backup. Run `hermes {profile_arg}doctor --fix` "
-        "(or restart Hermes, which repairs the index on open), then "
+        "(or restart Tino, which repairs the index on open), then "
         "send your message again."
     ),
     "disk": (
-        "Hermes couldn't save this conversation to disk, so it stopped rather than lose "
+        "Tino couldn't save this conversation to disk, so it stopped rather than lose "
         "your messages. The disk is probably full: free some space (or fix the permissions "
         "on {home}/state.db), then send your message again."
     ),
 }
 _PERSISTENCE_DEFAULT_EXPLANATION = (
-    "Hermes couldn't save this conversation, so it stopped rather than lose your messages. "
-    "Possible causes: the drive is out of room, or another Hermes process is holding the "
-    "database. Close other Hermes windows, run `hermes {profile_arg}doctor` to check "
+    "Tino couldn't save this conversation, so it stopped rather than lose your messages. "
+    "Possible causes: the drive is out of room, or another Tino process is holding the "
+    "database. Close other Tino windows, run `hermes {profile_arg}doctor` to check "
     "storage, then send your message again."
 )
 
@@ -250,7 +250,7 @@ class TurnExplainersMixin:
             if changed is not None:
                 changed.update(landed_paths)
             # Feed the checkpoint agent-write ledger so /rollback's safe mode can tell
-            # Hermes-authored content from later user hand-edits.
+            # Tino-authored content from later user hand-edits.
             mgr = getattr(self, "_checkpoint_mgr", None)
             if mgr is not None and getattr(mgr, "enabled", False):
                 from tools.file_tools_paths import container_backend_for_task
@@ -291,16 +291,16 @@ class TurnExplainersMixin:
         }
 
     def _file_mutation_verifier_enabled(self) -> bool:
-        """``display.file_mutation_verifier`` / ``HERMES_FILE_MUTATION_VERIFIER`` (a patchable seam)."""
+        """``display.file_mutation_verifier`` / ``TINO_FILE_MUTATION_VERIFIER`` (a patchable seam)."""
         return _display_flag_enabled(
-            self, env_var="HERMES_FILE_MUTATION_VERIFIER", config_key="file_mutation_verifier",
+            self, env_var="TINO_FILE_MUTATION_VERIFIER", config_key="file_mutation_verifier",
             cache_attr="_file_mutation_verifier_enabled_cache",
         )
 
     def _turn_completion_explainer_enabled(self) -> bool:
-        """``display.turn_completion_explainer`` / ``HERMES_TURN_COMPLETION_EXPLAINER``."""
+        """``display.turn_completion_explainer`` / ``TINO_TURN_COMPLETION_EXPLAINER``."""
         return _display_flag_enabled(
-            self, env_var="HERMES_TURN_COMPLETION_EXPLAINER", config_key="turn_completion_explainer",
+            self, env_var="TINO_TURN_COMPLETION_EXPLAINER", config_key="turn_completion_explainer",
             cache_attr="_turn_completion_explainer_enabled_cache",
         )
 

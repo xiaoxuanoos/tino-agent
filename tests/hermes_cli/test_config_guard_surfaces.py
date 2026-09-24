@@ -13,10 +13,10 @@ import pytest
 
 @pytest.fixture(autouse=True)
 def _isolated_config_env(monkeypatch, tmp_path):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
-    monkeypatch.delenv("HERMES_IGNORE_USER_CONFIG", raising=False)
+    monkeypatch.setenv("TINO_HOME", str(tmp_path))
+    monkeypatch.delenv("TINO_IGNORE_USER_CONFIG", raising=False)
     yield
-    os.environ.pop("HERMES_IGNORE_USER_CONFIG", None)
+    os.environ.pop("TINO_IGNORE_USER_CONFIG", None)
 
 
 def _write_corrupt_config(tmp_path):
@@ -35,7 +35,7 @@ class TestGatewayGuard:
             _guard_corrupt_user_config()
 
         assert exc_info.value.code == 2
-        assert "Hermes stopped because your settings file" in capsys.readouterr().err
+        assert "Tino stopped because your settings file" in capsys.readouterr().err
 
     def test_gateway_allows_valid_config(self, tmp_path):
         from gateway.run import _guard_corrupt_user_config
@@ -52,7 +52,7 @@ class TestGatewayGuard:
         from gateway.run import _guard_corrupt_user_config
 
         _write_corrupt_config(tmp_path)
-        monkeypatch.setenv("HERMES_IGNORE_USER_CONFIG", "1")
+        monkeypatch.setenv("TINO_IGNORE_USER_CONFIG", "1")
         _guard_corrupt_user_config()  # must not raise
 
 
@@ -71,7 +71,7 @@ class TestCronRunJobGuard:
 
         assert success is False
         assert error is not None
-        assert "Hermes stopped because your settings file" in error
+        assert "Tino stopped because your settings file" in error
         assert "config.yaml" in error
         assert final_response == ""
 
@@ -79,16 +79,16 @@ class TestCronRunJobGuard:
         from cron.scheduler import run_job
 
         _write_corrupt_config(tmp_path)
-        monkeypatch.setenv("HERMES_IGNORE_USER_CONFIG", "1")
+        monkeypatch.setenv("TINO_IGNORE_USER_CONFIG", "1")
 
         # With the escape hatch active the guard must not trip. The job then
         # proceeds into normal execution; a missing provider/model in the
-        # empty temp HERMES_HOME may fail later, but never with the guard's
+        # empty temp TINO_HOME may fail later, but never with the guard's
         # refusal message.
         success, output_doc, final_response, error = run_job(
             self._job(no_agent=True, script="true", deliver="none")
         )
-        assert "Hermes stopped because your settings file" not in (error or "")
+        assert "Tino stopped because your settings file" not in (error or "")
 
     def test_run_job_no_agent_exempt(self, tmp_path):
         from cron.scheduler import run_job
@@ -98,7 +98,7 @@ class TestCronRunJobGuard:
         success, output_doc, final_response, error = run_job(
             self._job(no_agent=True, script="true", deliver="none")
         )
-        assert "Hermes stopped because your settings file" not in (error or "")
+        assert "Tino stopped because your settings file" not in (error or "")
 
 
 class TestServeGuard:
@@ -122,7 +122,7 @@ class TestServeGuard:
             main_mod.cmd_dashboard(args)
 
         assert exc_info.value.code == 2
-        assert "Hermes stopped because your settings file" in capsys.readouterr().err
+        assert "Tino stopped because your settings file" in capsys.readouterr().err
 
     def test_serve_escape_hatch_passes_guard(self, tmp_path, monkeypatch):
         """--ignore-user-config lets serve get past the corrupt-config guard."""

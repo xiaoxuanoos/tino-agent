@@ -19,7 +19,6 @@ import type { SetStatusbarItemGroup } from '../shell/statusbar-controls'
 import { McpTab } from './mcp/mcp-tab'
 import { PluginsTab } from './plugins/plugins-tab'
 import { CapabilityScopeSelector, useCapabilityScope } from './scope-selector'
-import { EmbeddedHubPicker } from './skills/embedded-hub-picker'
 import { SKILLS_QUERY_KEY, skillSearchTerms, useSkillsQuery } from './skills/skills-data'
 import { SkillsTab } from './skills/skills-tab'
 import { refreshToolCalls } from './toolsets/tool-calls'
@@ -74,20 +73,12 @@ export function CapabilitiesView({
 
   const [query, setQuery] = useState('')
 
-  // Keep the docs iframe alive after the first Skills visit.
-  const [hubMounted, setHubMounted] = useState(mode === 'skills')
-
-  if (mode === 'skills' && !hubMounted) {
-    setHubMounted(true)
-  }
-
   const scope = useCapabilityScope({ fixedConnection, fixedProfile })
 
   // The two installed lists the tab pills count. They are fetched here, as a
   // pair, because the counts stay live for the tab the user is NOT on.
   const { data: skills, isError: skillsFailed, error: skillsError } = useSkillsQuery(scope.profile)
   const { data: toolsets, isError: toolsetsFailed } = useToolsetsQuery(scope.profile)
-  const installedSkillNames = useMemo(() => new Set((skills ?? []).map(skill => skill.name)), [skills])
 
   const refreshCapabilities = useCallback(async () => {
     await Promise.all([
@@ -199,9 +190,6 @@ export function CapabilitiesView({
           <div className={mode === 'skills' ? 'min-h-40 flex-1 overflow-hidden' : 'min-h-0 flex-1'}>
             {loadGate ?? tabContent[mode]()}
           </div>
-          {hubMounted && (
-            <EmbeddedHubPicker hidden={mode !== 'skills'} installedNames={installedSkillNames} profile={scope.profile} />
-          )}
         </div>
       </div>
     </PageSearchShell>

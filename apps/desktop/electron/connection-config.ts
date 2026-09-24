@@ -11,7 +11,7 @@
  *
  * Background on the two auth models a remote gateway can use:
  *   - 'token': legacy static dashboard session token. REST uses an
- *     `X-Hermes-Session-Token` header; WS uses `?token=`.
+ *     `X-Tino-Session-Token` header; WS uses `?token=`.
  *   - 'oauth': hosted gateways gate behind an OAuth provider. REST is authed
  *     by an HttpOnly session cookie; WS upgrades require a single-use
  *     `?ticket=` minted at POST /api/auth/ws-ticket. The gateway advertises
@@ -41,7 +41,7 @@ const RT_COOKIE_VARIANTS = ['__Host-hermes_session_rt', '__Secure-hermes_session
 
 // Keep this aligned with hermes_cli.profiles.validate_profile_name(). `default`
 // is the built-in root alias; these names cannot be created as profiles.
-const RESERVED_REMOTE_PROFILES = new Set(['hermes', 'test', 'tmp', 'root', 'sudo'])
+const RESERVED_REMOTE_PROFILES = new Set(['tino', 'test', 'tmp', 'root', 'sudo'])
 
 function normalizeRemoteBaseUrl(rawUrl) {
   let value = String(rawUrl || '').trim()
@@ -252,7 +252,7 @@ function connectionScopeKey(profile) {
   return String(profile ?? '').trim() || null
 }
 
-/** Which Hermes profile the remote SSH dashboard should actually run as.
+/** Which Tino profile the remote SSH dashboard should actually run as.
  *  Registry pool keys (`conn:mac-mini::default`) are desktop routing labels —
  *  they must never be sent to the remote as a profile name. `default` and
  *  empty mean the remote root home. */
@@ -293,7 +293,7 @@ const FORBIDDEN_REMOTE_HEADER_NAMES = new Set([
   'trailer',
   'transfer-encoding',
   'upgrade',
-  'x-hermes-session-token'
+  'x-tino-session-token'
 ])
 
 /**
@@ -373,7 +373,7 @@ function remoteRequestMatchesBaseUrl(requestUrl, baseUrl) {
 }
 
 // True for connection modes that resolve to a REMOTE backend. 'cloud' is a
-// Hermes Cloud connection (cloud-auto-discovery Q3/Q6): it carries a
+// Tino Cloud connection (cloud-auto-discovery Q3/Q6): it carries a
 // remote-shaped block and reuses the entire remote connect/probe/reconnect
 // path, so every resolution site treats it exactly like 'remote'. The only
 // places that distinguish cloud from remote are the settings UI (which card to
@@ -455,8 +455,8 @@ function normalizeSshConfig(entry) {
   }
 
   // A Desktop profile can be a local routing label rather than the profile
-  // name used by the remote Hermes installation. Preserve an explicit mapping
-  // when it is a valid Hermes profile identifier; otherwise fall back to the
+  // name used by the remote Tino installation. Preserve an explicit mapping
+  // when it is a valid Tino profile identifier; otherwise fall back to the
   // historical same-name behavior in the caller.
   const remoteProfile = String(entry.remoteProfile || '').trim()
 
@@ -688,7 +688,7 @@ function localPrimaryRequestScope(opts: ProfileRouteOptions): boolean | null {
  *  5. A local profile REST request that the primary backend can safely scope
  *     reuses that backend, with `?profile=` when the handler accepts it.
  *  6. Any other local profile gets its own pooled backend, spawned with
- *     `--profile`, so its `HERMES_HOME` scopes it.
+ *     `--profile`, so its `TINO_HOME` scopes it.
  *
  * Routing used to be spread across three overlapping predicates that each
  * re-derived part of this table, which is how case 3 ended up registering
@@ -705,7 +705,7 @@ function resolveProfileBackendRoute(profile, opts: ProfileRouteOptions = {}): Pr
   if (scopedProfile === primaryProfile) {
     // A global remote is a multi-profile dashboard, not a backend process
     // launched for this Desktop label. Even its "primary" label must travel on
-    // the wire: the dashboard's process HERMES_HOME can belong to a different
+    // the wire: the dashboard's process TINO_HOME can belong to a different
     // launch profile, so a bare request silently reads that profile instead.
     return opts.globalRemote
       ? { backend: 'primary', descriptorProfile: scopedProfile, scopePath: true }

@@ -99,7 +99,7 @@ function classifyVenvBlocker(
 
 /**
  * Stop only blockers that the fresh scanner identified as Python static-file
- * preview servers. Unknown Python/Hermes processes are deliberately ignored.
+ * preview servers. Unknown Python/Tino processes are deliberately ignored.
  */
 export async function stopSafeVenvBlockers(
   updateRoot: string,
@@ -298,7 +298,7 @@ export function resolveVenvPython(updateRoot: string): string | null {
  */
 export function formatBlockerMessage(result: VenvBlockerScanResult): string {
   const lines = [
-    'Update aborted: another Hermes process is using this installation.',
+    'Update aborted: another Tino process is using this installation.',
     '',
     'These processes must be stopped before updating:',
     ''
@@ -331,10 +331,10 @@ export function formatProbeFailedMessage(error?: string): string {
     : ''
 
   return (
-    'Update aborted: Desktop could not verify the Hermes installation is free.' +
+    'Update aborted: Desktop could not verify the Tino installation is free.' +
     timeoutDetail +
     '\n\n' +
-    'Close other Hermes windows and terminals, then retry.  If the problem\n' +
+    'Close other Tino windows and terminals, then retry.  If the problem\n' +
     'persists, run `hermes update` in a terminal for detailed diagnostics.'
   )
 }

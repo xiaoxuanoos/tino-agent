@@ -194,7 +194,7 @@ def ensure_google_chat_deps() -> bool:
     """ACTIVE installer (registry ``ensure_deps_fn``).
 
     Routes through ``tools.lazy_deps`` so sealed hosted/Docker images write
-    ``HERMES_LAZY_INSTALL_TARGET`` instead of the read-only venv. Resets the
+    ``TINO_LAZY_INSTALL_TARGET`` instead of the read-only venv. Resets the
     failed-import cache so ``create_adapter()`` can load modules after install.
     ``FeatureUnavailable`` propagates: the registry logs its ``reason`` (quarantine
     404, no writable target, network), which is exactly what a hosted operator needs.
@@ -385,7 +385,7 @@ class GoogleChatAdapter(BasePlatformAdapter):
         self._project_id = self._subscription_path = self._bot_user_id = None  # bot id is users/{id}
         self._supervisor_task: Optional[asyncio.Task] = None
         self._loop: Optional[asyncio.AbstractEventLoop] = None
-        # The profile scope this adapter was connected under (multiplex: HERMES_HOME override + secret
+        # The profile scope this adapter was connected under (multiplex: TINO_HOME override + secret
         # scope). Pub/Sub callbacks arrive on the gRPC SubscriberClient's own threads with an EMPTY
         # context, and ``run_coroutine_threadsafe`` copies THAT context onto the loop task — so
         # ``_dispatch_message`` and everything it reaches (attachment cache, per-user OAuth token
@@ -1255,7 +1255,7 @@ class GoogleChatAdapter(BasePlatformAdapter):
         return SendResult(success=True, message_id=resp.get("name"))
 
     async def send_typing(self, chat_id: str, metadata: Any = None) -> None:
-        """Post a visible 'Hermes is thinking…' marker (Chat has no typing API); ``send()``
+        """Post a visible 'Tino is thinking…' marker (Chat has no typing API); ``send()``
         PATCHes it with the reply, ``on_processing_complete`` reaps it otherwise. Created in
         the user's thread (patch cannot move it). ``_keep_typing`` wraps this in
         ``wait_for(timeout=1.5)``: a cancelled create would still land an unrecorded card and
@@ -1270,7 +1270,7 @@ class GoogleChatAdapter(BasePlatformAdapter):
                 await asyncio.wait_for(self._typing_card_inflight[chat_id].wait(), timeout=5.0)
             return
         thread_id = self._resolve_thread_id(reply_to=None, metadata=metadata, chat_id=chat_id)
-        body = _thread_body(getattr(self.config, "typing_status_text", None) or "Hermes is thinking…", thread_id)
+        body = _thread_body(getattr(self.config, "typing_status_text", None) or "Tino is thinking…", thread_id)
         self._typing_card_inflight[chat_id] = completed = asyncio.Event()
 
         async def _create_and_record() -> None:
@@ -1764,7 +1764,7 @@ def register(ctx) -> None:
             "in your response. Native file attachments require the user to run /setup-files once in their own DM — "
             "until they do, file requests fall back to a text notice with the host path. Do NOT generate interactive "
             "Card v2 buttons — Google Chat interactivity is not yet supported by this gateway; ask for typed "
-            "confirmations instead. While you are generating a response, a 'Hermes is thinking…' marker message "
+            "confirmations instead. While you are generating a response, a 'Tino is thinking…' marker message "
             "appears in the space and is deleted once your response is ready. You do NOT have access to Google "
             "Chat-specific APIs — you cannot search space history, list space members, or manage spaces. Do not "
             "promise to perform these actions; explain that you can only read messages sent directly to you and "

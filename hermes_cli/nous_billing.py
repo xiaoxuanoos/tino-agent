@@ -99,7 +99,7 @@ class BillingUpgradeCapExceeded(BillingTransient):
 
 def resolve_portal_base_url(state: Optional[dict[str, Any]] = None) -> str:
     """Resolve the portal base URL with login-time precedence: env, stored state, default."""
-    env = os.getenv("HERMES_PORTAL_BASE_URL") or os.getenv("NOUS_PORTAL_BASE_URL")
+    env = os.getenv("TINO_PORTAL_BASE_URL") or os.getenv("NOUS_PORTAL_BASE_URL")
     for candidate in (env, state.get("portal_base_url") if state else None):
         if isinstance(candidate, str) and candidate.strip():
             return candidate.strip().rstrip("/")

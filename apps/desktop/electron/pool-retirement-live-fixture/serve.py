@@ -15,7 +15,7 @@ import time
 
 # The installed interpreter supplies dependencies, never the implementation.
 sys.path.insert(0, sys.argv[1])
-home = Path(os.environ["HERMES_HOME"])
+home = Path(os.environ["TINO_HOME"])
 assert home.is_relative_to(Path(os.environ["HOME"]))
 
 if sys.argv[2] == "cron-busy":

@@ -21,7 +21,7 @@ import { expect, test } from './test'
 // with the pre-upgrade layout seeded on disk by the store's own writers.
 
 const REPO_ROOT = path.resolve(import.meta.dirname, '..', '..', '..')
-const PYTHON = process.env.HERMES_DESKTOP_PYTHON ?? path.join(REPO_ROOT, 'venv', 'bin', 'python')
+const PYTHON = process.env.TINO_DESKTOP_PYTHON ?? path.join(REPO_ROOT, 'venv', 'bin', 'python')
 
 let fixture: MockBackendFixture | null = null
 let rpc: Rpc | null = null
@@ -74,10 +74,10 @@ function findBackend(hermesHome: string): { port: number; token: string; pid: nu
       continue
     }
     const vars = new Map(environ.split('\0').map(kv => [kv.slice(0, kv.indexOf('=')), kv.slice(kv.indexOf('=') + 1)]))
-    if (vars.get('HERMES_HOME') !== hermesHome) {
+    if (vars.get('TINO_HOME') !== hermesHome) {
       continue
     }
-    const token = vars.get('HERMES_DASHBOARD_SESSION_TOKEN') ?? ''
+    const token = vars.get('TINO_DASHBOARD_SESSION_TOKEN') ?? ''
     // The backend inherits Electron's remote-debugging socket fd too; the serve port is the listener
     // that only the hermes process holds.
     const listen = execSync(`ss -ltnp | grep "pid=${pid}," | grep -v electron || true`, { encoding: 'utf8' })

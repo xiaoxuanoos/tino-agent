@@ -109,21 +109,21 @@ TOKEN = "idle-proof-live-token"
 
 
 def _spawn_desktop_child(tmp_path: Path, name: str, *, busy: bool) -> subprocess.Popen:
-    """Mirror the Desktop pool spawn: ``HERMES_DESKTOP=1`` (in-process cron ticker), a per-child
-    HERMES_HOME, an ephemeral port, the session token the Desktop probes with. The busy child
+    """Mirror the Desktop pool spawn: ``TINO_DESKTOP=1`` (in-process cron ticker), a per-child
+    TINO_HOME, an ephemeral port, the session token the Desktop probes with. The busy child
     registers a cron run in the scheduler's running-job ledger before it serves — the same
     ledger a real fire uses and the one the probe reads."""
     home = tmp_path / name
     home.mkdir()
     env = dict(os.environ)
     env.pop("PYTHONPATH", None)
-    for k in ("HERMES_PARENT_PID", "HERMES_PARENT_START_MARKER", "HERMES_PARENT_NONCE"):
+    for k in ("TINO_PARENT_PID", "TINO_PARENT_START_MARKER", "TINO_PARENT_NONCE"):
         env.pop(k, None)
     env.update(
-        HERMES_HOME=str(home),
-        HERMES_SERVE_HEADLESS="1",
-        HERMES_DESKTOP="1",
-        HERMES_DASHBOARD_SESSION_TOKEN=TOKEN,
+        TINO_HOME=str(home),
+        TINO_SERVE_HEADLESS="1",
+        TINO_DESKTOP="1",
+        TINO_DASHBOARD_SESSION_TOKEN=TOKEN,
         PYTHONUNBUFFERED="1",
     )
     hold = (
@@ -175,7 +175,7 @@ def _probe_settled(port: int, settled, timeout: float = 20.0) -> tuple[int, dict
 
 def _probe(port: int, token: str | None = TOKEN) -> tuple[int, dict]:
     req = urllib.request.Request(f"http://127.0.0.1:{port}/api/health/idle",
-                                 headers={"X-Hermes-Session-Token": token} if token else {})
+                                 headers={"X-Tino-Session-Token": token} if token else {})
     try:
         with urllib.request.urlopen(req, timeout=10) as resp:
             return resp.status, json.loads(resp.read().decode())
@@ -208,9 +208,9 @@ def test_live_pooled_children_prove_idle_or_busy_over_the_desktop_probe(tmp_path
     try:
         ports = {}
         for name, proc in children.items():
-            ready, lines = _read_until(proc, "HERMES_BACKEND_READY")
+            ready, lines = _read_until(proc, "TINO_BACKEND_READY")
             assert ready, f"{name}: no READY sentinel; output:\n{''.join(lines)}"
-            ready_line = next(l for l in lines if "HERMES_BACKEND_READY" in l)
+            ready_line = next(l for l in lines if "TINO_BACKEND_READY" in l)
             ports[name] = int(ready_line.strip().rsplit("port=", 1)[1])
 
         # READY precedes quiescence: the desktop child's cron ticker runs its first tick right at

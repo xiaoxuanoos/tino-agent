@@ -54,8 +54,8 @@ def _write_plugin(root: Path, name: str, body: str) -> None:
 
 def _run_probe(hermes_home: Path, code: str) -> subprocess.CompletedProcess:
     env = os.environ.copy()
-    env["HERMES_HOME"] = str(hermes_home)
-    env.pop("HERMES_PROFILE", None)
+    env["TINO_HOME"] = str(hermes_home)
+    env.pop("TINO_PROFILE", None)
     env["PYTHONPATH"] = os.pathsep.join(
         [str(REPO_ROOT), env.get("PYTHONPATH", "")]
     ).rstrip(os.pathsep)

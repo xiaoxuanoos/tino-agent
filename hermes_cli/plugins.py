@@ -1,8 +1,8 @@
-"""Hermes Plugin System — discovers, loads, and manages plugins.
+"""Tino Plugin System — discovers, loads, and manages plugins.
 
 Sources, later overriding earlier on key collision: bundled ``<repo>/plugins/<name>/`` (``memory/``
 and ``context_engine/`` have their own discovery), user ``~/.hermes/plugins/<name>/``, project
-``./.hermes/plugins/<name>/`` (opt-in via ``HERMES_ENABLE_PROJECT_PLUGINS``), and pip packages in
+``./.hermes/plugins/<name>/`` (opt-in via ``TINO_ENABLE_PROJECT_PLUGINS``), and pip packages in
 the ``hermes_agent.plugins`` entry-point group. A directory plugin needs a ``plugin.yaml`` manifest
 and an ``__init__.py`` exposing ``register(ctx)``. Plugins register callbacks for ``VALID_HOOKS``
 (core fires ``invoke_hook(name, **kwargs)``) and tools via ``PluginContext.register_tool()``.
@@ -50,7 +50,7 @@ from hermes_cli.plugins_loader import (
     _plugin_home_scope, _serialized_replacement,
 )
 from hermes_cli.plugins_dispatch import (  # noqa: F401 — re-exported
-    DEFAULT_SYSTEM_PROMPT_SECTION_MAX_CHARS, HERMES_EVENT_NAMESPACE, MAX_SYSTEM_PROMPT_SECTION_CHARS,
+    DEFAULT_SYSTEM_PROMPT_SECTION_MAX_CHARS, TINO_EVENT_NAMESPACE, MAX_SYSTEM_PROMPT_SECTION_CHARS,
     MAX_SYSTEM_PROMPT_SECTIONS_TOTAL_CHARS, PLUGIN_SECTIONS_END, PLUGIN_SECTIONS_START,
     SYSTEM_PROMPT_SECTION_POSITIONS, _EVENT_EMIT_DEPTH_CAP, _EVENT_PENDING_CAP,
     _HOOK_CALLBACK_TIMEOUT_SECS, _HOOK_TIMEOUT_SUPPRESSION_SECONDS, _MAX_HOOK_CALLBACK_TIMEOUT_SECS,
@@ -66,9 +66,9 @@ from hermes_cli.plugins_state import (
 
 
 def get_bundled_plugins_dir() -> Path:
-    """Bundled ``plugins/`` dir: ``HERMES_BUNDLED_PLUGINS`` (Nix wrapper / packaged installs, read-only
+    """Bundled ``plugins/`` dir: ``TINO_BUNDLED_PLUGINS`` (Nix wrapper / packaged installs, read-only
     store paths) first, else the in-repo path."""
-    env_override = os.getenv("HERMES_BUNDLED_PLUGINS")
+    env_override = os.getenv("TINO_BUNDLED_PLUGINS")
     if env_override:
         return Path(env_override)
     return Path(__file__).resolve().parent.parent / "plugins"
@@ -80,17 +80,17 @@ class PluginToolOverrideError(PermissionError):
 
 logger = logging.getLogger(__name__)
 
-# ``HERMES_PLUGINS_DEBUG=1`` tees verbose discovery logs to stderr in addition to agent.log. Read
+# ``TINO_PLUGINS_DEBUG=1`` tees verbose discovery logs to stderr in addition to agent.log. Read
 # once at import; tests flip it mid-process via ``_install_plugin_debug_handler(force=True)``.
-_PLUGINS_DEBUG = env_var_enabled("HERMES_PLUGINS_DEBUG")
+_PLUGINS_DEBUG = env_var_enabled("TINO_PLUGINS_DEBUG")
 _DEBUG_HANDLER_INSTALLED = False
 
 
 def _install_plugin_debug_handler(force: bool = False) -> None:
-    """When HERMES_PLUGINS_DEBUG is on, tee plugin logs to stderr at DEBUG (once per process)."""
+    """When TINO_PLUGINS_DEBUG is on, tee plugin logs to stderr at DEBUG (once per process)."""
     global _DEBUG_HANDLER_INSTALLED, _PLUGINS_DEBUG
     if force:
-        _PLUGINS_DEBUG = env_var_enabled("HERMES_PLUGINS_DEBUG")
+        _PLUGINS_DEBUG = env_var_enabled("TINO_PLUGINS_DEBUG")
     if not _PLUGINS_DEBUG or _DEBUG_HANDLER_INSTALLED:
         return
     handler = logging.StreamHandler(sys.stderr)
@@ -100,7 +100,7 @@ def _install_plugin_debug_handler(force: bool = False) -> None:
     logger.setLevel(logging.DEBUG)
     logger.propagate = True
     _DEBUG_HANDLER_INSTALLED = True
-    logger.debug("HERMES_PLUGINS_DEBUG=1 — verbose plugin discovery logging enabled")
+    logger.debug("TINO_PLUGINS_DEBUG=1 — verbose plugin discovery logging enabled")
 
 
 _install_plugin_debug_handler()
@@ -402,7 +402,7 @@ class PluginContext:
     @property
     def profile_name(self) -> str:
         """Active profile name (``"default"``, the ``~/.hermes/profiles/<name>`` id, or ``"custom"``),
-        derived from ``HERMES_HOME`` — not ``_cli_ref``, which is None outside the interactive CLI —
+        derived from ``TINO_HOME`` — not ``_cli_ref``, which is None outside the interactive CLI —
         so gateway and kanban workers get it too."""
         try:
             from hermes_cli.profiles import get_active_profile_name
@@ -581,7 +581,7 @@ class PluginContext:
         choice, not privilege escalation); others need ``tools.override`` via
         :func:`plugin_capability_granted` (granted_capabilities OR legacy ``allow_tool_override: true``).
 
-        Bundled plugins (shipped with Hermes core) are trusted by default — an override there is a
+        Bundled plugins (shipped with Tino core) are trusted by default — an override there is a
         deliberate maintainer choice, not a third-party plugin trying to elevate privilege. For every other
         source, the canonical check is :func:`plugin_capability_granted` with the ``tools.override``
         capability — satisfied by EITHER the consent-flow grant
@@ -977,9 +977,9 @@ class PluginContext:
             logger.warning("Plugin '%s' tried to emit namespaced/reserved event '%s' — a plugin may only emit "
                            "bare event names under its own '%s:' namespace (the '%s:' prefix is reserved "
                            "for core, and foreign namespaces are forbidden)",
-                           plugin_key, event, plugin_key, HERMES_EVENT_NAMESPACE)
+                           plugin_key, event, plugin_key, TINO_EVENT_NAMESPACE)
             raise ValueError(f"Plugin '{plugin_key}' may not emit '{event}': emit only the bare event name; "
-                             f"the namespace is forced to '{plugin_key}:' and the '{HERMES_EVENT_NAMESPACE}:' "
+                             f"the namespace is forced to '{plugin_key}:' and the '{TINO_EVENT_NAMESPACE}:' "
                              f"prefix is reserved for core")
         if payload is not None and not isinstance(payload, dict):
             raise TypeError(f"Plugin '{plugin_key}' emit() payload must be a dict or None")
@@ -1233,8 +1233,8 @@ class PluginManager(PluginLoaderMixin, PluginDispatchMixin, PluginLedgerMixin):
                 return
             if force:
                 self.unload()  # the ledger owns teardown of process-global registries
-            if env_var_enabled("HERMES_SAFE_MODE"):
-                logger.info("HERMES_SAFE_MODE=1 — plugin discovery skipped")
+            if env_var_enabled("TINO_SAFE_MODE"):
+                logger.info("TINO_SAFE_MODE=1 — plugin discovery skipped")
                 self._discovered = True
                 return
             # Flag set up front as a re-entrancy guard (register() can trigger discovery again) but
@@ -1329,7 +1329,7 @@ class PluginManager(PluginLoaderMixin, PluginDispatchMixin, PluginLedgerMixin):
         enabled = _get_enabled_plugins()  # None = opt-in default (nothing enabled)
         stale_relay_keys = legacy_relay_plugin_keys(enabled)
         if stale_relay_keys:
-            logger.warning("Removed Hermes plugin %s is still listed in plugins.enabled; "
+            logger.warning("Removed Tino plugin %s is still listed in plugins.enabled; "
                            "remove it and configure native Relay plugins with %s",
                            ", ".join(stale_relay_keys), RELAY_PLUGINS_CONFIG_ENV)
         # Later sources win on key collision (project > user > bundled); gate the winners, then
@@ -1347,7 +1347,7 @@ class PluginManager(PluginLoaderMixin, PluginDispatchMixin, PluginLedgerMixin):
         self._refresh_plugin_compat_report(list(to_load.values()))
 
     def _refresh_plugin_compat_report(self, manifests: List[PluginManifest]) -> None:
-        """Refresh HERMES_HOME/.plugin-compat-report.json from this discovery pass (hermes_cli.plugin_compat).
+        """Refresh TINO_HOME/.plugin-compat-report.json from this discovery pass (hermes_cli.plugin_compat).
 
         The Desktop boot modal has no Python runtime of its own and reads that file after the ``serve``
         backend is up, so the scan must run wherever plugins are discovered — not only under the CLI
@@ -1412,7 +1412,7 @@ class PluginManager(PluginLoaderMixin, PluginDispatchMixin, PluginLedgerMixin):
     def has_enabled_portable_mcp(self, raw_config: Mapping[str, Any]) -> bool:
         """Probe enabled portable MCP packages without loading plugins (shares the full-discovery
         manifest collection so precedence/gating cannot diverge)."""
-        if _env_enabled("HERMES_SAFE_MODE"):
+        if _env_enabled("TINO_SAFE_MODE"):
             return False
         plugins_config = raw_config.get("plugins")
         if not isinstance(plugins_config, dict):
@@ -1510,7 +1510,7 @@ class PluginManager(PluginLoaderMixin, PluginDispatchMixin, PluginLedgerMixin):
 # working — ``get_plugin_manager()`` still reads/writes this name.
 _plugin_manager: Optional[PluginManager] = None
 
-# Resolved Hermes home -> PluginManager. A process can switch profiles via
+# Resolved Tino home -> PluginManager. A process can switch profiles via
 # ``set_hermes_home_override()``; a single slot would leak one profile's plugin/context-engine state
 # into another, and keying by resolved home lets a re-entered profile reuse its imported modules.
 _plugin_managers_by_home: Dict[Path, PluginManager] = {}
@@ -1518,7 +1518,7 @@ _plugin_managers_lock = threading.RLock()
 
 
 def _plugin_home_key() -> Path:
-    """Resolved active Hermes home — the key for per-profile plugin managers (plugins capture the
+    """Resolved active Tino home — the key for per-profile plugin managers (plugins capture the
     home at registration, so a process serving several profiles cannot share one manager)."""
     try:
         return get_hermes_home().expanduser().resolve()
@@ -1543,7 +1543,7 @@ def _clear_plugin_submodules(manager: Optional[PluginManager]) -> None:
 
 
 def get_plugin_manager() -> PluginManager:
-    """Return the plugin manager for the active Hermes profile/home (cached per resolved home; a
+    """Return the plugin manager for the active Tino profile/home (cached per resolved home; a
     profile switch gets its own manager and plugin submodules)."""
     global _plugin_manager
     current_home = _plugin_home_key()
@@ -2033,7 +2033,7 @@ def resolve_plugin_command_result(result: Any) -> Any:
             done.set()
 
     # copy_context: the helper thread must see the caller's profile/secret scope, else an
-    # async hook under a running loop reads the default HERMES_HOME and get_secret raises.
+    # async hook under a running loop reads the default TINO_HOME and get_secret raises.
     threading.Thread(target=contextvars.copy_context().run, args=(_runner,),
                      name="hermes-plugin-command-await", daemon=True).start()
     if not done.wait(timeout=_PLUGIN_COMMAND_AWAIT_TIMEOUT_SECS):

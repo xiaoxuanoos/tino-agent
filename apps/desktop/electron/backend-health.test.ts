@@ -73,7 +73,7 @@ test('does not fall back to heavyweight /api/status for transient health failure
     waitForHermesReady('http://127.0.0.1:9000', {
       fetchPublicJson: async url => {
         calls.push(['public', url])
-        throw new Error('Timed out connecting to Hermes backend after 15000ms')
+        throw new Error('Timed out connecting to Tino backend after 15000ms')
       },
       fetchJson: async url => {
         calls.push(['token', url])
@@ -140,11 +140,11 @@ test('recognizes missing-route shapes only', () => {
   assert.equal(isMissingHealthEndpointError(new Error('404: {"detail":"Not Found"}')), true)
   assert.equal(
     isMissingHealthEndpointError(
-      new Error('Expected JSON from /api/health but got HTML. The endpoint is likely missing on the Hermes backend.')
+      new Error('Expected JSON from /api/health but got HTML. The endpoint is likely missing on the Tino backend.')
     ),
     true
   )
-  assert.equal(isMissingHealthEndpointError(new Error('Timed out connecting to Hermes backend after 15000ms')), false)
+  assert.equal(isMissingHealthEndpointError(new Error('Timed out connecting to Tino backend after 15000ms')), false)
   assert.equal(isMissingHealthEndpointError(new Error('500: boom')), false)
 })
 
@@ -234,7 +234,7 @@ test('unsigned OAuth is a terminal reauth failure; a bare needsOauthLogin hint i
   assert.equal(isReauthRequiredError(unsigned), true)
   assert.match(unsigned.message, /not signed in/i)
   assert.equal(isReauthRequiredError({ needsOauthLogin: true }), false)
-  assert.equal(isReauthRequiredError(new Error('Could not reach the remote Hermes gateway')), false)
+  assert.equal(isReauthRequiredError(new Error('Could not reach the remote Tino gateway')), false)
 })
 
 test('a credentialed 403 is also a terminal reauth failure', async () => {

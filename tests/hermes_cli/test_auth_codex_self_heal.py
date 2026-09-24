@@ -1,8 +1,8 @@
 """Regression tests for Codex refresh_token self-heal (cross-store rotation).
 
-Hermes keeps its OWN copy of the Codex OAuth token (per profile + top-level),
+Tino keeps its OWN copy of the Codex OAuth token (per profile + top-level),
 separate from the Codex CLI's ``~/.codex/auth.json``. OAuth refresh_tokens are
-single-use, so when the Codex CLI (or another Hermes process) rotates the shared
+single-use, so when the Codex CLI (or another Tino process) rotates the shared
 token, the frozen copy's refresh_token goes stale and ``refresh_codex_oauth_pure``
 fails with a relogin-required error. ``_refresh_codex_auth_tokens`` must then
 recover by re-importing the canonical token from ``~/.codex/auth.json`` instead of
@@ -51,7 +51,7 @@ def test_self_heals_on_stale_refresh_token(monkeypatch):
 
     assert out["access_token"] == "fresh-access"
     assert out["refresh_token"] == "fresh-refresh"
-    # the recovered token was persisted to the Hermes auth store
+    # the recovered token was persisted to the Tino auth store
     assert saved["access_token"] == "fresh-access"
 
 
@@ -64,7 +64,7 @@ def test_self_heals_on_stale_refresh_token(monkeypatch):
 
 
 def test_self_heals_missing_singleton_access_token_from_codex_cli(tmp_path, monkeypatch):
-    """Exact cron failure path: Hermes auth has refresh_token but missing access_token."""
+    """Exact cron failure path: Tino auth has refresh_token but missing access_token."""
     hermes_home = tmp_path / "hermes"
     codex_home = tmp_path / "codex"
     hermes_home.mkdir()
@@ -85,7 +85,7 @@ def test_self_heals_missing_singleton_access_token_from_codex_cli(tmp_path, monk
             "refresh_token": "fresh-refresh",
         },
     }))
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+    monkeypatch.setenv("TINO_HOME", str(hermes_home))
     monkeypatch.setenv("CODEX_HOME", str(codex_home))
 
     resolved = resolve_codex_runtime_credentials()
@@ -102,7 +102,7 @@ def test_self_heals_missing_singleton_access_token_from_codex_cli(tmp_path, monk
 
 def test_opt_out_never_adopts_codex_cli_login(tmp_path, monkeypatch):
     """``auth.adopt_external_logins: false`` (#113023): the Codex CLI pair is a single-use refresh-token
-    family the user did not hand to Hermes. Both automatic recovery paths must leave it (and Hermes' own
+    family the user did not hand to Tino. Both automatic recovery paths must leave it (and Tino' own
     auth.json) untouched and surface the real error instead."""
     hermes_home = tmp_path / "hermes"
     codex_home = tmp_path / "codex"
@@ -114,7 +114,7 @@ def test_opt_out_never_adopts_codex_cli_login(tmp_path, monkeypatch):
     (hermes_home / "auth.json").write_text(json.dumps(hermes_auth))
     (codex_home / "auth.json").write_text(json.dumps({
         "tokens": {"access_token": "fresh-access", "refresh_token": "fresh-refresh"}}))
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+    monkeypatch.setenv("TINO_HOME", str(hermes_home))
     monkeypatch.setenv("CODEX_HOME", str(codex_home))
 
     with pytest.raises(AuthError) as info:
@@ -146,14 +146,14 @@ def _seed_homes(tmp_path, monkeypatch, hermes_tokens, cli_tokens):
     (hermes_home / "auth.json").write_text(json.dumps({"version": 1, "providers": {"openai-codex": {
         "tokens": hermes_tokens, "auth_mode": "chatgpt"}}}))
     (codex_home / "auth.json").write_text(json.dumps({"tokens": cli_tokens}))
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+    monkeypatch.setenv("TINO_HOME", str(hermes_home))
     monkeypatch.setenv("CODEX_HOME", str(codex_home))
     return hermes_home / "auth.json"
 
 
 def test_recovery_refuses_codex_cli_login_from_another_workspace(tmp_path, monkeypatch, caplog):
     """#73667: a Codex Desktop/CLI login into ANOTHER ChatGPT workspace must not silently replace the
-    Hermes credential it is supposed to repair — the store stays byte-identical and the log says why."""
+    Tino credential it is supposed to repair — the store stays byte-identical and the log says why."""
     personal, team = _codex_jwt("acct-personal"), _codex_jwt("acct-team")
     auth_file = _seed_homes(tmp_path, monkeypatch, {"access_token": personal},
                             {"access_token": team, "refresh_token": "rt-team"})

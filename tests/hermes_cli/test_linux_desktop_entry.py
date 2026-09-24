@@ -148,7 +148,7 @@ def test_install_icon_copy_failure_falls_back_to_absolute(
     assert values["Icon"] == str(lde.icon_path(root))
 
     assert values["Type"] == "Application"
-    assert values["Name"] == "Hermes"
+    assert values["Name"] == "Tino"
     assert values["Terminal"] == "false"
 
 
@@ -670,7 +670,7 @@ def test_install_without_source_icon_uses_themed_name(tmp_path, xdg_home, monkey
     entry = lde.install_desktop_entry(root)
 
     # A broken absolute path renders as no icon. The themed name resolves
-    # when Hermes is installed some other way.
+    # when Tino is installed some other way.
     assert _parse(entry.read_text(encoding="utf-8"))["Icon"] == "hermes"
 
 

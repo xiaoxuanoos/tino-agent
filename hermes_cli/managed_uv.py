@@ -1,6 +1,6 @@
-"""Hermes-managed uv and Python runtime repair.
+"""Tino-managed uv and Python runtime repair.
 
-The Python backing the install is shared by every Hermes profile because the checkout's ``venv``
+The Python backing the install is shared by every Tino profile because the checkout's ``venv``
 is shared. Runtime repair therefore uses an install-scoped store under
 ``<checkout>/.hermes-runtime/python``. A vulnerable interpreter is never reinstalled in place: a
 new immutable Python generation is provisioned and a relocatable sibling venv built and smoke-tested
@@ -46,7 +46,7 @@ _Provisioned = tuple[Path, Path, SQLiteRuntimeInfo]
 
 
 def managed_uv_path() -> Path:
-    """Path of Hermes' own uv binary (``$HERMES_HOME/bin/uv[.exe]``); may not exist yet."""
+    """Path of Tino' own uv binary (``$TINO_HOME/bin/uv[.exe]``); may not exist yet."""
     return get_hermes_home() / "bin" / ("uv.exe" if platform.system() == "Windows" else "uv")
 
 
@@ -59,7 +59,7 @@ def resolve_uv() -> Optional[str]:
 def pip_install_hint(package: str) -> str:
     """Copy-pasteable command that installs *package* into the running interpreter.
 
-    Names Hermes' own uv when it exists: the installer drops it in ``$HERMES_HOME/bin``
+    Names Tino' own uv when it exists: the installer drops it in ``$TINO_HOME/bin``
     without putting that on PATH, so a bare ``uv`` would fail for installer-only users.
     """
     return f"{resolve_uv() or 'uv'} pip install --python {sys.executable} {package}"
@@ -74,7 +74,7 @@ def managed_python_install_dir(project_root: Path | None = None) -> Path:
 def managed_python_env(
     project_root: Path | None = None, *, install_dir: Path | None = None,
     base_env: dict[str, str] | None = None) -> dict[str, str]:
-    """Return a sanitized environment for Hermes-private uv Python commands."""
+    """Return a sanitized environment for Tino-private uv Python commands."""
     target = (
         Path(install_dir) if install_dir is not None else managed_python_install_dir(project_root))
     env = dict(os.environ if base_env is None else base_env)
@@ -152,7 +152,7 @@ def _report_runtime_repair_failure(repair: RuntimeRepairResult) -> None:
     if repair.backup_venv is None:
         print("  ℹ Managed Python runtime was not replaced; "
               f"the existing venv is unchanged ({repair.detail}).")
-        print("    Sessions stay protected meanwhile: Hermes keeps databases "
+        print("    Sessions stay protected meanwhile: Tino keeps databases "
               "out of WAL mode on this SQLite build. The next `hermes update` "
               "will retry.")
         return
@@ -205,7 +205,7 @@ def _ensure_uv_path(
 
 def _uv_runs(uv_bin: str) -> bool:
     """``uv --version`` exits 0. A pre-fix installer could salvage a relocated Chocolatey/Scoop shim into
-    ``$HERMES_HOME/bin``: it is a file with the executable bit that never runs, so is_file()+X_OK
+    ``$TINO_HOME/bin``: it is a file with the executable bit that never runs, so is_file()+X_OK
     alone would keep handing it out forever instead of reinstalling."""
     try:
         return subprocess.run([uv_bin, "--version"], capture_output=True, check=False).returncode == 0
@@ -464,7 +464,7 @@ def _attempt_install_generation(
     try:
         python.resolve().relative_to(generation.resolve())
     except (OSError, ValueError):
-        return reject("uv resolved Python outside the Hermes generation: %s", python)
+        return reject("uv resolved Python outside the Tino generation: %s", python)
     # Sign before the candidate is probed or promoted so each immutable generation does not look
     # like a new TCC principal on macOS. Non-fatal: the SQLite repair proceeds regardless.
     _macos_sign_managed_python(python)
@@ -988,7 +988,7 @@ def _repair_under_lock(
     if not current.wal_reset_vulnerable:
         return _result("safe", current, sqlite_after=current.sqlite_version_string)
     print(
-        "  ⚠ Hermes venv links SQLite "
+        "  ⚠ Tino venv links SQLite "
         f"{current.sqlite_version_string}, which has the WAL-reset bug.")
     provisioned = _install_safe_python_generation(uv_bin, project_root=root, current=current)
     # Likely a stale managed-uv catalog: python-build-standalone re-releases the same patch
@@ -1082,7 +1082,7 @@ def _install_uv(target: Path) -> None:
     """Bootstrap uv into *target* using the official standalone installer.
 
     Sets ``UV_UNMANAGED_INSTALL`` (POSIX) / ``UV_INSTALL_DIR`` (Windows) so the installer writes
-    into ``$HERMES_HOME/bin/`` instead of ``~/.local/bin/``.
+    into ``$TINO_HOME/bin/`` instead of ``~/.local/bin/``.
     """
     env = {**os.environ, "UV_UNMANAGED_INSTALL": str(target.parent),
            "UV_INSTALL_DIR": str(target.parent)}

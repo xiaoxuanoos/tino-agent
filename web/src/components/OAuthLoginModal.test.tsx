@@ -74,6 +74,7 @@ async function exhaustCountdown(seconds: number) {
 
 beforeEach(() => {
   (globalThis as Record<string, unknown>).IS_REACT_ACT_ENVIRONMENT = true;
+  localStorage.setItem("tino-locale", "en");
   vi.useFakeTimers();
   apiMocks.startOAuthLogin.mockReset();
   apiMocks.pollOAuthSession.mockReset();
@@ -90,6 +91,7 @@ afterEach(() => {
   vi.useRealTimers();
   root?.unmount();
   container?.remove();
+  localStorage.removeItem("tino-locale");
 });
 
 describe("OAuthLoginModal local expiry", () => {

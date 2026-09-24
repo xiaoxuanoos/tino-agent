@@ -208,7 +208,7 @@ class TestStartRun:
     async def test_start_binds_chat_id_for_delegation_wake_target(self, adapter):
         """/v1/runs must bind the raw session id as the api_server chat_id
         (like every other agent-entry route does via _run_agent): the async
-        delegation dispatch reads HERMES_SESSION_CHAT_ID to pick its wake
+        delegation dispatch reads TINO_SESSION_CHAT_ID to pick its wake
         self-post target, and an empty binding forces background delegations
         on this route back to synchronous execution."""
         app = _create_runs_app(adapter)
@@ -1516,12 +1516,12 @@ class TestRunIdempotency:
                 first_headers = {
                     "Authorization": "Bearer sk-secret",
                     "Idempotency-Key": "memory-scope",
-                    "X-Hermes-Session-Key": "memory-a",
+                    "X-Tino-Session-Key": "memory-a",
                 }
                 second_headers = {
                     "Authorization": "Bearer sk-secret",
                     "Idempotency-Key": "memory-scope",
-                    "X-Hermes-Session-Key": "memory-b",
+                    "X-Tino-Session-Key": "memory-b",
                 }
                 first = await cli.post(
                     "/v1/runs", json={"input": "same"}, headers=first_headers
@@ -1550,7 +1550,7 @@ class TestRunIdempotency:
                 headers = {
                     "Authorization": "Bearer sk-secret",
                     "Idempotency-Key": "lost-acceptance",
-                    "X-Hermes-Session-Key": "memory-a",
+                    "X-Tino-Session-Key": "memory-a",
                 }
                 first = await cli.post(
                     "/v1/runs", json={"input": "same"}, headers=headers
@@ -1568,7 +1568,7 @@ class TestRunIdempotency:
                 assert replay.status == 202
                 assert replay_body["run_id"] == first_body["run_id"]
                 assert replay_body["replayed"] is True
-                assert replay.headers["X-Hermes-Session-Key"] == "memory-a"
+                assert replay.headers["X-Tino-Session-Key"] == "memory-a"
 
     @pytest.mark.asyncio
     async def test_direct_status_hydrates_after_adapter_restart(
@@ -1791,9 +1791,9 @@ class TestHostedRoomRuns:
     async def test_invitation_uses_validated_app_managed_local_catalog(
         self, auth_adapter, monkeypatch
     ):
-        monkeypatch.setenv("HERMES_DESKTOP", "1")
+        monkeypatch.setenv("TINO_DESKTOP", "1")
         monkeypatch.setenv(
-            "HERMES_ROOM_LINK_URL", "https://peer.example.test/hermes"
+            "TINO_ROOM_LINK_URL", "https://peer.example.test/hermes"
         )
         app = _create_runs_app(auth_adapter)
         async with TestClient(TestServer(app)) as cli:

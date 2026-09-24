@@ -8,7 +8,7 @@ Two fixes under test:
    (a) route the respawned gateway's stray stdout/stderr to
        ``logs/gateway-stdio.log`` (it was ``DEVNULL`` — a gateway killed by
        parent Job Object teardown left ZERO trace anywhere), and
-   (b) stamp ``_HERMES_GATEWAY_BREAKAWAY`` =1/0 on the respawn env exactly
+   (b) stamp ``_TINO_GATEWAY_BREAKAWAY`` =1/0 on the respawn env exactly
        like the canonical ``gateway_windows._spawn_detached``, so the
        lifecycle/exit-diag records show whether the gateway escaped the
        parent's Job Object.
@@ -78,14 +78,14 @@ class TestWatcherRespawnTemplate:
     def test_respawn_stamps_breakaway_state_like_spawn_detached(
         self, monkeypatch
     ):
-        """The respawned gateway must carry _HERMES_GATEWAY_BREAKAWAY=1 on
+        """The respawned gateway must carry _TINO_GATEWAY_BREAKAWAY=1 on
         the primary (breakaway) spawn and =0 on the no-breakaway fallback,
         mirroring gateway_windows._spawn_detached — without the stamp, a
         job-teardown kill is indistinguishable from any other silent death
         in the exit diagnostics."""
         src = _captured_watcher_source(monkeypatch)
         assert "_WINDOWS_GATEWAY_BREAKAWAY_ENV" in src
-        assert _WINDOWS_GATEWAY_BREAKAWAY_ENV == "_HERMES_GATEWAY_BREAKAWAY"
+        assert _WINDOWS_GATEWAY_BREAKAWAY_ENV == "_TINO_GATEWAY_BREAKAWAY"
         # Primary stamps "1", the OSError fallback stamps "0".
         assert '_WINDOWS_GATEWAY_BREAKAWAY_ENV: "1"' in src
         assert '_WINDOWS_GATEWAY_BREAKAWAY_ENV: "0"' in src

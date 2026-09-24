@@ -27,10 +27,10 @@ def _args(**overrides) -> Namespace:
 
 @pytest.fixture(autouse=True)
 def _isolated_config_env(monkeypatch, tmp_path):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
-    monkeypatch.delenv("HERMES_IGNORE_USER_CONFIG", raising=False)
+    monkeypatch.setenv("TINO_HOME", str(tmp_path))
+    monkeypatch.delenv("TINO_IGNORE_USER_CONFIG", raising=False)
     yield
-    os.environ.pop("HERMES_IGNORE_USER_CONFIG", None)
+    os.environ.pop("TINO_IGNORE_USER_CONFIG", None)
 
 
 @pytest.mark.parametrize(
@@ -54,10 +54,10 @@ def test_noninteractive_guard_rejects_malformed_yaml(args, tmp_path, caplog, cap
             main_mod._guard_noninteractive_user_config(args)
 
     assert exc_info.value.code == 2
-    assert "Hermes stopped because your settings file" in capsys.readouterr().err
+    assert "Tino stopped because your settings file" in capsys.readouterr().err
     assert any(
         record.levelno == logging.ERROR
-        and "Hermes stopped because your settings file" in record.getMessage()
+        and "Tino stopped because your settings file" in record.getMessage()
         for record in caplog.records
     )
     assert config_path.read_text(encoding="utf-8") == broken
@@ -170,7 +170,7 @@ def test_env_only_config_bypass_allows_noninteractive_recovery(monkeypatch, tmp_
     from hermes_cli import main as main_mod
 
     (tmp_path / "config.yaml").write_text("model: [unterminated\n")
-    monkeypatch.setenv("HERMES_IGNORE_USER_CONFIG", "1")
+    monkeypatch.setenv("TINO_IGNORE_USER_CONFIG", "1")
     args = _args()
 
     main_mod._guard_noninteractive_user_config(args)
@@ -198,8 +198,8 @@ def test_reused_args_can_retry_after_config_repair(tmp_path):
 def test_ignore_user_config_is_applied_before_oneshot_startup(monkeypatch):
     from hermes_cli import main as main_mod
 
-    monkeypatch.delenv("HERMES_IGNORE_USER_CONFIG", raising=False)
+    monkeypatch.delenv("TINO_IGNORE_USER_CONFIG", raising=False)
 
     main_mod._apply_user_config_bypass(_args(ignore_user_config=True))
 
-    assert os.environ["HERMES_IGNORE_USER_CONFIG"] == "1"
+    assert os.environ["TINO_IGNORE_USER_CONFIG"] == "1"

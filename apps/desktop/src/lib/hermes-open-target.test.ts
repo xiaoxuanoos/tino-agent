@@ -13,21 +13,21 @@ describe('normalizeHermesOpenString', () => {
     expect(normalizeHermesOpenString('#/index-network/intent/1')).toBe('/index-network/intent/1')
   })
 
-  it('maps plugin-scoped hermes:// deep links to the same path', () => {
-    expect(normalizeHermesOpenString('hermes://index-network/intent/1')).toBe('/index-network/intent/1')
-    expect(normalizeHermesOpenString('hermes://index-network/intent/1?focus=true')).toBe(
+  it('maps plugin-scoped tino:// deep links to the same path', () => {
+    expect(normalizeHermesOpenString('tino://index-network/intent/1')).toBe('/index-network/intent/1')
+    expect(normalizeHermesOpenString('tino://index-network/intent/1?focus=true')).toBe(
       '/index-network/intent/1?focus=true'
     )
   })
 
-  it('maps hermes://open/… deep links by stripping the open host', () => {
-    expect(normalizeHermesOpenString('hermes://open/index-network/intent/1')).toBe('/index-network/intent/1')
-    expect(normalizeHermesOpenString('hermes://open/settings/plugins')).toBe('/settings/plugins')
+  it('maps tino://open/… deep links by stripping the open host', () => {
+    expect(normalizeHermesOpenString('tino://open/index-network/intent/1')).toBe('/index-network/intent/1')
+    expect(normalizeHermesOpenString('tino://open/settings/plugins')).toBe('/settings/plugins')
   })
 
   it('rejects reserved hermes kinds and unsafe paths', () => {
-    expect(normalizeHermesOpenString('hermes://blueprint/morning-brief')).toBeNull()
-    expect(normalizeHermesOpenString('hermes://plugin/install')).toBeNull()
+    expect(normalizeHermesOpenString('tino://blueprint/morning-brief')).toBeNull()
+    expect(normalizeHermesOpenString('tino://plugin/install')).toBeNull()
     expect(normalizeHermesOpenString('https://example.com/x')).toBeNull()
     expect(normalizeHermesOpenString('/../etc/passwd')).toBeNull()
     expect(normalizeHermesOpenString('index-network')).toBeNull()
@@ -42,7 +42,7 @@ describe('resolveHermesOpenPath', () => {
   })
 
   it('resolves href the same as a bare string', () => {
-    expect(resolveHermesOpenPath({ href: 'hermes://index-network/intent/1' })).toBe('/index-network/intent/1')
+    expect(resolveHermesOpenPath({ href: 'tino://index-network/intent/1' })).toBe('/index-network/intent/1')
   })
 })
 
@@ -51,7 +51,7 @@ describe('pathFromHermesDeepLink', () => {
     expect(pathFromHermesDeepLink('index-network', 'intent/1')).toBe('/index-network/intent/1')
   })
 
-  it('builds the navigate path from hermes://open/… payloads', () => {
+  it('builds the navigate path from tino://open/… payloads', () => {
     expect(pathFromOpenDeepLink('index-network/intent/1')).toBe('/index-network/intent/1')
     expect(pathFromHermesDeepLink('open', 'agent/42')).toBe('/agent/42')
   })

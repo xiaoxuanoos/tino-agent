@@ -9,7 +9,6 @@ import {
   Cpu,
   Database,
   Download,
-  Globe,
   HardDrive,
   KeyRound,
   Link2,
@@ -66,7 +65,6 @@ import type {
   SystemStats,
   UpdateCheckResponse,
   CuratorStatus,
-  PortalStatus,
   DebugShareResponse,
   GatewayMigratePlan,
 } from "@/lib/api";
@@ -213,7 +211,6 @@ export default function SystemPage() {
   );
   const [hooks, setHooks] = useState<HooksResponse | null>(null);
   const [curator, setCurator] = useState<CuratorStatus | null>(null);
-  const [portal, setPortal] = useState<PortalStatus | null>(null);
   const [loading, setLoading] = useState(true);
 
   const [activeAction, setActiveAction] = useState<string | null>(null);
@@ -274,13 +271,12 @@ export default function SystemPage() {
       api.getCheckpoints(),
       api.getHooks(),
       api.getCurator(),
-      api.getPortal(),
       // Cached (non-forced) check so the version row shows update status on
       // load without a separate effect / a forced network round-trip.
       api.checkHermesUpdate(false),
       api.getGatewayMigratePlan(),
     ])
-      .then(([s, st, m, p, c, h, cur, prt, upd, mig]) => {
+      .then(([s, st, m, p, c, h, cur, upd, mig]) => {
         if (s.status === "fulfilled") setStatus(s.value);
         if (st.status === "fulfilled") setStats(st.value);
         if (m.status === "fulfilled") setMemory(m.value);
@@ -288,7 +284,6 @@ export default function SystemPage() {
         if (c.status === "fulfilled") setCheckpoints(c.value);
         if (h.status === "fulfilled") setHooks(h.value);
         if (cur.status === "fulfilled") setCurator(cur.value);
-        if (prt.status === "fulfilled") setPortal(prt.value);
         if (upd.status === "fulfilled") setUpdateInfo(upd.value);
         if (mig.status === "fulfilled") setMigratePlan(mig.value);
       })
@@ -611,13 +606,13 @@ export default function SystemPage() {
     setUpdateConfirmOpen(false);
     if (status?.can_update_hermes === false) {
       showToast(
-        "Hermes updates are managed outside this dashboard.",
+        "Tino updates are managed outside this dashboard.",
         "success",
       );
       return;
     }
     try {
-      const resp = await api.updateHermes();
+      const resp = await api.updateTino();
       if (!resp.ok) {
         showToast(
           resp.message ??
@@ -739,7 +734,7 @@ export default function SystemPage() {
         open={canUpdateHermes && updateConfirmOpen}
         onCancel={() => setUpdateConfirmOpen(false)}
         onConfirm={() => void applyUpdate()}
-        title="Update Hermes?"
+        title="Update Tino?"
         description={
           updateInfo && updateInfo.behind && updateInfo.behind > 0
             ? `This will run 'hermes update' (${updateInfo.update_command}) and pull ${updateInfo.behind} new commit${updateInfo.behind === 1 ? "" : "s"}. The gateway restarts when the update finishes; the current session keeps its prompt cache until then.`
@@ -923,7 +918,7 @@ export default function SystemPage() {
                 <div>{stats?.python_impl} {stats?.python_version}</div>
               </div>
               <div>
-                <div className="text-xs uppercase tracking-wider text-muted-foreground">Hermes</div>
+                <div className="text-xs uppercase tracking-wider text-muted-foreground">Tino Agent</div>
                 <div className="flex items-center gap-2">
                   <span>v{stats?.hermes_version}</span>
                   {canUpdateHermes &&
@@ -1027,53 +1022,6 @@ export default function SystemPage() {
                   </span>
                 )}
               </div>
-            )}
-          </CardContent>
-        </Card>
-      </section>
-
-      {/* ── Portal ────────────────────────────────────────────────── */}
-      <section className="flex flex-col gap-3">
-        <H2 variant="sm" className="flex items-center gap-2 text-muted-foreground">
-          <Globe className="h-4 w-4" /> Nous Portal
-        </H2>
-        <Card>
-          <CardContent className="flex flex-col gap-3 py-4">
-            <div className="flex items-center gap-3">
-              <Badge tone={portal?.logged_in ? "success" : "secondary"}>
-                {portal?.logged_in ? "logged in" : "not logged in"}
-              </Badge>
-              {portal?.provider && (
-                <span className="text-sm text-muted-foreground">
-                  inference provider: {portal.provider}
-                </span>
-              )}
-              <a
-                href={portal?.subscription_url || "https://portal.nousresearch.com/manage-subscription"}
-                target="_blank"
-                rel="noreferrer"
-                className="ml-auto text-xs text-primary underline"
-              >
-                Manage subscription
-              </a>
-            </div>
-            {portal?.features && portal.features.length > 0 && (
-              <div className="flex flex-col gap-1 border-t border-border pt-3">
-                <span className="text-xs uppercase tracking-wider text-muted-foreground">
-                  Tool Gateway routing
-                </span>
-                {portal.features.map((f) => (
-                  <div key={f.label} className="flex items-center justify-between text-sm">
-                    <span>{f.label}</span>
-                    <span className="text-muted-foreground">{f.state}</span>
-                  </div>
-                ))}
-              </div>
-            )}
-            {!portal?.logged_in && (
-              <p className="text-xs text-muted-foreground">
-                Log in with <span className="font-mono">hermes portal</span>.
-              </p>
             )}
           </CardContent>
         </Card>
@@ -1417,7 +1365,7 @@ export default function SystemPage() {
                   id="import-path"
                   value={importPath}
                   onChange={(e) => setImportPath(e.target.value)}
-                  placeholder="$HERMES_HOME/backups/hermes-backup.zip"
+                  placeholder="$TINO_HOME/backups/hermes-backup.zip"
                 />
               </div>
               <Button
@@ -1436,8 +1384,8 @@ export default function SystemPage() {
             </div>
             <ConfirmDialog
               open={!!importConfirmTarget}
-              title="Restore full Hermes backup?"
-              description={`This will overwrite your current Hermes configuration, skills, sessions, and data with the contents of ${backupImportLabel(importConfirmTarget)}. This cannot be undone.`}
+              title="Restore full Tino backup?"
+              description={`This will overwrite your current Tino configuration, skills, sessions, and data with the contents of ${backupImportLabel(importConfirmTarget)}. This cannot be undone.`}
               destructive
               confirmLabel="Restore"
               cancelLabel="Cancel"
@@ -1454,7 +1402,7 @@ export default function SystemPage() {
         {/* Debug share — uploads a redacted report + logs, returns shareable
             links. Separated from the buttons above because its output is
             persistent, copyable URLs, not a fire-and-forget log tail. */}
-        <Card>
+        {import.meta.env.MODE === "upstream" && <Card>
           <CardContent className="flex flex-col gap-3 py-4">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div className="flex items-start gap-2">
@@ -1463,7 +1411,7 @@ export default function SystemPage() {
                   <span className="text-sm font-medium">Share debug report</span>
                   <span className="text-xs text-muted-foreground max-w-prose">
                     Uploads system info + logs to a public paste service and
-                    returns links to send the Hermes team. Pastes auto-delete
+                    returns links to send the Tino team. Pastes auto-delete
                     after 6 hours.
                   </span>
                 </div>
@@ -1577,7 +1525,7 @@ export default function SystemPage() {
               </div>
             )}
           </CardContent>
-        </Card>
+        </Card>}
       </section>
 
       {/* ── Checkpoints ───────────────────────────────────────────── */}

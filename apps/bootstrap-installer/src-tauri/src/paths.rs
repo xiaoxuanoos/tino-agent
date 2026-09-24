@@ -3,7 +3,7 @@
 //! Mirrors `hermes_constants.get_hermes_home()` from the Python CLI:
 //!   Windows: %LOCALAPPDATA%\hermes
 //!   macOS:   ~/.hermes
-//!   Linux:   ~/.hermes  (override via $HERMES_HOME)
+//!   Linux:   ~/.hermes  (override via $TINO_HOME)
 //!
 //! NOTE (macOS): Python's get_hermes_home(), scripts/install.sh, and the
 //! Electron desktop's resolveHermesHome() ALL use ~/.hermes on macOS — there
@@ -21,9 +21,9 @@ use std::path::{Path, PathBuf};
 use std::process::Command;
 use tracing_appender::non_blocking::WorkerGuard;
 
-/// Returns the canonical Hermes home directory, respecting $HERMES_HOME if set.
+/// Returns the canonical Tino home directory, respecting $TINO_HOME if set.
 pub fn hermes_home() -> PathBuf {
-    if let Ok(override_path) = std::env::var("HERMES_HOME") {
+    if let Ok(override_path) = std::env::var("TINO_HOME") {
         if !override_path.trim().is_empty() {
             return PathBuf::from(override_path);
         }
@@ -63,7 +63,7 @@ pub fn bootstrap_cache_dir() -> PathBuf {
 /// Stable location the installer copies itself to after a successful install.
 /// The desktop app re-invokes this with `--update`, and the start-menu /
 /// desktop shortcuts can point users back to it. Lives directly under
-/// HERMES_HOME so it survives repo checkout deletion (unlike anything under
+/// TINO_HOME so it survives repo checkout deletion (unlike anything under
 /// hermes-agent/).
 ///
 /// On Windows this is `%LOCALAPPDATA%\hermes\hermes-setup.exe`; on other
@@ -83,8 +83,8 @@ pub fn installer_dest() -> PathBuf {
 /// mid-update re-locks the venv shim and triggers `force_kill_other_hermes`,
 /// which then kills that legitimate backend in a respawn loop (#50238).
 ///
-/// Lives directly under HERMES_HOME (same rationale as `installer_dest`) so the
-/// Electron desktop — which resolves HERMES_HOME identically and pins it into
+/// Lives directly under TINO_HOME (same rationale as `installer_dest`) so the
+/// Electron desktop — which resolves TINO_HOME identically and pins it into
 /// the updater's env — agrees on the exact path.
 pub fn update_in_progress_marker() -> PathBuf {
     hermes_home().join(".hermes-update-in-progress")
@@ -125,7 +125,7 @@ pub fn copy_self_to_hermes_home() -> std::io::Result<()> {
     }
     std::fs::copy(&src, &dest)?;
     repair_macos_installer_helper(&dest);
-    tracing::info!(?src, ?dest, "copied installer to HERMES_HOME");
+    tracing::info!(?src, ?dest, "copied installer to TINO_HOME");
     Ok(())
 }
 
@@ -157,14 +157,14 @@ fn repair_macos_installer_helper(_path: &Path) {}
 
 /// Where the bootstrap-complete marker lives (existence-only for the Rust
 /// installer fast path; JSON schema-checked by the Electron app). Per main.ts:
-///   const BOOTSTRAP_COMPLETE_MARKER = path.join(ACTIVE_HERMES_ROOT, '.hermes-bootstrap-complete')
-/// We don't always know ACTIVE_HERMES_ROOT until install.ps1 reports it, so
+///   const BOOTSTRAP_COMPLETE_MARKER = path.join(ACTIVE_TINO_ROOT, '.tino-bootstrap-complete')
+/// We don't always know ACTIVE_TINO_ROOT until install.ps1 reports it, so
 /// this is a probe helper, not a definitive path.
 pub fn likely_bootstrap_marker(install_root: &Path) -> PathBuf {
-    install_root.join(".hermes-bootstrap-complete")
+    install_root.join(".tino-bootstrap-complete")
 }
 
-/// Initializes tracing to bootstrap-installer.log under HERMES_HOME/logs/.
+/// Initializes tracing to bootstrap-installer.log under TINO_HOME/logs/.
 /// Returns a guard that flushes the appender on drop — keep it alive for
 /// the lifetime of the process.
 pub fn init_logging() -> Option<WorkerGuard> {
@@ -179,7 +179,7 @@ pub fn init_logging() -> Option<WorkerGuard> {
     let file_appender = tracing_appender::rolling::never(&dir, "bootstrap-installer.log");
     let (non_blocking, guard) = tracing_appender::non_blocking(file_appender);
 
-    let env_filter = tracing_subscriber::EnvFilter::try_from_env("HERMES_BOOTSTRAP_LOG")
+    let env_filter = tracing_subscriber::EnvFilter::try_from_env("TINO_BOOTSTRAP_LOG")
         .unwrap_or_else(|_| tracing_subscriber::EnvFilter::new("info"));
 
     tracing_subscriber::fmt()

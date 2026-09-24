@@ -190,7 +190,7 @@ def _cache_dirs() -> tuple:
 
 
 def _is_allowed_bridge_path(url: str) -> bool:
-    """Absolute bridge path resolves (symlinks included) inside a Hermes cache dir — a rogue bridge could hand back /etc/passwd."""
+    """Absolute bridge path resolves (symlinks included) inside a Tino cache dir — a rogue bridge could hand back /etc/passwd."""
     try:
         resolved = Path(url).resolve()
     except (OSError, ValueError):
@@ -212,7 +212,7 @@ def _file_content_hash(path: Path) -> str:
 
 
 def check_whatsapp_requirements() -> bool:
-    """Node.js (Hermes-managed first, so a bad system Node on PATH can't break Windows) is available."""
+    """Node.js (Tino-managed first, so a bad system Node on PATH can't break Windows) is available."""
     _node = find_node_executable("node")
     try:
         return bool(_node) and subprocess.run([_node, "--version"], timeout=5, **_RUN_TEXT).returncode == 0
@@ -320,7 +320,7 @@ class WhatsAppAdapter(WhatsAppBehaviorMixin, BasePlatformAdapter):
         except OSError:
             pass
         print(f"[{self.name}] Installing WhatsApp bridge dependencies...")
-        # Hermes-managed portable Node's npm.cmd first (Windows), then PATH.
+        # Tino-managed portable Node's npm.cmd first (Windows), then PATH.
         _npm_bin = find_node_executable("npm") or "npm"
         detail = ""
         try:  # Default 300s accommodates slow systems like an Unraid NAS.
@@ -393,9 +393,9 @@ class WhatsAppAdapter(WhatsAppBehaviorMixin, BasePlatformAdapter):
                 bridge_env[env_key] = ",".join(sorted(ids))
             else:
                 bridge_env.pop(env_key, None)
-        # Without these the bridge hardcodes ~/.hermes/{image,audio,document}_cache (wrong under HERMES_HOME/profiles/cache layout).
+        # Without these the bridge hardcodes ~/.hermes/{image,audio,document}_cache (wrong under TINO_HOME/profiles/cache layout).
         img_dir, audio_dir, _video_dir, doc_dir = _cache_dirs()
-        bridge_env.update(HERMES_IMAGE_CACHE_DIR=str(img_dir), HERMES_AUDIO_CACHE_DIR=str(audio_dir), HERMES_DOCUMENT_CACHE_DIR=str(doc_dir))
+        bridge_env.update(TINO_IMAGE_CACHE_DIR=str(img_dir), TINO_AUDIO_CACHE_DIR=str(audio_dir), TINO_DOCUMENT_CACHE_DIR=str(doc_dir))
         return bridge_env
 
     def _bridge_died(self, detail: str) -> bool:
@@ -918,7 +918,7 @@ async def _standalone_send(pconfig, chat_id, message, *, thread_id=None, media_f
                 if not (health.get("capabilities") or {}).get("outboundMentions"):
                     return {"error": (
                         "WhatsApp bridge does not support native mentions; "
-                        "restart it from the same Hermes version.")}
+                        "restart it from the same Tino version.")}
 
             async def _post(path, payload, total, error_label=None):
                 """``(messageId, None)`` on 200, else ``(None, error_dict)`` (body read only when labelled)."""

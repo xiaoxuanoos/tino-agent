@@ -109,7 +109,7 @@ class TestPidIsHermes:
 
     @pytest.mark.skipif(sys.platform != "win32", reason="real probe is windows-only")
     def test_missing_pid_real_probe_fails_closed(self):
-        # A PID that cannot exist must never be judged Hermes-owned.
+        # A PID that cannot exist must never be judged Tino-owned.
         assert _subprocess_compat.pid_is_hermes(2**24) is False
 
 
@@ -218,7 +218,7 @@ class TestKillStaleDashboardProcesses:
         """An argv match from another profile is never a ``--stop`` target."""
         own_home = "/tmp/hermes-own"
         foreign_home = "/tmp/hermes-foreign"
-        monkeypatch.setenv("HERMES_HOME", own_home)
+        monkeypatch.setenv("TINO_HOME", own_home)
 
         with mock.patch.object(
             dashboard_procs, "_scan_dashboard_processes",
@@ -245,7 +245,7 @@ class TestHermesHomeForPid:
 
     @pytest.mark.skipif(sys.platform == "win32", reason="POSIX default home is $HOME/.hermes")
     def test_readable_env_without_var_resolves_to_that_process_default_home(self, monkeypatch, tmp_path):
-        """The common install shape exports no HERMES_HOME: the backend lives in its user's
+        """The common install shape exports no TINO_HOME: the backend lives in its user's
         platform default home, and a default-home ``--stop`` must still find it (#113978)."""
         home = str(tmp_path / "alice")
         monkeypatch.setattr(dashboard_procs, "_pid_environ", lambda pid: {"HOME": home})
@@ -259,12 +259,12 @@ class TestHermesHomeForPid:
         assert dashboard_procs._pids_owned_by_hermes_home([1, 2], f"{home}/.hermes") == [1]
 
     def test_root_shaped_hermes_home_follows_the_flag_and_the_sticky_active_profile(self, monkeypatch, tmp_path):
-        """Mirror ``_apply_profile_override``: an exported root ``HERMES_HOME`` is the root, not the
+        """Mirror ``_apply_profile_override``: an exported root ``TINO_HOME`` is the root, not the
         home — ``-p work`` and ``hermes profile use work`` both land in ``<root>/profiles/work``."""
         root = tmp_path / ".hermes"
         root.mkdir()
         monkeypatch.setattr(dashboard_procs, "_pid_environ",
-                            lambda pid: {"HOME": str(tmp_path), "HERMES_HOME": str(root)})
+                            lambda pid: {"HOME": str(tmp_path), "TINO_HOME": str(root)})
         from hermes_cli import main_dashboard
         monkeypatch.setattr(main_dashboard, "_dashboard_cmdline_for_pid",
                             lambda pid: ["hermes", "-p", "work", "serve"] if pid == 2 else ["hermes", "serve"])
@@ -273,9 +273,9 @@ class TestHermesHomeForPid:
         assert dashboard_procs._hermes_home_for_pid(1) == str(root)  # no flag, no active_profile
         (root / "active_profile").write_text("work", encoding="utf-8")
         assert dashboard_procs._hermes_home_for_pid(1) == str(root / "profiles" / "work")
-        # A profile-shaped HERMES_HOME without a flag is the home itself (root = its grandparent).
+        # A profile-shaped TINO_HOME without a flag is the home itself (root = its grandparent).
         monkeypatch.setattr(dashboard_procs, "_pid_environ",
-                            lambda pid: {"HERMES_HOME": str(root / "profiles" / "ops")})
+                            lambda pid: {"TINO_HOME": str(root / "profiles" / "ops")})
         assert dashboard_procs._hermes_home_for_pid(1) == str(root / "profiles" / "ops")
 
     def test_unreadable_env_is_none_and_spared(self, monkeypatch):

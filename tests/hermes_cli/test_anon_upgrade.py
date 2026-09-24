@@ -96,10 +96,10 @@ class FakePortal:
 @pytest.fixture
 def portal(monkeypatch, tmp_path):
     fake = FakePortal()
-    monkeypatch.setenv("HERMES_PORTAL_BASE_URL", PORTAL)
-    monkeypatch.setenv("HERMES_ANON_API_SECRET", "test-secret")
-    monkeypatch.setenv("HERMES_SHARED_AUTH_DIR", str(tmp_path / "shared-store"))
-    monkeypatch.setenv("HERMES_GUEST_ONBOARDING", "1")
+    monkeypatch.setenv("TINO_PORTAL_BASE_URL", PORTAL)
+    monkeypatch.setenv("TINO_ANON_API_SECRET", "test-secret")
+    monkeypatch.setenv("TINO_SHARED_AUTH_DIR", str(tmp_path / "shared-store"))
+    monkeypatch.setenv("TINO_GUEST_ONBOARDING", "1")
     for var in ("OPENROUTER_API_KEY", "OPENAI_API_KEY", "ANTHROPIC_API_KEY", "NOUS_API_KEY"):
         monkeypatch.delenv(var, raising=False)
     from hermes_cli import auth_nous

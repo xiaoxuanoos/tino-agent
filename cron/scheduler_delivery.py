@@ -262,7 +262,7 @@ def _open_continuable_cron_thread(job: dict, adapter, chat_id: str, loop) -> Opt
     create_thread = getattr(adapter, "create_handoff_thread", None)
     if not callable(create_thread) or loop is None:
         return None
-    thread_name = f"Hermes — {_cron_display_name(job)}"
+    thread_name = f"Tino — {_cron_display_name(job)}"
     try:
         from agent.async_utils import safe_schedule_threadsafe
         coro = create_thread(str(chat_id), thread_name)
@@ -936,7 +936,7 @@ def _deliver_to_bot_chat(job: dict, content: str, profile: str, *, deferred: Opt
     else:
         hermes_bin = shutil.which("hermes")
         if not hermes_bin:
-            return ("Hermes could not deliver this result to Bot Chat: the `hermes` command was not found. "
+            return ("Tino could not deliver this result to Bot Chat: the `hermes` command was not found. "
                     "The result is saved; run `hermes cron runs` to see it, or `hermes doctor` if this keeps happening")
         argv = [hermes_bin]
 
@@ -951,7 +951,7 @@ def _deliver_to_bot_chat(job: dict, content: str, profile: str, *, deferred: Opt
         return _fail(f"bot-chat delivery target no longer exists: {home}; do not resend")
     # Discovery (or deferred admission) owns the destination, not HOME or a
     # subsequently changed active_profile. Do not resolve the name a second time.
-    env["HERMES_HOME"] = str(home)
+    env["TINO_HOME"] = str(home)
     if home.parent.name != "profiles":
         argv += ["-p", "default"]
 
@@ -978,7 +978,7 @@ def _deliver_to_bot_chat(job: dict, content: str, profile: str, *, deferred: Opt
                 "Job '%s': bot-chat delivery to profile '%s' failed at %s: %s",
                 job_id, profile_label, home, tail)
             return (
-                f"Hermes could not deliver this result to Bot Chat (profile '{profile_label}'). "
+                f"Tino could not deliver this result to Bot Chat (profile '{profile_label}'). "
                 "The result is saved; run `hermes cron runs` to see it, or `hermes doctor` if this keeps happening"
                 f". Details: {tail}")
         logger.info("Job '%s': delivered to Bot Chat of profile '%s'", job_id, profile_label)
@@ -1024,7 +1024,7 @@ def _deliver_to_bot_chat(job: dict, content: str, profile: str, *, deferred: Opt
             "Job '%s': bot-chat delivery to profile '%s' failed: %s", job_id, profile_label,
             str(e) or type(e).__name__, exc_info=True)
         return (
-            f"Hermes could not deliver this result to Bot Chat (profile '{profile_label}'). "
+            f"Tino could not deliver this result to Bot Chat (profile '{profile_label}'). "
             "The result is saved; run `hermes cron runs` to see it, or `hermes doctor` if this keeps happening")
     finally:
         if query_file:
@@ -1966,7 +1966,7 @@ def _deliver_result(
     # id is the idempotency key (the queue never retries an uncertain claimed send). Match on THIS
     # job's own attempt: a worker's script may dispatch another job in-process (`hermes cron run`),
     # and that nested delivery must not be keyed under the outer execution id.
-    external_execution = os.environ.get("_HERMES_CRON_EXTERNAL_WORKER", "")
+    external_execution = os.environ.get("_TINO_CRON_EXTERNAL_WORKER", "")
     if (external_execution and adapters is None
             and external_execution == str(job.get("execution_id") or "")
             and any(target["platform"] != BOT_CHAT_PLATFORM for target in targets)):

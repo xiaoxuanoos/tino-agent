@@ -133,7 +133,7 @@ def test_persistence_failure_error_fallback_is_pinned_and_leaves_final_response_
     memory sync and the background-review gate still see the turn as having produced nothing."""
     from hermes_constants import profile_cli_selector
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / ".hermes" / "profiles" / "research"))
+    monkeypatch.setenv("TINO_HOME", str(tmp_path / ".hermes" / "profiles" / "research"))
     selector = profile_cli_selector()
     assert selector.strip()
     agent = _make_agent()

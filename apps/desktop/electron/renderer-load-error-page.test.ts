@@ -12,7 +12,7 @@ test('error page names the failure and carries a Reload button', () => {
     repairHint: 'hermes desktop --force-build'
   })
 
-  assert.match(html, /Hermes couldn.t start the desktop UI/)
+  assert.match(html, /Tino couldn.t start the desktop UI/)
   assert.match(html, /incomplete after the last update \(2 missing file\(s\)\)/)
   assert.match(html, /-6/)
   assert.match(html, /assets\/app-C0ffee\.js/)
@@ -25,12 +25,12 @@ test('error page names the failure and carries a Reload button', () => {
 test('error page reload button targets the real renderer URL when provided', () => {
   const html = buildRendererLoadErrorPage({
     errorDescription: 'load failed',
-    reloadUrl: 'file:///C:/Hermes%20Agent/dist/index.html'
+    reloadUrl: 'file:///C:/Tino%20Agent/dist/index.html'
   })
 
   // A data: page cannot recover with location.reload() (it would re-render
   // the error page) — the button must navigate back to the app URL.
-  assert.match(html, /location\.replace\("file:\/\/\/C:\/Hermes%20Agent\/dist\/index\.html"\)/)
+  assert.match(html, /location\.replace\("file:\/\/\/C:\/Tino%20Agent\/dist\/index\.html"\)/)
   assert.doesNotMatch(html, /location\.reload\(\)/)
 })
 

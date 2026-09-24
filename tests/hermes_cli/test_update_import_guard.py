@@ -183,7 +183,7 @@ def test_import_guard_does_not_accept_forged_static_marker(monkeypatch, tmp_path
     """Imported stdout cannot impersonate the per-probe completion marker."""
     (tmp_path / "consumer.py").write_text(
         "import os, sys\n"
-        "sys.stdout.write('__HERMES_IMPORT_HEALTH__[]')\n"
+        "sys.stdout.write('__TINO_IMPORT_HEALTH__[]')\n"
         "sys.stdout.flush()\n"
         "os._exit(7)\n"
     )

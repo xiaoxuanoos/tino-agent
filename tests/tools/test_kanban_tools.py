@@ -1,7 +1,7 @@
 """Tests for the Kanban tool surface (tools/kanban_tools.py).
 
 Verifies:
-  - Tools are gated on HERMES_KANBAN_TASK: a normal chat session sees
+  - Tools are gated on TINO_KANBAN_TASK: a normal chat session sees
     zero kanban tools in its schema; a worker session sees the kanban set.
   - Each handler's happy path.
   - Error paths (missing required args, bad metadata type, etc).
@@ -20,12 +20,12 @@ import pytest
 # ---------------------------------------------------------------------------
 
 def test_kanban_tools_hidden_without_env_var(monkeypatch, tmp_path):
-    """Normal `hermes chat` sessions (no HERMES_KANBAN_TASK) must have
+    """Normal `hermes chat` sessions (no TINO_KANBAN_TASK) must have
     zero kanban_* tools in their schema."""
-    monkeypatch.delenv("HERMES_KANBAN_TASK", raising=False)
+    monkeypatch.delenv("TINO_KANBAN_TASK", raising=False)
     home = tmp_path / ".hermes"
     home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("TINO_HOME", str(home))
 
     import tools.kanban_tools  # ensure registered
     from tools.registry import invalidate_check_fn_cache, registry
@@ -46,13 +46,13 @@ def test_kanban_tools_hidden_without_env_var(monkeypatch, tmp_path):
 
 @pytest.fixture
 def worker_env(monkeypatch, tmp_path):
-    """Simulate being a worker: HERMES_HOME isolated, HERMES_KANBAN_TASK set
+    """Simulate being a worker: TINO_HOME isolated, TINO_KANBAN_TASK set
     after we've created the task."""
     home = tmp_path / ".hermes"
     home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
-    monkeypatch.setenv("HERMES_PROFILE", "test-worker")
-    monkeypatch.delenv("HERMES_SESSION_ID", raising=False)
+    monkeypatch.setenv("TINO_HOME", str(home))
+    monkeypatch.setenv("TINO_PROFILE", "test-worker")
+    monkeypatch.delenv("TINO_SESSION_ID", raising=False)
     from pathlib import Path as _Path
     monkeypatch.setattr(_Path, "home", lambda: tmp_path)
 
@@ -66,7 +66,7 @@ def worker_env(monkeypatch, tmp_path):
         kb.claim_task(conn, tid)
     finally:
         conn.close()
-    monkeypatch.setenv("HERMES_KANBAN_TASK", tid)
+    monkeypatch.setenv("TINO_KANBAN_TASK", tid)
     return tid
 
 
@@ -83,7 +83,7 @@ def test_show_defaults_to_env_task_id(worker_env):
 
 def test_list_filters_tasks(monkeypatch, worker_env):
     """kanban_list gives orchestrators filtered board discovery."""
-    monkeypatch.delenv("HERMES_KANBAN_TASK", raising=False)
+    monkeypatch.delenv("TINO_KANBAN_TASK", raising=False)
     from hermes_cli import kanban_db as kb
     from hermes_cli import kanban_db_connect as kbc
     conn = kbc.connect()
@@ -177,7 +177,7 @@ def test_request_review_rejects_unknown_reviewer_without_mutation(monkeypatch, w
     with kbc.connect() as conn:
         before = kb.get_task(conn, worker_env)
         before_events = kb.list_events(conn, worker_env)
-    monkeypatch.setenv("HERMES_KANBAN_RUN_ID", str(before.current_run_id))
+    monkeypatch.setenv("TINO_KANBAN_RUN_ID", str(before.current_run_id))
 
     out = json.loads(kt._handle_request_review({"summary": "Ready for review.", "reviewer": "reviewer"}))
 
@@ -196,7 +196,7 @@ def test_request_review_accepts_installed_profile(monkeypatch, worker_env, tmp_p
     (tmp_path / ".hermes" / "profiles" / "verifier").mkdir(parents=True)
     (tmp_path / ".hermes" / "profiles" / "verifier" / "config.yaml").write_text("{}\n")  # identity marker
     with kbc.connect() as conn:
-        monkeypatch.setenv("HERMES_KANBAN_RUN_ID", str(kb.get_task(conn, worker_env).current_run_id))
+        monkeypatch.setenv("TINO_KANBAN_RUN_ID", str(kb.get_task(conn, worker_env).current_run_id))
 
     out = json.loads(kt._handle_request_review({"summary": "Ready for review.", "reviewer": "verifier"}))
 
@@ -214,12 +214,12 @@ def test_complete_goal_mode_rejected_by_judge(monkeypatch, tmp_path):
     from hermes_cli import kanban_db_connect as kbc
     from tools import kanban_tools as kt
 
-    # Set up isolated HERMES_HOME
+    # Set up isolated TINO_HOME
     home = tmp_path / ".hermes"
     home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
-    monkeypatch.setenv("HERMES_PROFILE", "test-worker")
-    monkeypatch.delenv("HERMES_SESSION_ID", raising=False)
+    monkeypatch.setenv("TINO_HOME", str(home))
+    monkeypatch.setenv("TINO_PROFILE", "test-worker")
+    monkeypatch.delenv("TINO_SESSION_ID", raising=False)
     monkeypatch.setattr(_Path, "home", lambda: tmp_path)
 
     kb._INITIALIZED_PATHS.clear()
@@ -233,7 +233,7 @@ def test_complete_goal_mode_rejected_by_judge(monkeypatch, tmp_path):
         kb.claim_task(conn, goal_task_id)
     finally:
         conn.close()
-    monkeypatch.setenv("HERMES_KANBAN_TASK", goal_task_id)
+    monkeypatch.setenv("TINO_KANBAN_TASK", goal_task_id)
 
     # Mock the judge to reject the completion. The gate only runs when a
     # judge is reachable, so force the availability probe True as well.
@@ -277,7 +277,7 @@ def test_block_happy_path(worker_env):
 
 
 def _make_goal_mode_worker_env(monkeypatch, tmp_path):
-    """Set up an isolated HERMES_HOME with one claimed goal_mode task,
+    """Set up an isolated TINO_HOME with one claimed goal_mode task,
     matching the pattern used by the kanban_complete judge gate tests."""
     from pathlib import Path as _Path
     from hermes_cli import kanban_db as kb
@@ -285,9 +285,9 @@ def _make_goal_mode_worker_env(monkeypatch, tmp_path):
 
     home = tmp_path / ".hermes"
     home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
-    monkeypatch.setenv("HERMES_PROFILE", "test-worker")
-    monkeypatch.delenv("HERMES_SESSION_ID", raising=False)
+    monkeypatch.setenv("TINO_HOME", str(home))
+    monkeypatch.setenv("TINO_PROFILE", "test-worker")
+    monkeypatch.delenv("TINO_SESSION_ID", raising=False)
     monkeypatch.setattr(_Path, "home", lambda: tmp_path)
 
     kb._INITIALIZED_PATHS.clear()
@@ -301,7 +301,7 @@ def _make_goal_mode_worker_env(monkeypatch, tmp_path):
         kb.claim_task(conn, goal_task_id)
     finally:
         conn.close()
-    monkeypatch.setenv("HERMES_KANBAN_TASK", goal_task_id)
+    monkeypatch.setenv("TINO_KANBAN_TASK", goal_task_id)
     return goal_task_id
 
 
@@ -428,7 +428,7 @@ def test_comment_happy_path(worker_env):
     try:
         comments = kb.list_comments(conn, worker_env)
         assert len(comments) == 1
-        # Author defaults to HERMES_PROFILE env we set in the fixture
+        # Author defaults to TINO_PROFILE env we set in the fixture
         assert comments[0].author == "test-worker"
         assert comments[0].body == "hello thread"
     finally:
@@ -437,7 +437,7 @@ def test_comment_happy_path(worker_env):
 
 def test_comment_ignores_caller_supplied_author(worker_env):
     """``args["author"]`` is no longer honored — the author is always
-    derived from ``HERMES_PROFILE`` so a worker can't forge a comment
+    derived from ``TINO_PROFILE`` so a worker can't forge a comment
     under an authoritative-looking name like ``hermes-system`` and
     poison the next worker's prompt context. Cross-task commenting
     itself remains unrestricted (see #19713); only the author override
@@ -453,7 +453,7 @@ def test_comment_ignores_caller_supplied_author(worker_env):
     conn = kbc.connect()
     try:
         comments = kb.list_comments(conn, worker_env)
-        # Author comes from HERMES_PROFILE in the fixture, not the
+        # Author comes from TINO_PROFILE in the fixture, not the
         # caller-supplied "hermes-system" override.
         assert comments[0].author == "test-worker"
     finally:
@@ -539,7 +539,7 @@ def test_link_running_child_allows_owner_but_rejects_foreign(monkeypatch, worker
         foreign_child = kb.create_task(conn, title="foreign worker")
         assert kb.claim_task(conn, foreign_child, claimer="other") is not None
 
-    monkeypatch.setenv("HERMES_KANBAN_RUN_ID", str(own_run_id))
+    monkeypatch.setenv("TINO_KANBAN_RUN_ID", str(own_run_id))
     own = json.loads(kt._handle_link({"parent_id": own_parent, "child_id": worker_env}))
     foreign = json.loads(kt._handle_link(
         {"parent_id": foreign_parent, "child_id": foreign_child},
@@ -553,7 +553,7 @@ def test_link_running_child_allows_owner_but_rejects_foreign(monkeypatch, worker
 
 
 def test_unblock_happy_path(monkeypatch, worker_env):
-    monkeypatch.delenv("HERMES_KANBAN_TASK", raising=False)
+    monkeypatch.delenv("TINO_KANBAN_TASK", raising=False)
     from hermes_cli import kanban_db as kb
     from hermes_cli import kanban_db_connect as kbc
     conn = kbc.connect()
@@ -577,11 +577,11 @@ def test_unblock_happy_path(monkeypatch, worker_env):
 
 
 def test_unblock_with_pending_parents_returns_todo(monkeypatch, tmp_path):
-    monkeypatch.delenv("HERMES_KANBAN_TASK", raising=False)
+    monkeypatch.delenv("TINO_KANBAN_TASK", raising=False)
     home = tmp_path / ".hermes"
     home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
-    monkeypatch.setenv("HERMES_PROFILE", "orchestrator")
+    monkeypatch.setenv("TINO_HOME", str(home))
+    monkeypatch.setenv("TINO_PROFILE", "orchestrator")
     from pathlib import Path as _Path
     monkeypatch.setattr(_Path, "home", lambda: tmp_path)
 
@@ -708,7 +708,7 @@ def test_kanban_guidance_orchestrator_decision_ownership():
 # Worker task-ownership enforcement (regression tests for #19534)
 # ---------------------------------------------------------------------------
 #
-# A worker process has HERMES_KANBAN_TASK set to its own task id. The
+# A worker process has TINO_KANBAN_TASK set to its own task id. The
 # destructive tools (kanban_complete, kanban_block, kanban_heartbeat,
 # kanban_unblock) must refuse to operate
 # on any OTHER task id, even if the caller supplies an explicit `task_id`
@@ -716,7 +716,7 @@ def test_kanban_guidance_orchestrator_decision_ownership():
 # kanban_comment / kanban_create / kanban_link on other tasks, so those
 # are unrestricted.
 #
-# Orchestrator profiles (no HERMES_KANBAN_TASK in env) are intentionally
+# Orchestrator profiles (no TINO_KANBAN_TASK in env) are intentionally
 # exempt — their job is routing, and they sometimes close out child
 # tasks on behalf of the child.
 
@@ -773,7 +773,7 @@ def test_worker_can_comment_on_foreign_task(worker_env):
     assert d.get("ok") is True, f"cross-task comment must succeed: {d}"
 
     # The comment lands on the foreign task, attributed to the worker's
-    # HERMES_PROFILE — never to a caller-controlled string.
+    # TINO_PROFILE — never to a caller-controlled string.
     conn = kbc.connect()
     try:
         comments = kb.list_comments(conn, other)
@@ -817,12 +817,12 @@ def test_worker_unblock_rejects_foreign_task_id(worker_env):
 
 
 def test_orchestrator_complete_any_task_allowed(monkeypatch, tmp_path):
-    """Orchestrator profiles (no HERMES_KANBAN_TASK) can still complete
+    """Orchestrator profiles (no TINO_KANBAN_TASK) can still complete
     any task via explicit task_id. The check only applies to workers."""
-    monkeypatch.delenv("HERMES_KANBAN_TASK", raising=False)
+    monkeypatch.delenv("TINO_KANBAN_TASK", raising=False)
     home = tmp_path / ".hermes"
     home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("TINO_HOME", str(home))
     from pathlib import Path as _P
     monkeypatch.setattr(_P, "home", lambda: tmp_path)
 
@@ -848,32 +848,32 @@ def test_orchestrator_complete_any_task_allowed(monkeypatch, tmp_path):
 # Optional ``board`` parameter — per-call DB override
 # ---------------------------------------------------------------------------
 #
-# The dispatcher pins the active board via HERMES_KANBAN_BOARD env var,
+# The dispatcher pins the active board via TINO_KANBAN_BOARD env var,
 # but a Telegram-side orchestrator handling multiple boards needs to be
 # able to route a single tool call to a specific board's DB without
-# restarting Hermes. These tests pin that ``board=<slug>`` argument
+# restarting Tino. These tests pin that ``board=<slug>`` argument
 # routes each handler to that board's sqlite file, and that omitting
 # ``board`` preserves the legacy env-driven resolution.
 
 
 @pytest.fixture
 def multi_board_env(monkeypatch, tmp_path):
-    """Isolated Hermes home with two distinct kanban boards seeded.
+    """Isolated Tino home with two distinct kanban boards seeded.
 
     Returns ``("default", "alt")`` slugs. The default board has one
     pre-existing task ``seed_default``; ``alt`` has ``seed_alt``. No
-    HERMES_KANBAN_TASK is pinned (orchestrator context) — workers test
+    TINO_KANBAN_TASK is pinned (orchestrator context) — workers test
     the env-task case via the existing ``worker_env`` fixture.
     """
     home = tmp_path / ".hermes"
     home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
-    # Make sure neither HERMES_KANBAN_DB nor HERMES_KANBAN_BOARD pin a
+    monkeypatch.setenv("TINO_HOME", str(home))
+    # Make sure neither TINO_KANBAN_DB nor TINO_KANBAN_BOARD pin a
     # board — the test is specifically about the per-call override.
-    monkeypatch.delenv("HERMES_KANBAN_DB", raising=False)
-    monkeypatch.delenv("HERMES_KANBAN_BOARD", raising=False)
-    monkeypatch.delenv("HERMES_KANBAN_TASK", raising=False)
-    monkeypatch.setenv("HERMES_PROFILE", "test-orchestrator")
+    monkeypatch.delenv("TINO_KANBAN_DB", raising=False)
+    monkeypatch.delenv("TINO_KANBAN_BOARD", raising=False)
+    monkeypatch.delenv("TINO_KANBAN_TASK", raising=False)
+    monkeypatch.setenv("TINO_PROFILE", "test-orchestrator")
     from pathlib import Path as _Path
     monkeypatch.setattr(_Path, "home", lambda: tmp_path)
 
@@ -931,8 +931,8 @@ def test_board_param_none_falls_back_to_env(worker_env):
 # When a worker calls kanban_create from inside a session that has a
 # persistent delivery channel, the originating session should be
 # subscribed to the new task's completion/block events automatically.
-# - Gateway sessions: HERMES_SESSION_PLATFORM + HERMES_SESSION_CHAT_ID set.
-# - TUI sessions: HERMES_SESSION_KEY (or HERMES_SESSION_ID) set, with
+# - Gateway sessions: TINO_SESSION_PLATFORM + TINO_SESSION_CHAT_ID set.
+# - TUI sessions: TINO_SESSION_KEY (or TINO_SESSION_ID) set, with
 #   the platform/chat_id ContextVars intentionally empty.
 # - CLI / cron / test sessions: no delivery channel -> no subscription.
 # - Config gate kanban.auto_subscribe_on_create: false -> no subscription
@@ -975,12 +975,12 @@ def test_create_subscribes_gateway_session(monkeypatch, worker_env):
     to its own kanban_create result, and the response surfaces the
     ``subscribed`` flag so the orchestrator can react."""
     from tools import kanban_tools as kt
-    monkeypatch.setenv("HERMES_SESSION_PLATFORM", "telegram")
-    monkeypatch.setenv("HERMES_SESSION_CHAT_ID", "chat-42")
-    monkeypatch.setenv("HERMES_SESSION_THREAD_ID", "thread-7")
-    monkeypatch.setenv("HERMES_SESSION_USER_ID", "user-9")
-    monkeypatch.setenv("HERMES_SESSION_USER_ID_ALT", "alt-user-9")
-    monkeypatch.setenv("HERMES_SESSION_CHAT_TYPE", "forum")
+    monkeypatch.setenv("TINO_SESSION_PLATFORM", "telegram")
+    monkeypatch.setenv("TINO_SESSION_CHAT_ID", "chat-42")
+    monkeypatch.setenv("TINO_SESSION_THREAD_ID", "thread-7")
+    monkeypatch.setenv("TINO_SESSION_USER_ID", "user-9")
+    monkeypatch.setenv("TINO_SESSION_USER_ID_ALT", "alt-user-9")
+    monkeypatch.setenv("TINO_SESSION_CHAT_TYPE", "forum")
 
     out = kt._handle_create({
         "title": "auto-sub gateway",
@@ -1005,16 +1005,16 @@ def test_create_subscribes_gateway_session(monkeypatch, worker_env):
 
 def test_create_subscribes_tui_session_via_session_key(monkeypatch, worker_env):
     """TUI / desktop sessions don't have a platform/chat_id (single
-    local channel), but the parent process exports HERMES_SESSION_KEY.
+    local channel), but the parent process exports TINO_SESSION_KEY.
     We should still auto-subscribe, with platform='tui' and
     chat_id=<key>."""
     from tools import kanban_tools as kt
-    monkeypatch.delenv("HERMES_SESSION_PLATFORM", raising=False)
-    monkeypatch.delenv("HERMES_SESSION_CHAT_ID", raising=False)
-    monkeypatch.delenv("HERMES_SESSION_THREAD_ID", raising=False)
-    monkeypatch.delenv("HERMES_SESSION_USER_ID", raising=False)
-    monkeypatch.setenv("HERMES_SESSION_KEY", "tui-session-abc")
-    monkeypatch.delenv("HERMES_SESSION_ID", raising=False)
+    monkeypatch.delenv("TINO_SESSION_PLATFORM", raising=False)
+    monkeypatch.delenv("TINO_SESSION_CHAT_ID", raising=False)
+    monkeypatch.delenv("TINO_SESSION_THREAD_ID", raising=False)
+    monkeypatch.delenv("TINO_SESSION_USER_ID", raising=False)
+    monkeypatch.setenv("TINO_SESSION_KEY", "tui-session-abc")
+    monkeypatch.delenv("TINO_SESSION_ID", raising=False)
 
     out = kt._handle_create({
         "title": "auto-sub tui",
@@ -1037,10 +1037,10 @@ def test_create_does_not_subscribe_in_cli_session(monkeypatch, worker_env):
     """CLI / cron / test sessions have no persistent delivery channel.
     _maybe_auto_subscribe returns False and no row is written."""
     from tools import kanban_tools as kt
-    monkeypatch.delenv("HERMES_SESSION_PLATFORM", raising=False)
-    monkeypatch.delenv("HERMES_SESSION_CHAT_ID", raising=False)
-    monkeypatch.delenv("HERMES_SESSION_KEY", raising=False)
-    monkeypatch.delenv("HERMES_SESSION_ID", raising=False)
+    monkeypatch.delenv("TINO_SESSION_PLATFORM", raising=False)
+    monkeypatch.delenv("TINO_SESSION_CHAT_ID", raising=False)
+    monkeypatch.delenv("TINO_SESSION_KEY", raising=False)
+    monkeypatch.delenv("TINO_SESSION_ID", raising=False)
 
     out = kt._handle_create({
         "title": "no sub cli",
@@ -1066,9 +1066,9 @@ def test_create_respects_auto_subscribe_on_create_false(monkeypatch, worker_env,
     (home / "config.yaml").write_text(
         "kanban:\n  auto_subscribe_on_create: false\n"
     )
-    monkeypatch.setenv("HERMES_HOME", str(home))
-    monkeypatch.setenv("HERMES_SESSION_PLATFORM", "discord")
-    monkeypatch.setenv("HERMES_SESSION_CHAT_ID", "channel-1")
+    monkeypatch.setenv("TINO_HOME", str(home))
+    monkeypatch.setenv("TINO_SESSION_PLATFORM", "discord")
+    monkeypatch.setenv("TINO_SESSION_CHAT_ID", "channel-1")
 
     from tools import kanban_tools as kt
     out = kt._handle_create({
@@ -1088,8 +1088,8 @@ def test_maybe_auto_subscribe_swallows_add_notify_sub_failure(monkeypatch, worke
     kanban_create. The function returns False and the parent create
     still succeeds with subscribed=False."""
     from tools import kanban_tools as kt
-    monkeypatch.setenv("HERMES_SESSION_PLATFORM", "telegram")
-    monkeypatch.setenv("HERMES_SESSION_CHAT_ID", "chat-42")
+    monkeypatch.setenv("TINO_SESSION_PLATFORM", "telegram")
+    monkeypatch.setenv("TINO_SESSION_CHAT_ID", "chat-42")
 
     from hermes_cli import kanban_db as kb
     from hermes_cli import kanban_db_notify as kbn
@@ -1117,13 +1117,13 @@ def test_maybe_auto_subscribe_swallows_add_notify_sub_failure(monkeypatch, worke
 def allow_private_urls(monkeypatch):
     """Opt the SSRF guard into private/loopback targets for local fixtures.
 
-    Mirrors a user setting HERMES_ALLOW_PRIVATE_URLS on a private network.
+    Mirrors a user setting TINO_ALLOW_PRIVATE_URLS on a private network.
     Resets the url_safety process-lifetime cache on both sides so the
     override neither leaks in nor out of the test.
     """
     from tools import url_safety
 
-    monkeypatch.setenv("HERMES_ALLOW_PRIVATE_URLS", "true")
+    monkeypatch.setenv("TINO_ALLOW_PRIVATE_URLS", "true")
     url_safety._reset_allow_private_cache()
     yield
     url_safety._reset_allow_private_cache()
@@ -1147,12 +1147,12 @@ def test_attach_url_rejects_non_http_scheme(worker_env):
 def default_url_guard(monkeypatch):
     """Force the SSRF guard to its secure default for this test.
 
-    Clears HERMES_ALLOW_PRIVATE_URLS and resets url_safety's process-lifetime
+    Clears TINO_ALLOW_PRIVATE_URLS and resets url_safety's process-lifetime
     cache on both sides so a prior test's opt-in can't leak in.
     """
     from tools import url_safety
 
-    monkeypatch.delenv("HERMES_ALLOW_PRIVATE_URLS", raising=False)
+    monkeypatch.delenv("TINO_ALLOW_PRIVATE_URLS", raising=False)
     url_safety._reset_allow_private_cache()
     yield
     url_safety._reset_allow_private_cache()

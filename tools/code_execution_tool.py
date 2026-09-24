@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Code Execution Tool -- Programmatic Tool Calling (PTC).
 
-The LLM writes a Python script that calls Hermes tools via RPC, collapsing
+The LLM writes a Python script that calls Tino tools via RPC, collapsing
 multi-step tool chains into one inference turn; only the script's stdout returns
 to the LLM. Local backend: a persistent per-conversation session kernel
 (tools/code_kernel.py) over a Unix socket (loopback TCP on Windows). Remote
@@ -35,7 +35,7 @@ from tools.tool_output_truncate import head_tail_split, truncation_notice
 
 logger = logging.getLogger(__name__)
 
-# Loopback TCP replaces AF_UNIX on Windows, so execute_code runs on every platform Hermes does.
+# Loopback TCP replaces AF_UNIX on Windows, so execute_code runs on every platform Tino does.
 SANDBOX_AVAILABLE = True
 
 # Tools allowed inside the sandbox; ∩ the session's enabled tools decides which stubs are generated.
@@ -247,7 +247,7 @@ def retry(fn, max_attempts=3, delay=2):
 # ---- UDS transport (local backend) ---------------------------------------
 
 _UDS_TRANSPORT_HEADER = '''\
-"""Auto-generated Hermes tools RPC stubs."""
+"""Auto-generated Tino tools RPC stubs."""
 import json, os, socket, shlex, threading, time
 
 _sock = None
@@ -261,7 +261,7 @@ _call_lock = threading.Lock()
 def _connect():
     """Connect to the parent's RPC server via the transport it picked.
 
-    HERMES_RPC_SOCKET can be either:
+    TINO_RPC_SOCKET can be either:
       - a filesystem path (POSIX Unix domain socket — the default on
         Linux and macOS)
       - a string of the form ``tcp://127.0.0.1:<port>`` (Windows, where
@@ -269,7 +269,7 @@ def _connect():
     """
     global _sock
     if _sock is None:
-        endpoint = os.environ["HERMES_RPC_SOCKET"]
+        endpoint = os.environ["TINO_RPC_SOCKET"]
         if endpoint.startswith("tcp://"):
             # tcp://host:port  (host is always 127.0.0.1 in practice — we
             # only bind loopback server-side)
@@ -288,12 +288,12 @@ def _call(tool_name, args):
     request = json.dumps({
         "tool": tool_name,
         "args": args,
-        "token": os.environ.get("HERMES_RPC_TOKEN", ""),
+        "token": os.environ.get("TINO_RPC_TOKEN", ""),
     }) + "\\n"
     # Session kernels outlive the RPC server's 300s idle window, so their
     # connection can be legitimately gone by the next cell. The server
-    # re-accepts (HERMES_RPC_PERSISTENT=1); retry once on a fresh socket.
-    _attempts = 2 if os.environ.get("HERMES_RPC_PERSISTENT") == "1" else 1
+    # re-accepts (TINO_RPC_PERSISTENT=1); retry once on a fresh socket.
+    _attempts = 2 if os.environ.get("TINO_RPC_PERSISTENT") == "1" else 1
     with _call_lock:
         for _attempt in range(_attempts):
             try:
@@ -332,10 +332,10 @@ def _call(tool_name, args):
 # ---- File-based transport (remote backends) -------------------------------
 
 _FILE_TRANSPORT_HEADER = '''\
-"""Auto-generated Hermes tools RPC stubs (file-based transport)."""
+"""Auto-generated Tino tools RPC stubs (file-based transport)."""
 import json, os, shlex, tempfile, threading, time
 
-_RPC_DIR = os.environ.get("HERMES_RPC_DIR") or os.path.join(tempfile.gettempdir(), "hermes_rpc")
+_RPC_DIR = os.environ.get("TINO_RPC_DIR") or os.path.join(tempfile.gettempdir(), "hermes_rpc")
 _seq = 0
 # `_seq += 1` is not atomic (read-modify-write), so concurrent _call()
 # invocations from multiple threads could allocate the same sequence number
@@ -363,7 +363,7 @@ def _call(tool_name, args):
             "tool": tool_name,
             "args": args,
             "seq": seq,
-            "token": os.environ.get("HERMES_RPC_TOKEN", ""),
+            "token": os.environ.get("TINO_RPC_TOKEN", ""),
         }, f)
     os.rename(tmp, req_file)
 
@@ -581,7 +581,7 @@ def _run_remote_per_call(env, env_type: str, code: str, effective_task_id: str,
             args=(env, f"{sandbox_dir}/rpc", effective_task_id, [], tool_call_counter,
                   max_tool_calls, sandbox_tools, stop_event, rpc_token))
         rpc_thread.start()
-        env_prefix = (f"HERMES_RPC_DIR={quoted_rpc_dir} HERMES_RPC_TOKEN={shlex.quote(rpc_token)} "
+        env_prefix = (f"TINO_RPC_DIR={quoted_rpc_dir} TINO_RPC_TOKEN={shlex.quote(rpc_token)} "
                       "PYTHONDONTWRITEBYTECODE=1")
         tz = get_timezone_name()  # routed profile's timezone, not the bridged default's
         if tz:
@@ -668,7 +668,7 @@ def execute_code(
     reset: bool = False,
 ) -> str:
     """Run Python in the session's persistent kernel (local) or on the remote terminal backend,
-    with RPC access to a subset of Hermes tools; returns the JSON result string. "Sandbox" means
+    with RPC access to a subset of Tino tools; returns the JSON result string. "Sandbox" means
     the security envelope (env scrubbing, tool whitelist + call budget, output redaction), not an
     isolation jail: default `project` mode runs in the session's cwd with the project venv.
     ``enabled_tools`` ∩ SANDBOX_ALLOWED_TOOLS; ``reset`` kills the existing kernel first."""
@@ -856,7 +856,7 @@ def build_execute_code_schema(enabled_sandbox_tools: set = None,
             "Scripts run in the session's working directory. Interpreter: "
             "the project's activated venv/conda python when one is active "
             "(VIRTUAL_ENV/CONDA_PREFIX — matches terminal()); otherwise "
-            "Hermes's own python (the common case — stdlib plus Hermes's "
+            "Tino's own python (the common case — stdlib plus Tino's "
             "deps; check `import x` before relying on project packages)."
         )
     # Remote hosts that fail open to per-call are not worth schema words; the result's
@@ -864,7 +864,7 @@ def build_execute_code_schema(enabled_sandbox_tools: set = None,
     # Session kernels are always on (kernel_mode retired in #96787): persistence is part of the tool's one
     # description, not a bolt-on paragraph behind a dead conditional.
     description = (
-        "Run Python that calls Hermes tools programmatically. Use when you "
+        "Run Python that calls Tino tools programmatically. Use when you "
         "need 3+ tool calls with logic between them: filtering/reducing "
         "large outputs before they enter context, branching, or loops "
         "(N pages/files, retry on failure). Use normal tool calls for "

@@ -32,19 +32,19 @@ from hermes_cli.update_cmd_common import _best_effort
 logger = logging.getLogger("hermes_cli.update_cmd")
 
 # Set on the post-swap child: the receipt header says "continued", the lock is the parent's.
-POST_SWAP_ENV = "HERMES_UPDATE_POST_SWAP"
+POST_SWAP_ENV = "TINO_UPDATE_POST_SWAP"
 # Set on a child spawned DETACHED off the Windows console shim: the pid of the process that
 # still holds ``hermes.exe`` open (the launcher, or the interpreter it ran). The child waits
 # for it before it touches the venv —
 # the shim quarantine is a single rename with sub-second retries, and the reporter's runs
 # (#101600) reached it while the parent was still alive (relaunching gateways, or just
 # tearing down), so the rename failed and the whole install was deferred.
-SHIM_PARENT_PID_ENV = "HERMES_UPDATE_SHIM_PARENT_PID"
+SHIM_PARENT_PID_ENV = "TINO_UPDATE_SHIM_PARENT_PID"
 # Legacy re-exec (``_reexec_dependency_sync_off_windows_shim``, no hand-off file): the Windows
 # pause token travels here so the child resumes exactly the fleet the parent stopped instead
 # of re-running pause discovery — which found the parent's freshly relaunched gateway before
 # its pid file existed and force-killed it as "unmapped" (#101600).
-GATEWAY_RESUME_ENV = "HERMES_UPDATE_GATEWAY_RESUME"
+GATEWAY_RESUME_ENV = "TINO_UPDATE_GATEWAY_RESUME"
 
 SHIM_PARENT_EXIT_TIMEOUT_SECONDS = 30.0
 
@@ -58,7 +58,7 @@ def _json_default(value: Any):
 
 
 def write_handoff(payload: dict[str, Any]) -> Path:
-    """Persist the post-swap payload under HERMES_HOME; returns its path."""
+    """Persist the post-swap payload under TINO_HOME; returns its path."""
     from hermes_constants import get_hermes_home
 
     directory = get_hermes_home() / "logs" / "update_receipts"
@@ -106,7 +106,7 @@ def post_swap_command(handoff_path: Path, argv_tail: list[str]) -> list[str]:
 
 
 def post_swap_child_env() -> dict[str, str]:
-    """Environment for the child. ``HERMES_UPDATE_REEXEC`` marks it as already off the Windows
+    """Environment for the child. ``TINO_UPDATE_REEXEC`` marks it as already off the Windows
     shim (no second re-exec at the sync boundary; ``cmd_update`` hard-exits it when its receipt
     is durable instead of waiting on a leftover non-daemon thread). The lock hand-off pid is
     only claimed when nobody upstream (Tauri/Electron updater) already named theirs."""

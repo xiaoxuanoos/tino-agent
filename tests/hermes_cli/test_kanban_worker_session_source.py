@@ -14,7 +14,7 @@ from hermes_state import SessionDB
 
 @pytest.fixture()
 def db(tmp_path, monkeypatch):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("TINO_HOME", str(tmp_path))
     database = SessionDB(db_path=tmp_path / "state.db")
     yield database
     database.close()
@@ -60,7 +60,7 @@ def test_worker_spawn_tags_session_source_kanban(monkeypatch, tmp_path):
 
     kbd._default_spawn(task, workspace)
 
-    assert captured["env"]["HERMES_SESSION_SOURCE"] == "kanban"
+    assert captured["env"]["TINO_SESSION_SOURCE"] == "kanban"
 
 
 def test_kanban_rows_stay_out_of_the_session_list(db):

@@ -2,7 +2,7 @@
 name: hyperliquid
 description: Hyperliquid market data, account history, trade review.
 version: 0.1.0
-author: Hugo Sequier (Hugo-SEQUIER), Hermes Agent
+author: Hugo Sequier (Hugo-SEQUIER), Tino Agent
 license: MIT
 platforms: [linux, macos, windows]
 metadata:
@@ -36,7 +36,7 @@ Read-only — no API key, no signing, no order placement.
 
 Stdlib only — no external packages, no API key.
 
-The script reads `${HERMES_HOME:-~/.hermes}/.env` for two optional defaults:
+The script reads `${TINO_HOME:-~/.hermes}/.env` for two optional defaults:
 
 - `HYPERLIQUID_API_URL` — defaults to `https://api.hyperliquid.xyz`. Set to
   `https://api.hyperliquid-testnet.xyz` for testnet.
@@ -80,7 +80,7 @@ hyperliquid_client.py export <coin> [--interval 1h] [--hours N] [--output PATH]
 ```
 
 For `state`, `spot-balances`, `fills`, `orders`, and `review`, the address is
-optional when `HYPERLIQUID_USER_ADDRESS` is set in `${HERMES_HOME:-~/.hermes}/.env`.
+optional when `HYPERLIQUID_USER_ADDRESS` is set in `${TINO_HOME:-~/.hermes}/.env`.
 
 ---
 

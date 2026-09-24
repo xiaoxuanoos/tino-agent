@@ -1,9 +1,9 @@
 """Human-friendly generic gateway status phrases: short chat-safe lines for the long-running
 status surface without relaying raw model scratch text — only configured phrase strings are used;
 tool args, commands, previews, and reasoning are never interpolated. Built-in defaults live in
-``gateway/assets/status_phrases.yaml``; users add profile-relative catalogs under ``HERMES_HOME``
+``gateway/assets/status_phrases.yaml``; users add profile-relative catalogs under ``TINO_HOME``
 via ``status_phrases.yaml`` / ``status_phrases/*.yaml`` or ``display.status_phrases: {path:
-<HERMES_HOME-relative>, mode: append|replace}``. Absolute paths and ``..`` escapes are ignored on
+<TINO_HOME-relative>, mode: append|replace}``. Absolute paths and ``..`` escapes are ignored on
 purpose so config stays profile-portable and cannot read arbitrary files."""
 
 from __future__ import annotations
@@ -17,7 +17,7 @@ import yaml
 
 from hermes_constants import get_hermes_home
 
-# Hermes UI surfaces, not app/vendor buckets.  Long-running-only: regular tool/thinking/interim
+# Tino UI surfaces, not app/vendor buckets.  Long-running-only: regular tool/thinking/interim
 # chatter is deliberately not rewritten (too noisy in chat).
 _STATUS_SURFACES = ("status", "generic")
 _MAX_CUSTOM_PHRASES_PER_SURFACE = 80
@@ -131,7 +131,7 @@ def resolve_status_phrase_catalog(user_config: Mapping[str, Any] | None,
 
 def classify_status_context(kind: str, *, tool_name: str | None = None, preview: str | None = None,
                             args: Any = None) -> str:
-    """Classify an internal gateway event into a Hermes UI-surface bucket."""
+    """Classify an internal gateway event into a Tino UI-surface bucket."""
     if str(kind or "").strip().lower() in {"heartbeat", "waiting", "long_running", "status"}:
         return "status"
     return "generic"

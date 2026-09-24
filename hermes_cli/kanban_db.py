@@ -1,8 +1,8 @@
 """SQLite-backed Kanban board shared across profiles (the cross-profile coordination primitive).
 
-Lives under the shared Hermes root: ``default`` board DB at ``<root>/kanban.db`` (pre-boards
+Lives under the shared Tino root: ``default`` board DB at ``<root>/kanban.db`` (pre-boards
 back-compat), other boards at ``<root>/kanban/boards/<slug>/``; a worker on one board never sees
-another. Board resolution: ``board=`` arg > ``HERMES_KANBAN_BOARD`` > ``HERMES_KANBAN_DB`` (pins the
+another. Board resolution: ``board=`` arg > ``TINO_KANBAN_BOARD`` > ``TINO_KANBAN_DB`` (pins the
 file path) > ``<root>/kanban/current`` > ``default``; the dispatcher injects these into workers.
 Concurrency: WAL + ``BEGIN IMMEDIATE`` + compare-and-swap on ``tasks.status``/``claim_lock`` —
 SQLite serializes writers so one claimer wins, losers see zero rows (no retries, no distributed
@@ -272,7 +272,7 @@ def _fire_dispatch_tick_hook(
 
 
 # Claim window before the next tick reclaims a running task; long workers
-# ``heartbeat_claim`` or raise it via HERMES_KANBAN_CLAIM_TTL_SECONDS.
+# ``heartbeat_claim`` or raise it via TINO_KANBAN_CLAIM_TTL_SECONDS.
 DEFAULT_CLAIM_TTL_SECONDS = 15 * 60
 
 # A live PID with a heartbeat older than this is wedged and reclaimed anyway
@@ -290,11 +290,11 @@ RECLAIM_DEFER_GRACE_SECONDS = 120
 
 
 def _resolve_claim_ttl_seconds(ttl_seconds: Optional[int] = None) -> int:
-    """Explicit ``ttl_seconds`` > ``HERMES_KANBAN_CLAIM_TTL_SECONDS`` > default."""
+    """Explicit ``ttl_seconds`` > ``TINO_KANBAN_CLAIM_TTL_SECONDS`` > default."""
     if ttl_seconds is not None:
         return max(1, int(ttl_seconds))
 
-    return _env_int("HERMES_KANBAN_CLAIM_TTL_SECONDS", DEFAULT_CLAIM_TTL_SECONDS, minimum=1)
+    return _env_int("TINO_KANBAN_CLAIM_TTL_SECONDS", DEFAULT_CLAIM_TTL_SECONDS, minimum=1)
 
 
 # ``detect_crashed_workers`` skips ``_pid_alive`` this long after start: the
@@ -312,13 +312,13 @@ KANBAN_TERMINAL_PROVIDER_EXIT_CODE = 78
 
 
 def _resolve_crash_grace_seconds() -> int:
-    """``HERMES_KANBAN_CRASH_GRACE_SECONDS`` (0 = immediate, for tests) else default."""
-    return _env_int("HERMES_KANBAN_CRASH_GRACE_SECONDS", DEFAULT_CRASH_GRACE_SECONDS)
+    """``TINO_KANBAN_CRASH_GRACE_SECONDS`` (0 = immediate, for tests) else default."""
+    return _env_int("TINO_KANBAN_CRASH_GRACE_SECONDS", DEFAULT_CRASH_GRACE_SECONDS)
 
 
 def _resolve_rate_limit_cooldown_seconds() -> int:
-    """``HERMES_KANBAN_RATE_LIMIT_COOLDOWN_SECONDS`` (0 = next tick, for tests) else default."""
-    return _env_int("HERMES_KANBAN_RATE_LIMIT_COOLDOWN_SECONDS", DEFAULT_RATE_LIMIT_COOLDOWN_SECONDS)
+    """``TINO_KANBAN_RATE_LIMIT_COOLDOWN_SECONDS`` (0 = next tick, for tests) else default."""
+    return _env_int("TINO_KANBAN_RATE_LIMIT_COOLDOWN_SECONDS", DEFAULT_RATE_LIMIT_COOLDOWN_SECONDS)
 
 
 # build_worker_context() caps, sized for a ~100k-char prompt with headroom.
@@ -397,10 +397,10 @@ def _require_slug(slug: str) -> str:
 
 
 def kanban_home() -> Path:
-    """``HERMES_KANBAN_HOME`` else ``get_default_hermes_root()``. Shared across
-    profiles BY DESIGN: resolving through the active profile's HERMES_HOME would
+    """``TINO_KANBAN_HOME`` else ``get_default_hermes_root()``. Shared across
+    profiles BY DESIGN: resolving through the active profile's TINO_HOME would
     fork the board per profile and break the dispatcher/worker handoff."""
-    override = os.environ.get("HERMES_KANBAN_HOME", "").strip()
+    override = os.environ.get("TINO_KANBAN_HOME", "").strip()
     if override:
         return Path(override).expanduser()
     from hermes_constants import get_default_hermes_root
@@ -419,7 +419,7 @@ def current_board_path() -> Path:
 
 
 def get_current_board() -> str:
-    """Active slug: context override -> ``HERMES_KANBAN_BOARD`` -> ``<root>/kanban/current``
+    """Active slug: context override -> ``TINO_KANBAN_BOARD`` -> ``<root>/kanban/current``
     (only while that board exists) -> ``DEFAULT_BOARD``. A malformed/stale slug
     falls through — the dispatcher must never crash on a hand-edited file."""
     def _existing(candidate: str) -> Optional[str]:
@@ -433,7 +433,7 @@ def get_current_board() -> str:
 
     for candidate in (
         (_CURRENT_BOARD_OVERRIDE.get() or "").strip(),
-        os.environ.get("HERMES_KANBAN_BOARD", "").strip(),
+        os.environ.get("TINO_KANBAN_BOARD", "").strip(),
     ):
         found = _existing(candidate)
         if found:
@@ -505,21 +505,21 @@ def _board_path(
 
 
 def kanban_db_path(board: Optional[str] = None) -> Path:
-    """``kanban.db`` path: ``HERMES_KANBAN_DB`` pins it (injected into workers);
+    """``kanban.db`` path: ``TINO_KANBAN_DB`` pins it (injected into workers);
     ``default`` -> ``<root>/kanban.db`` (back-compat), else the board dir."""
-    return _board_path("HERMES_KANBAN_DB", board, ("kanban.db",), "kanban.db")
+    return _board_path("TINO_KANBAN_DB", board, ("kanban.db",), "kanban.db")
 
 
 def workspaces_root(board: Optional[str] = None) -> Path:
-    """Per-board scratch workspace root (``HERMES_KANBAN_WORKSPACES_ROOT`` wins);
+    """Per-board scratch workspace root (``TINO_KANBAN_WORKSPACES_ROOT`` wins);
     ``default`` keeps the legacy ``<root>/kanban/workspaces/``."""
-    return _board_path("HERMES_KANBAN_WORKSPACES_ROOT", board, ("kanban", "workspaces"), "workspaces")
+    return _board_path("TINO_KANBAN_WORKSPACES_ROOT", board, ("kanban", "workspaces"), "workspaces")
 
 
 def attachments_root(board: Optional[str] = None) -> Path:
-    """Per-board attachments root (``HERMES_KANBAN_ATTACHMENTS_ROOT`` wins). Workers
+    """Per-board attachments root (``TINO_KANBAN_ATTACHMENTS_ROOT`` wins). Workers
     read attachments by absolute path, so remote terminal backends must mount it."""
-    return _board_path("HERMES_KANBAN_ATTACHMENTS_ROOT", board, ("kanban", "attachments"), "attachments")
+    return _board_path("TINO_KANBAN_ATTACHMENTS_ROOT", board, ("kanban", "attachments"), "attachments")
 
 
 def task_attachments_dir(task_id: str, board: Optional[str] = None) -> Path:
@@ -727,7 +727,7 @@ class Task:
     # done / budget exhausted (-> kanban_block); ``goal_max_turns`` None -> goals default.
     goal_mode: bool = False
     goal_max_turns: Optional[int] = None
-    session_id: Optional[str] = None         # originating HERMES_SESSION_ID; NULL from CLI/dashboard
+    session_id: Optional[str] = None         # originating TINO_SESSION_ID; NULL from CLI/dashboard
     # VALID_BLOCK_KINDS or None (legacy); kept across unblock so a same-kind re-block reads as a loop.
     block_kind: Optional[str] = None
     block_recurrences: int = 0               # unblock-loop counter, see BLOCK_RECURRENCE_LIMIT
@@ -948,7 +948,7 @@ CREATE TABLE IF NOT EXISTS tasks (
     -- goals-engine default.
     goal_max_turns       INTEGER,
     -- Originating chat/agent session id when the task was created from
-    -- inside an agent loop that propagated ``HERMES_SESSION_ID``. NULL
+    -- inside an agent loop that propagated ``TINO_SESSION_ID``. NULL
     -- for tasks created from the CLI, dashboard, or any path that doesn't
     -- set the env var, and for an id with no ``sessions`` row in this
     -- profile's state.db (kanban_create verifies before stamping). Indexed
@@ -4037,7 +4037,7 @@ def _ctx_role_history(lines: list[str], conn: sqlite3.Connection, task: Task, no
 
 def _ctx_comments(lines: list[str], comments: list[Comment], now: int) -> None:
     """Newest ``_CTX_MAX_COMMENTS`` comments. The explicit "comment from
-    worker" framing stops an operator-controlled HERMES_PROFILE like
+    worker" framing stops an operator-controlled TINO_PROFILE like
     "hermes-system" being read as a system directive above an
     attacker-influenceable body (defense-in-depth)."""
     shown, omitted_note = _ctx_tail(comments, _CTX_MAX_COMMENTS, "comment")
@@ -4047,7 +4047,7 @@ def _ctx_comments(lines: list[str], comments: list[Comment], now: int) -> None:
     if omitted_note:
         lines.append(omitted_note)
     for c in shown:
-        # Render author with explicit "comment from worker" framing so operator-controlled HERMES_PROFILE
+        # Render author with explicit "comment from worker" framing so operator-controlled TINO_PROFILE
         # values like "hermes-system" or "operator" can't be misread by the next worker as a system
         # directive above the (attacker-influenceable) comment body. Defense-in-depth — the LLM-controlled
         # author-forgery surface was already closed in #22435. See #22452.

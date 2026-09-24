@@ -80,7 +80,7 @@ def test_reap_only_kills_ppid1_local_serves():
         patch("os.kill", side_effect=fake_kill),
         patch("sys.platform", "darwin"),
     ):
-        os.environ.pop("HERMES_DESKTOP_CHILD_PID", None)
+        os.environ.pop("TINO_DESKTOP_CHILD_PID", None)
         result = _reap_orphaned_desktop_local_serves(
             sleep_fn=lambda _s: None,
             signal_term=15,
@@ -102,7 +102,7 @@ def test_reap_passes_child_pid_exclude_to_scan():
             return_value=[],
         ) as scan,
         patch("sys.platform", "darwin"),
-        patch.dict(os.environ, {"HERMES_DESKTOP_CHILD_PID": "999,111"}, clear=False),
+        patch.dict(os.environ, {"TINO_DESKTOP_CHILD_PID": "999,111"}, clear=False),
     ):
         result = _reap_orphaned_desktop_local_serves(sleep_fn=lambda _s: None)
 
@@ -163,7 +163,7 @@ def test_lock_owned_serve_pids_reads_valid_backend_lock(tmp_path):
 
 
 def test_lock_owned_serve_pids_sees_root_home_locks_from_a_profile_home(tmp_path, monkeypatch):
-    """A profile backend (``HERMES_HOME=<root>/profiles/<name>``) must still see the Desktop's SSH
+    """A profile backend (``TINO_HOME=<root>/profiles/<name>``) must still see the Desktop's SSH
     locks, which live under ``<root>/desktop-ssh`` — otherwise its reaper kills the sibling
     profile's live SSH backend on every profile switch (#89811)."""
     import hermes_constants
@@ -177,7 +177,7 @@ def test_lock_owned_serve_pids_sees_root_home_locks_from_a_profile_home(tmp_path
     (root / "desktop-ssh" / oid / "backend.lock.json").write_text(
         json.dumps(_valid_lock_payload(7777, oid, nonce))
     )
-    monkeypatch.setenv("HERMES_HOME", str(profile_home))
+    monkeypatch.setenv("TINO_HOME", str(profile_home))
     monkeypatch.setattr(hermes_constants, "_get_platform_default_hermes_home", lambda: root)
     monkeypatch.setattr(hermes_constants, "_default_hermes_root_memo", None, raising=False)
 
@@ -252,7 +252,7 @@ def test_reap_spare_lock_owned_ssh_remote_backend_of_foreign_client():
         patch("os.kill", side_effect=fake_kill),
         patch("sys.platform", "darwin"),
     ):
-        os.environ.pop("HERMES_DESKTOP_CHILD_PID", None)
+        os.environ.pop("TINO_DESKTOP_CHILD_PID", None)
         result = _reap_orphaned_desktop_local_serves(
             sleep_fn=lambda _s: None,
             signal_term=15,
@@ -371,7 +371,7 @@ def test_reap_age_boundary_makes_180_second_orphan_eligible():
 
 def test_reap_spare_lock_owned_backend_even_without_exclude_match(tmp_path):
     """End-to-end through the real lock scanner: a backend.lock.json on disk
-    spares a matching orphaned serve even when HERMES_DESKTOP_CHILD_PID is
+    spares a matching orphaned serve even when TINO_DESKTOP_CHILD_PID is
     unset (foreign-client backend, not ours by env either)."""
     oid = "a" * 32
     nonce = "b" * 16
@@ -401,7 +401,7 @@ def test_reap_spare_lock_owned_backend_even_without_exclude_match(tmp_path):
         patch("os.kill", side_effect=fake_kill),
         patch("sys.platform", "darwin"),
     ):
-        os.environ.pop("HERMES_DESKTOP_CHILD_PID", None)
+        os.environ.pop("TINO_DESKTOP_CHILD_PID", None)
         result = _reap_orphaned_desktop_local_serves(
             sleep_fn=lambda _s: None,
             signal_term=15,
@@ -439,7 +439,7 @@ def test_reap_kills_descendants_of_killed_roots_but_spares_a_failed_roots_subtre
         patch("os.kill", side_effect=fake_kill),
         patch("sys.platform", "darwin"),
     ):
-        os.environ.pop("HERMES_DESKTOP_CHILD_PID", None)
+        os.environ.pop("TINO_DESKTOP_CHILD_PID", None)
         result = _reap_orphaned_desktop_local_serves(
             sleep_fn=lambda _s: None, signal_term=15, signal_kill=9,
             process_age_seconds_fn=lambda _pid: 600.0,

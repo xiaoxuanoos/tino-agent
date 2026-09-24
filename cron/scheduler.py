@@ -647,7 +647,7 @@ def _inflight_min_allowance_minutes() -> float:
             val = float(_cfg_val)
             if val > 0:
                 return val
-    raw = cron_env_setting("HERMES_CRON_INFLIGHT_MAX_MINUTES").strip()
+    raw = cron_env_setting("TINO_CRON_INFLIGHT_MAX_MINUTES").strip()
     if raw:
         try:
             val = float(raw)
@@ -655,7 +655,7 @@ def _inflight_min_allowance_minutes() -> float:
                 return val
         except (ValueError, TypeError):
             logger.warning(
-                "Invalid HERMES_CRON_INFLIGHT_MAX_MINUTES=%r; using default %s",
+                "Invalid TINO_CRON_INFLIGHT_MAX_MINUTES=%r; using default %s",
                 raw,
                 _INFLIGHT_MIN_ALLOWANCE_MINUTES)
     return _INFLIGHT_MIN_ALLOWANCE_MINUTES
@@ -975,16 +975,16 @@ def _inactivity_watchdog_loop(
 
 
 def _cron_inactivity_seconds() -> float:
-    """Parse HERMES_CRON_TIMEOUT (seconds). 0 = unlimited; bad input = 600. Shared by the
+    """Parse TINO_CRON_TIMEOUT (seconds). 0 = unlimited; bad input = 600. Shared by the
     inactivity monitor and the cwd-lock bound so they can't drift: the lock bound must stay >= the
     inactivity limit or waiters fail while a healthy holder runs."""
-    raw = cron_env_setting("HERMES_CRON_TIMEOUT").strip()
+    raw = cron_env_setting("TINO_CRON_TIMEOUT").strip()
     if not raw:
         return 600.0
     try:
         return float(raw)
     except (ValueError, TypeError):
-        logger.warning("Invalid HERMES_CRON_TIMEOUT=%r; using default 600s", raw)
+        logger.warning("Invalid TINO_CRON_TIMEOUT=%r; using default 600s", raw)
         return 600.0
 
 
@@ -1056,11 +1056,11 @@ _hermes_home: Path | None = None
 
 
 def _get_hermes_home() -> Path:
-    """Hermes home at call time (honouring the test override). Cron is per-profile: never freeze
+    """Tino home at call time (honouring the test override). Cron is per-profile: never freeze
     this at import or anchor it at the shared default root — either breaks profile isolation.
 
     Cron is per-profile by design (#4707): the in-process ticker runs inside a profile-scoped gateway, so
-    resolving the active HERMES_HOME at call time means a profile's jobs are stored AND executed under that
+    resolving the active TINO_HOME at call time means a profile's jobs are stored AND executed under that
     profile's home (its .env, config.yaml, scripts, skills).
     """
     return _hermes_home or get_hermes_home()
@@ -1396,9 +1396,9 @@ def _snapshot_pin(job: dict, axis: str, current: str, job_id: str) -> str:
 
 def _load_cron_job_config(job: dict, job_id: str, job_name: str) -> _CronJobConfig:
     """Load config.yaml and resolve the run's model: per-job override > cron.model (fleet default) >
-    creation snapshot > HERMES_MODEL > config ``model:``. Re-read every tick (no cache) so
+    creation snapshot > TINO_MODEL > config ``model:``. Re-read every tick (no cache) so
     ``hermes cron edit --model`` applies next tick."""
-    model = job.get("model") or cron_env_setting("HERMES_MODEL") or ""
+    model = job.get("model") or cron_env_setting("TINO_MODEL") or ""
     _cron_default_provider = ""
     _cfg: dict = {}
     _model_cfg: Any = {}
@@ -1419,7 +1419,7 @@ def _load_cron_job_config(job: dict, job_id: str, job_name: str) -> _CronJobConf
                     model = _cron_default_model
                 else:
                     _, _global_model = resolve_cron_model_drift_defaults(
-                        _cfg, environ={"HERMES_MODEL": cron_env_setting("HERMES_MODEL")})
+                        _cfg, environ={"TINO_MODEL": cron_env_setting("TINO_MODEL")})
                     model = _snapshot_pin(job, "model", _global_model, job_id) or _global_model or model
     except Exception as e:
         logger.warning("Job '%s': failed to load config.yaml, using defaults: %s", job_id, e)
@@ -1430,7 +1430,7 @@ def _load_cron_job_config(job: dict, job_id: str, job_name: str) -> _CronJobConf
         raise RuntimeError(
             f"Cron job '{job_name}' has no model configured "
             f"(job.model={job.get('model')!r}, "
-            f"HERMES_MODEL={cron_env_setting('HERMES_MODEL')!r}, "
+            f"TINO_MODEL={cron_env_setting('TINO_MODEL')!r}, "
             "config.yaml model.default missing or empty). "
             f"Set a per-job model via "
             f"`hermes cron edit {job_id} --model <name>` or set a "
@@ -1449,7 +1449,7 @@ def _load_prefill_messages(cfg: dict, job_id: str) -> Optional[list]:
     """Prefill messages from env or config.yaml (top-level key canonical; agent.* is legacy)."""
     agent_cfg = cfg.get("agent", {}) if isinstance(cfg.get("agent", {}), dict) else {}
     prefill_file = (
-        cron_env_setting("HERMES_PREFILL_MESSAGES_FILE")
+        cron_env_setting("TINO_PREFILL_MESSAGES_FILE")
         or cfg.get("prefill_messages_file", "")
         or agent_cfg.get("prefill_messages_file", "")
     )
@@ -1520,7 +1520,7 @@ def _blocked_config_result(job_id: str, job_name: str, _pf_reason: str) -> tuple
         "The pre-run configuration check found a problem, so the agent did not run "
         "(nothing was charged).\n\n"
         f"**Reason:** {_pf_reason}\n\n"
-        "Hermes tries again at the next scheduled time and clears this state on the first healthy "
+        "Tino tries again at the next scheduled time and clears this state on the first healthy "
         "run; this alert is not repeated. Check with `hermes cron doctor`. Set `cron.preflight: "
         "false` in config.yaml to disable this check."
     )
@@ -1545,7 +1545,7 @@ def _resolve_job_runtime(job: dict, job_id: str, jc: _CronJobConfig) -> tuple[di
         # config exactly as before.
         requested = _snapshot_pin(job, "provider", global_provider, job_id) or None
     try:
-        # Do NOT pass HERMES_INFERENCE_PROVIDER as `requested`: it would override persisted config
+        # Do NOT pass TINO_INFERENCE_PROVIDER as `requested`: it would override persisted config
         # and resurrect stale providers for unpinned jobs.
         runtime_kwargs = {
             "requested": requested,
@@ -1636,13 +1636,13 @@ def _init_cron_mcp_tools(job_id: str) -> None:
 
 
 def _open_cron_session_db(job: dict):
-    """Open the SQLite session store under its own timeout (HERMES_CRON_TIMEOUT only watches
+    """Open the SQLite session store under its own timeout (TINO_CRON_TIMEOUT only watches
     run_conversation). A wedged sqlite3.connect returns None (no session store) instead of
     wedging the worker thread."""
     # Initialize the SQLite session store so cron job messages are persisted and discoverable via
     # session_search (same pattern as gateway/run.py) — only now, after every early-return path (wake-gate,
     # prompt validation, drift skip) has passed, so a gated run never opens state.db just to abandon the
-    # handle (#96290). Bounded with its own timeout (separate from HERMES_CRON_TIMEOUT, which only watches
+    # handle (#96290). Bounded with its own timeout (separate from TINO_CRON_TIMEOUT, which only watches
     # the agent's run_conversation below): SessionDB.__init__ opens/migrates state.db synchronously and has
     # no timeout of its own against a wedged sqlite3.connect (e.g. a stale flock left by a crashed sibling
     # process). An unbounded hang here would wedge the job's worker thread, so the init is bounded and a
@@ -1707,7 +1707,7 @@ def _run_agent_with_watchdog(
     worker_state: Optional[dict] = None,
 ) -> dict:
     """Run ``agent.run_conversation`` on a worker thread under the inactivity (not wall-clock)
-    watchdog: default 600s, override HERMES_CRON_TIMEOUT, 0 = unlimited."""
+    watchdog: default 600s, override TINO_CRON_TIMEOUT, 0 = unlimited."""
     _cron_timeout = _cron_inactivity_seconds()
     _cron_inactivity_limit = _cron_timeout if _cron_timeout > 0 else None
     _POLL_INTERVAL = 5.0
@@ -1894,7 +1894,7 @@ def _finalize_cron_session(session_db, agent, job_id: str, job_name: str, cron_s
         with contextlib.suppress((Exception, KeyboardInterrupt)):
             _agent_session_id = getattr(agent, "session_id", None)
             # CLI (single-process) path: the approval contextvar is only bound during gateway/TUI turns and
-            # HERMES_SESSION_KEY is not in the CLI environment, so the key resolves empty here. Since #64240
+            # TINO_SESSION_KEY is not in the CLI environment, so the key resolves empty here. Since #64240
             # the CLI drains completions through a positive-ownership filter keyed on the durable
             # AIAgent.session_id — an empty session_key would fail closed and the CLI could never claim its
             # own completions, while a restored foreign event with an empty key could leak into any
@@ -1989,7 +1989,7 @@ def _prepare_job_prompt(
     result short-circuits ``run_job`` (no_agent job, empty payload, monitor gate, wake gate,
     injection block, empty prompt); otherwise ``prompt`` is set."""
     # Fail closed on a corrupt config.yaml: defaults would let auto-detection bill a provider the
-    # user never chose. no_agent jobs are exempt. Escape hatch: HERMES_IGNORE_USER_CONFIG=1.
+    # user never chose. no_agent jobs are exempt. Escape hatch: TINO_IGNORE_USER_CONFIG=1.
     if not job.get("no_agent"):
         from hermes_cli.config import InvalidUserConfigError, require_parseable_user_config
 
@@ -2071,9 +2071,9 @@ def _prepare_job_prompt(
 
 
 _CRON_DELIVERY_VARS = (
-    "HERMES_CRON_AUTO_DELIVER_PLATFORM",
-    "HERMES_CRON_AUTO_DELIVER_CHAT_ID",
-    "HERMES_CRON_AUTO_DELIVER_THREAD_ID")
+    "TINO_CRON_AUTO_DELIVER_PLATFORM",
+    "TINO_CRON_AUTO_DELIVER_CHAT_ID",
+    "TINO_CRON_AUTO_DELIVER_THREAD_ID")
 
 
 class _CronRunScope:
@@ -2081,9 +2081,9 @@ class _CronRunScope:
     parallel jobs don't clobber each other). Construct before the try, ``enter()`` as its first
     statement, ``exit()`` in the finally — every setter here has a matching reset there.
 
-    HERMES_SESSION_* are deliberately NOT seeded from job["origin"]: it is delivery metadata, not
+    TINO_SESSION_* are deliberately NOT seeded from job["origin"]: it is delivery metadata, not
     a sender, and terminal/tts/skills/send_message tools would act as if the origin user were
-    driving the agent. Delivery reads job["origin"] / HERMES_CRON_AUTO_DELIVER_* directly.
+    driving the agent. Delivery reads job["origin"] / TINO_CRON_AUTO_DELIVER_* directly.
     """
 
     def __init__(self, job: dict, job_id: str, execution_id: Optional[str]):
@@ -2099,12 +2099,12 @@ class _CronRunScope:
             chat_name="",
             # Cron can't receive completions after its turn; async delegation output could
             # otherwise route to an unrelated chat via the ambient session key => inline delegation.
-            # We clear the HERMES_SESSION_* routing keys just below, so an async delegation's completion
+            # We clear the TINO_SESSION_* routing keys just below, so an async delegation's completion
             # event carries session_key="" — _enrich_async_delegation_routing cannot resolve it and
             # _inject_watch_notification drops it ("no routing metadata"). And by the time a child finishes,
             # run_job has already shipped the job's final response via _deliver_result; there is no turn
             # left to re-enter. (Worse, get_current_session_key() can fall back to the ambient os.environ
-            # HERMES_SESSION_KEY, which risks routing a cron subagent's output into an unrelated user chat.)
+            # TINO_SESSION_KEY, which risks routing a cron subagent's output into an unrelated user chat.)
             # Declaring the channel stateless routes delegate_task to its existing inline/synchronous path,
             # so results return within the job's own turn. See declare_stateless_channel(). Upstream:
             # #53027, #63142.
@@ -2118,7 +2118,7 @@ class _CronRunScope:
         self.task_id = f"cron:{job_id}:{execution_id or job.get('execution_id') or uuid.uuid4().hex}"
         if self.workdir:
             record_session_cwd(self.task_id, self.workdir)
-        self._cron_session_var = _VAR_MAP["HERMES_CRON_SESSION"]
+        self._cron_session_var = _VAR_MAP["TINO_CRON_SESSION"]
         self._cron_session_token = None
         self._non_dispatcher_token = None
 
@@ -2127,7 +2127,7 @@ class _CronRunScope:
         # os.environ fallback used by standalone entrypoints/tests).
         self._cron_session_token = self._cron_session_var.set("1")
         # Mark NOT the kanban worker: a worker's cronjob(action="run") lands here with
-        # HERMES_KANBAN_TASK in env, and an unrelated job could close the worker's task. Must be a
+        # TINO_KANBAN_TASK in env, and an unrelated job could close the worker's task. Must be a
         # ContextVar, NOT an os.environ clear (env is shared with the worker heartbeat and
         # concurrent jobs); copy_context() carries it into the agent thread.
         self._non_dispatcher_token = enter_non_dispatcher_owned_context()
@@ -2158,9 +2158,9 @@ def _reload_dotenv_and_publish_delivery_target(job: dict) -> None:
 
     delivery_target = _resolve_delivery_target(job)
     if delivery_target:
-        _VAR_MAP["HERMES_CRON_AUTO_DELIVER_PLATFORM"].set(delivery_target["platform"])
-        _VAR_MAP["HERMES_CRON_AUTO_DELIVER_CHAT_ID"].set(str(delivery_target["chat_id"]))
-        _VAR_MAP["HERMES_CRON_AUTO_DELIVER_THREAD_ID"].set(
+        _VAR_MAP["TINO_CRON_AUTO_DELIVER_PLATFORM"].set(delivery_target["platform"])
+        _VAR_MAP["TINO_CRON_AUTO_DELIVER_CHAT_ID"].set(str(delivery_target["chat_id"]))
+        _VAR_MAP["TINO_CRON_AUTO_DELIVER_THREAD_ID"].set(
             "" if delivery_target.get("thread_id") is None else str(delivery_target["thread_id"])
         )
 
@@ -2534,7 +2534,7 @@ def run_one_job(
         job["execution_id"] = execution["id"]
 
     execution_id = str(job["execution_id"])
-    external_owner = os.environ.get("_HERMES_CRON_EXTERNAL_WORKER") == execution_id
+    external_owner = os.environ.get("_TINO_CRON_EXTERNAL_WORKER") == execution_id
     if not external_owner:
         try:
             if _launch_external_cron_worker(job):
@@ -2983,7 +2983,7 @@ def _run_one_job_body(
         # Claimed durably before dispatch; becomes running only right before the actual run.
         # Detached workers transition to running while adopting; in-process paths must win the
         # claimed->running CAS here before any user script or agent side effect may begin.
-        external_owner = os.environ.get("_HERMES_CRON_EXTERNAL_WORKER") == execution_id
+        external_owner = os.environ.get("_TINO_CRON_EXTERNAL_WORKER") == execution_id
         if not external_owner and mark_execution_running(execution_id) is None:
             logger.warning("Cron job %s lost execution ownership before start; skipping", job["id"])
             return True
@@ -3332,19 +3332,19 @@ def _launch_external_cron_worker(job: dict) -> bool:
         worker_env = strip_launch_profile_env(build_subprocess_env(
             scrub_secrets=multiplex_active,
             inherit_profile_home=True,
-            extra={"HERMES_HOME": str(profile_home)},
+            extra={"TINO_HOME": str(profile_home)},
         ))
     finally:
         reset_secret_scope(secret_token)
     worker_env = systemd_user_bus_env(worker_env)
-    # Unattended worker: the gateway sets HERMES_EXEC_ASK at startup (interactive launches set
+    # Unattended worker: the gateway sets TINO_EXEC_ASK at startup (interactive launches set
     # the other two), and an inherited presence var makes every env-fallback consumer in the
     # child (`_is_interactive_cli`, sudo prompting, `check_cronjob_requirements`) believe a
     # human is present to answer (#110932).
     for _presence_var in (
-        "HERMES_INTERACTIVE",
-        "HERMES_GATEWAY_SESSION",
-        "HERMES_EXEC_ASK",
+        "TINO_INTERACTIVE",
+        "TINO_GATEWAY_SESSION",
+        "TINO_EXEC_ASK",
     ):
         worker_env.pop(_presence_var, None)
     # `-m cron.scheduler` has no hermes_cli.main bootstrap; pin this checkout explicitly
@@ -3543,15 +3543,15 @@ def _run_external_worker_payload(payload_path: Path, ack_path: Path) -> bool:
                     execution_id,
                 )
                 return False
-            old_external_execution = os.environ.get("_HERMES_CRON_EXTERNAL_WORKER")
-            os.environ["_HERMES_CRON_EXTERNAL_WORKER"] = execution_id
+            old_external_execution = os.environ.get("_TINO_CRON_EXTERNAL_WORKER")
+            os.environ["_TINO_CRON_EXTERNAL_WORKER"] = execution_id
             try:
                 return run_one_job(job, adapters=None, loop=None, verbose=False)
             finally:
                 if old_external_execution is None:
-                    os.environ.pop("_HERMES_CRON_EXTERNAL_WORKER", None)
+                    os.environ.pop("_TINO_CRON_EXTERNAL_WORKER", None)
                 else:
-                    os.environ["_HERMES_CRON_EXTERNAL_WORKER"] = old_external_execution
+                    os.environ["_TINO_CRON_EXTERNAL_WORKER"] = old_external_execution
                 # Post-ack the gateway never reads the stderr capture (it only
                 # serves the pre-ack death report) and may not outlive this run
                 # in the restart-safe topology, so the worker removes its own.
@@ -3641,7 +3641,7 @@ def _worktree_maintenance_repos() -> List[str]:
     filtered to those that actually have a ``.worktrees/`` dir."""
     repos: set = set()
 
-    # Hermes source checkout (git installs only; wheel installs have no .git).
+    # Tino source checkout (git installs only; wheel installs have no .git).
     with contextlib.suppress(Exception):
         install_root = Path(__file__).resolve().parent.parent
         if (install_root / ".git").exists():
@@ -3798,13 +3798,13 @@ def _sweep_stale_inflight_for_tick(due_jobs: list) -> None:
 
 
 def _resolve_max_parallel_workers() -> Optional[int]:
-    """Max workers: env > config.yaml > unbounded (HERMES_CRON_MAX_PARALLEL=1 restores serial)."""
+    """Max workers: env > config.yaml > unbounded (TINO_CRON_MAX_PARALLEL=1 restores serial)."""
     try:
-        _env_par = cron_env_setting("HERMES_CRON_MAX_PARALLEL").strip()
+        _env_par = cron_env_setting("TINO_CRON_MAX_PARALLEL").strip()
         if _env_par:
             return int(_env_par) or None
     except (ValueError, TypeError):
-        logger.warning("Invalid HERMES_CRON_MAX_PARALLEL value; defaulting to unbounded")
+        logger.warning("Invalid TINO_CRON_MAX_PARALLEL value; defaulting to unbounded")
     with contextlib.suppress(Exception):
         _ucfg = load_config() or {}
         _cfg_par = (_ucfg.get("cron", {}) if isinstance(_ucfg, dict) else {}).get("max_parallel_jobs")

@@ -37,7 +37,7 @@ def _rows():
             "profile": "default",
             "handle": "hermes",
             "connection_id": "cloud-1",
-            "connection_label": "Hermes Cloud",
+            "connection_label": "Tino Cloud",
             "title": "Moxie",
             "description": "Main cloud agent",
         },
@@ -363,7 +363,7 @@ def test_relay_route_queues_envelope_and_spawns_waiter(tmp_path, monkeypatch):
     home = _managed_home(tmp_path)
     bot_relay.write_remote_roster(home, [
         {"profile": "default", "handle": "hermes", "connection_id": "cloud-1",
-         "connection_label": "Hermes Cloud", "title": "Moxie"},
+         "connection_label": "Tino Cloud", "title": "Moxie"},
     ])
 
     spawned = {}
@@ -377,7 +377,7 @@ def test_relay_route_queues_envelope_and_spawns_waiter(tmp_path, monkeypatch):
     agent = _FakeAgent(home)
     out = json.loads(message_agent_tool(target="hermes", message="ping", agent=agent))
     assert out.get("status") == "queued"
-    assert "Hermes Cloud" in spawned["label"]
+    assert "Tino Cloud" in spawned["label"]
     # envelope landed in the outbox with attribution prefixed
     pending = bot_relay.claim_pending_envelopes(home)
     assert len(pending) == 1
@@ -419,11 +419,11 @@ def test_protocol_section_lists_remote_teammates(tmp_path):
     home = _managed_home(tmp_path)
     bot_relay.write_remote_roster(home, [
         {"profile": "default", "handle": "hermes", "connection_id": "cloud-1",
-         "connection_label": "Hermes Cloud", "title": "Moxie"},
+         "connection_label": "Tino Cloud", "title": "Moxie"},
     ])
     section = bot_mode_probe.get_bot_mode_protocol_section(home, force_refresh=True)
     assert "OTHER connected machines" in section
-    assert "`@hermes` — on Hermes Cloud — Moxie" in section
+    assert "`@hermes` — on Tino Cloud — Moxie" in section
 
 
 def test_capability_fingerprint_changes_with_relay_roster(tmp_path):
@@ -445,7 +445,7 @@ def test_cleanup_bot_relay_artifacts_sweeps_stale_plaintext(tmp_path, monkeypatc
     import os as _os
     import time as _time
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("TINO_HOME", str(tmp_path))
     target = {"profile": "scout", "handle": "scout", "connection_id": "cloud-1",
               "connection_label": "", "title": "", "description": ""}
     stale_env = bot_relay.enqueue_envelope(
@@ -471,7 +471,7 @@ def test_cleanup_bot_relay_artifacts_sweeps_stale_plaintext(tmp_path, monkeypatc
 
 
 def test_cleanup_bot_relay_artifacts_missing_dir_is_zero(tmp_path, monkeypatch):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "nope"))
+    monkeypatch.setenv("TINO_HOME", str(tmp_path / "nope"))
     assert bot_relay.cleanup_bot_relay_artifacts() == 0
 
 
@@ -636,7 +636,7 @@ def test_message_agent_surfaces_runtime_offline_refusal(tmp_path, monkeypatch):
     home = _managed_home(tmp_path)
     bot_relay.write_remote_roster(home, [
         {"profile": "default", "handle": "hermes", "connection_id": "cloud-1",
-         "connection_label": "Hermes Cloud", "online": False},
+         "connection_label": "Tino Cloud", "online": False},
     ])
     monkeypatch.setattr(
         "tools.bot_mode_dm._spawn_delivery",
@@ -650,7 +650,7 @@ def test_message_agent_surfaces_runtime_offline_refusal(tmp_path, monkeypatch):
     assert bot_relay.claim_pending_envelopes(home) == []
 
 
-# ── delivery turn author (HERMES_TURN_AUTHOR on the recipient turn) ──────────
+# ── delivery turn author (TINO_TURN_AUTHOR on the recipient turn) ──────────
 
 
 def test_delivery_turn_author_from_envelope_sender_fields():
@@ -673,24 +673,24 @@ def test_delivery_turn_author_qualifies_a_remote_sender_by_its_connection():
 
 
 def test_delivery_env_carries_only_the_given_author(monkeypatch):
-    """The dispatcher's own HERMES_TURN_AUTHOR never reaches the child: dropped without an author, replaced with one."""
+    """The dispatcher's own TINO_TURN_AUTHOR never reaches the child: dropped without an author, replaced with one."""
     from agent.turn_author import TURN_AUTHOR_ENV
 
-    monkeypatch.setenv("HERMES_RELAY_TEST_MARKER", "kept")
+    monkeypatch.setenv("TINO_RELAY_TEST_MARKER", "kept")
     monkeypatch.setenv(TURN_AUTHOR_ENV, json.dumps({"id": "bot:previous", "name": "previous", "is_bot": True}))
-    monkeypatch.setenv("HERMES_SESSION_KEY", "session-A")
-    monkeypatch.setenv("HERMES_UI_SESSION_ID", "ui-A")
-    monkeypatch.setenv("HERMES_SESSION_ID", "session-A")
-    monkeypatch.setenv("HERMES_SESSION_PROFILE", "profile-A")
+    monkeypatch.setenv("TINO_SESSION_KEY", "session-A")
+    monkeypatch.setenv("TINO_UI_SESSION_ID", "ui-A")
+    monkeypatch.setenv("TINO_SESSION_ID", "session-A")
+    monkeypatch.setenv("TINO_SESSION_PROFILE", "profile-A")
     # A session-* knob, not identity: stripping it would break the child's watcher tuning.
-    monkeypatch.setenv("HERMES_SESSION_STALL_TIMEOUT", "97")
+    monkeypatch.setenv("TINO_SESSION_STALL_TIMEOUT", "97")
 
     assert TURN_AUTHOR_ENV not in bot_relay.delivery_env(None)
     env = bot_relay.delivery_env(bot_relay.delivery_turn_author("ops", "ops"))
     assert json.loads(env[TURN_AUTHOR_ENV]) == {"id": "bot:ops", "name": "ops", "is_bot": True}
-    assert env["HERMES_RELAY_TEST_MARKER"] == "kept"
-    assert "HERMES_SESSION_KEY" not in env
-    assert "HERMES_UI_SESSION_ID" not in env
-    assert "HERMES_SESSION_ID" not in env
-    assert "HERMES_SESSION_PROFILE" not in env
-    assert env["HERMES_SESSION_STALL_TIMEOUT"] == "97"
+    assert env["TINO_RELAY_TEST_MARKER"] == "kept"
+    assert "TINO_SESSION_KEY" not in env
+    assert "TINO_UI_SESSION_ID" not in env
+    assert "TINO_SESSION_ID" not in env
+    assert "TINO_SESSION_PROFILE" not in env
+    assert env["TINO_SESSION_STALL_TIMEOUT"] == "97"

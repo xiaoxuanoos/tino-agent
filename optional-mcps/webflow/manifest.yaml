@@ -7,9 +7,9 @@ description: >-
   Sites, CMS collections, and pages via Webflow's hosted MCP.
 source: https://developers.webflow.com/mcp/reference/getting-started
 
-# Official vendor-hosted remote MCP (URL-only — Hermes never spawns a local
+# Official vendor-hosted remote MCP (URL-only — Tino never spawns a local
 # process for this entry). Native OAuth 2.1 + Dynamic Client Registration;
-# Hermes's MCP client + mcp_oauth_manager handle discovery, PKCE, token
+# Tino's MCP client + mcp_oauth_manager handle discovery, PKCE, token
 # exchange, and refresh.
 # No `webflow.io` suggest host — that's published staging sites, not Webflow intent.
 transport:

@@ -28,7 +28,7 @@ def homes(tmp_path, monkeypatch):
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
     root = tmp_path / ".hermes"
     root.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(root))
+    monkeypatch.setenv("TINO_HOME", str(root))
     from hermes_cli.profiles import create_profile
     for name in ("acme", "beta"):
         create_profile(name, no_alias=True, no_skills=True)

@@ -96,7 +96,7 @@ def _escape_unresolved_presentation_mention(content: str, error: str) -> Optiona
 
 _FETCH_LIMIT = 50  # events per poll / seed call
 _SEEN_CAP = 500  # per-channel de-dupe set bound (events)
-_CURSOR_STATE_SUBDIR = "buzz"  # per-channel cursors survive a restart under HERMES_HOME
+_CURSOR_STATE_SUBDIR = "buzz"  # per-channel cursors survive a restart under TINO_HOME
 _CURSOR_STATE_FILENAME = "channel-cursors.json"
 _DM_DISCOVERY_EVERY = 5  # re-run DM discovery every N poll sweeps
 _DEFAULT_POLL_INTERVAL = 4.0
@@ -1950,7 +1950,7 @@ def interactive_setup() -> None:
     existing_relay = get_env_value("BUZZ_RELAY_URL")
     if declines_reconfigure("Buzz", "Reconfigure Buzz?", "BUZZ_RELAY_URL"):
         return
-    print_info("Connect Hermes to a Buzz community (Block's Nostr-based human+agent platform).")
+    print_info("Connect Tino to a Buzz community (Block's Nostr-based human+agent platform).")
     print_info("   Requires the buzz CLI binary and a Nostr key that is a community member.")
     print()
     relay = prompt("Relay URL (e.g. https://mycommunity.communities.buzz.xyz)", default=existing_relay or "")
@@ -1985,7 +1985,7 @@ def interactive_setup() -> None:
 
 
 def register(ctx):
-    """Plugin entry point: called by the Hermes plugin system."""
+    """Plugin entry point: called by the Tino plugin system."""
     ctx.register_platform(
         name="buzz", label="Buzz", adapter_factory=lambda cfg: BuzzAdapter(cfg), check_fn=check_requirements,
         validate_config=validate_config, is_connected=is_connected, required_env=["BUZZ_RELAY_URL", "BUZZ_PRIVATE_KEY"],

@@ -267,11 +267,10 @@ describe('LocalModelsSettings', () => {
     expect(screen.getAllByText('Up to 256K context').length).toBe(2)
     expect(screen.queryByText(/Starts at/)).toBeNull()
 
-    // Its download button is disabled; the fitting model's is enabled once
-    // the runtime exists (here runtime_installed=false, so both disabled —
-    // asserted separately below).
+    // Downloads can be staged before installing the runtime; only models too
+    // large for this computer stay disabled.
     const buttons = screen.getAllByRole('button', { name: /download · 17\.6 GB/i })
-    expect(buttons.every(b => (b as HTMLButtonElement).disabled)).toBe(true)
+    expect(buttons.filter(b => (b as HTMLButtonElement).disabled)).toHaveLength(1)
   })
 
   it('orders the catalog by fit: resident first, then spilled, then too-big', async () => {
@@ -287,6 +286,41 @@ describe('LocalModelsSettings', () => {
       .map(el => el.textContent?.replace('Recommended', ''))
 
     expect(names).toEqual(['Qwen3.6 27B', 'Spilled Model', 'Huge Model'])
+  })
+
+  it('lets users download a fitting model before installing the runtime', async () => {
+    mocked.getLocalCatalog.mockResolvedValue({ models: [FITTING_MODEL] })
+    mocked.downloadLocalModel.mockResolvedValue({ job_id: 'staged-download' })
+    await renderFullPane()
+
+    const download = await screen.findByRole('button', { name: /download · 17\.6 GB/i })
+    expect((download as HTMLButtonElement).disabled).toBe(false)
+    fireEvent.click(download)
+    await waitFor(() => expect(mocked.downloadLocalModel).toHaveBeenCalledWith(FITTING_MODEL.id))
+  })
+
+  it('installs the engine when using a downloaded catalog model', async () => {
+    const stagedId = 'Qwen3.6-27B-UD-Q4_K_XL'
+    mocked.getLocalModelsStatus.mockResolvedValue({
+      ...BASE_STATUS,
+      models: [{ id: stagedId, size_bytes: FITTING_MODEL.size_bytes, size_label: FITTING_MODEL.size_label }]
+    })
+    mocked.getLocalCatalog.mockResolvedValue({
+      models: [{ ...FITTING_MODEL, downloaded: true, downloaded_model_id: stagedId }]
+    })
+    mocked.quickstartLocalModels.mockResolvedValue({
+      job_id: 'setup-model',
+      display_name: FITTING_MODEL.display_name,
+      download_bytes: 0,
+      model_id: stagedId,
+      needs_download: false,
+      needs_runtime: true
+    })
+    await renderFullPane()
+
+    fireEvent.click(await screen.findByRole('button', { name: /^use$/i }))
+    await waitFor(() => expect(mocked.quickstartLocalModels).toHaveBeenCalledWith(FITTING_MODEL.id))
+    expect(mocked.activateLocalModel).not.toHaveBeenCalled()
   })
 
   it('never greens the full-context pill on a system-RAM model', async () => {
@@ -622,10 +656,10 @@ describe('added-by-you rows', () => {
   it('staged models outside the catalog get the full action set', async () => {
     vi.mocked(hermes.getLocalModelsStatus).mockResolvedValue({
       ...BASE_STATUS,
-      loaded_models: { 'Hermes-4.3-36B-Q5_K_M': 'loaded' },
-      models: [{ id: 'Hermes-4.3-36B-Q5_K_M', size_bytes: 25 * 2 ** 30, size_label: '25.0 GB' }],
+      loaded_models: { 'Tino-4.3-36B-Q5_K_M': 'loaded' },
+      models: [{ id: 'Tino-4.3-36B-Q5_K_M', size_bytes: 25 * 2 ** 30, size_label: '25.0 GB' }],
       placement: {
-        'Hermes-4.3-36B-Q5_K_M': {
+        'Tino-4.3-36B-Q5_K_M': {
           granted_window_label: '96K',
           spilled: false,
           window: 98304,
@@ -637,7 +671,7 @@ describe('added-by-you rows', () => {
     vi.mocked(hermes.getLocalCatalog).mockResolvedValue({ models: [] })
 
     renderPane()
-    await screen.findByText('Hermes-4.3-36B-Q5_K_M')
+    await screen.findByText('Tino-4.3-36B-Q5_K_M')
 
     // Full management surface: Use, eject, delete, live placement pill.
     expect(screen.getByText(/added by you/i)).toBeTruthy()

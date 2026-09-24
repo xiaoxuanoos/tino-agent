@@ -338,7 +338,7 @@ class TestTeamsInteractiveSetup:
         credentials to .env without crashing.
         """
         hermes_home = tmp_path / "hermes"
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        monkeypatch.setenv("TINO_HOME", str(hermes_home))
 
         import hermes_cli.cli_output as cli_output_mod
 
@@ -1205,8 +1205,8 @@ class TestTeamsRequireMention:
         ("channel", {}, False),
         ("groupChat", {}, False),
         ("channel", {"text": "<at>Alice</at> hi", "mentioned_id": "29:alice"}, False),  # someone else
-        ("channel", {"text": "<at>Hermes</at> hi", "mentioned_id": "28:bot-id"}, True),  # wire form of the bot id
-        ("groupChat", {"text": "<at>Hermes</at> hi", "mentioned_id": "bot-id"}, True),
+        ("channel", {"text": "<at>Tino</at> hi", "mentioned_id": "28:bot-id"}, True),  # wire form of the bot id
+        ("groupChat", {"text": "<at>Tino</at> hi", "mentioned_id": "bot-id"}, True),
         ("channel", {"reply_to_id": "bot-msg-1"}, True),
         ("personal", {}, True),
     ])

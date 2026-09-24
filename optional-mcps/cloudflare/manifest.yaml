@@ -14,13 +14,13 @@ source: https://developers.cloudflare.com/agents/model-context-protocol/cloudfla
 # We pin `?codemode=false` deliberately. The server's default mode fronts
 # the API through its own search()/execute() indirection ("Code Mode"),
 # where the model must query a spec index and then write JavaScript that
-# runs in a provider-side sandbox. Hermes already has progressive tool
+# runs in a provider-side sandbox. Tino already has progressive tool
 # disclosure (tool_search) — stacking a second, server-side search layer
 # on top of it would mean two search hops before any real call, and our
 # tool_search would only ever see 2 opaque meta-tools instead of the real
 # surface. With codemode=false the server registers each API endpoint as
 # its own tool (~3,300 as of July 2026) with a real JSON Schema derived
-# from the endpoint's path/query/body parameters. Hermes's tool_search
+# from the endpoint's path/query/body parameters. Tino's tool_search
 # then defers the whole surface behind its bridge tools and searches the
 # FULL catalog with complete schemas — one disclosure layer, ours, with
 # total information. Calls go straight to the Cloudflare API; no sandbox
@@ -33,7 +33,7 @@ auth:
   type: oauth
   # Native MCP OAuth 2.1 (case 1) — the server publishes AS metadata with
   # Dynamic Client Registration at https://mcp.cloudflare.com/register.
-  # Hermes's MCP client + mcp_oauth_manager handle discovery, DCR, PKCE,
+  # Tino's MCP client + mcp_oauth_manager handle discovery, DCR, PKCE,
   # token exchange, and refresh. During authorization Cloudflare lets you
   # scope exactly which account permissions the agent gets.
 

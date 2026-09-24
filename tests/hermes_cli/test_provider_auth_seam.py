@@ -1,7 +1,7 @@
 """OAuth-shaped model-provider plugins are first-class in `hermes auth` (#116408).
 
 The seam: ``ProviderProfile.auth_handler``. These tests drive the real ``hermes auth`` argparse
-surface against a plugin discovered from an isolated HERMES_HOME, so they fail if the dispatch is
+surface against a plugin discovered from an isolated TINO_HOME, so they fail if the dispatch is
 dropped, reordered after the built-in paths, or the registry stops admitting non-api-key profiles.
 """
 
@@ -51,7 +51,7 @@ register_provider(ProviderProfile(name="__NAME__", auth_type="oauth_external",
 
 
 def _rediscover() -> None:
-    """Point the next profile lookup at the (new) HERMES_HOME user plugin dir.
+    """Point the next profile lookup at the (new) TINO_HOME user plugin dir.
 
     Only the discovery flag is cleared: bundled plugin modules stay in
     ``sys.modules`` (so their profiles stay registered) while the user dir is
@@ -67,7 +67,7 @@ def _rediscover() -> None:
 
 @pytest.fixture
 def install_provider(tmp_path, monkeypatch):
-    """Write a model-provider plugin into an isolated HERMES_HOME and discover it."""
+    """Write a model-provider plugin into an isolated TINO_HOME and discover it."""
     installed: list[str] = []
 
     def _install(name: str = "fake-auth", *, with_handler: bool = True) -> Path:
@@ -82,7 +82,7 @@ def install_provider(tmp_path, monkeypatch):
             source = source.replace(", auth_handler=handler", "")
         (plugin_dir / "__init__.py").write_text(source, encoding="utf-8")
 
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path / "hermes"))
+        monkeypatch.setenv("TINO_HOME", str(tmp_path / "hermes"))
         monkeypatch.setenv("FAKE_AUTH_LOG", str(tmp_path / "auth-log.jsonl"))
         _rediscover()
         installed.append(name)

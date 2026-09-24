@@ -32,7 +32,7 @@ __all__ = ["PTY_HOST_DASHBOARD", "PTY_HOST_ENV", "PtyBridge", "PtyUnavailableErr
 
 # Set on the spawned TUI so Ink knows which emulator is hosting it. Mirrored in
 # ui-tui/packages/hermes-ink/src/ink/termio/host.ts — keep the two in sync.
-PTY_HOST_ENV = "HERMES_PTY_HOST"
+PTY_HOST_ENV = "TINO_PTY_HOST"
 PTY_HOST_DASHBOARD = "dashboard"
 
 
@@ -87,7 +87,7 @@ class PtyBridge:
         if not _PTY_AVAILABLE:
             if sys.platform.startswith("win"):
                 raise PtyUnavailableError("Pseudo-terminals are unavailable on this platform. "
-                                          "Hermes Agent supports Windows only via WSL.")
+                                          "Tino Agent supports Windows only via WSL.")
             raise PtyUnavailableError("The `ptyprocess` package is missing. "  # only other way _PTY_AVAILABLE is False
                                       "Install with: pip install ptyprocess (or pip install -e '.[pty]').")
         # env=None: callers own env policy (process_registry already sanitizes), so inherit via the

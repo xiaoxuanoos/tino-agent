@@ -44,7 +44,7 @@ def raise_if_removed(*candidates: str) -> None:
             if removed.date:
                 detail += f" (removed {removed.date})"
             raise PluginOperationError(
-                f"Plugin '{removed.name}' was removed from the Hermes plugin catalog and is blocked from "
+                f"Plugin '{removed.name}' was removed from the Tino plugin catalog and is blocked from "
                 f"installation: {detail}")
 
 
@@ -54,7 +54,7 @@ def resolve_catalog_name(identifier: str, console) -> PluginCatalogEntry:
     entry = get_live_catalog_entry(identifier)
     if entry is None:
         _fail(console, (
-            f"[red]Error:[/red] '{identifier}' is not in the Hermes plugin catalog and is not a Git URL or "
+            f"[red]Error:[/red] '{identifier}' is not in the Tino plugin catalog and is not a Git URL or "
             "owner/repo shorthand. Browse entries with `hermes plugins search`."))
         raise SystemExit(1)  # _fail exits; keeps type-checkers honest
     return entry
@@ -178,7 +178,7 @@ def pin_label(entry: PluginCatalogEntry) -> str:
 def _render_entries(entries: List[PluginCatalogEntry], console) -> None:
     from hermes_cli.plugins_cmd import _table
     table = _table(((("Name", "bold")), ("Category", None), ("Tier", None), ("Description", None),
-                    ("Pinned", "dim"), ("Capabilities", "dim")), title="Hermes Plugin Catalog (curated)")
+                    ("Pinned", "dim"), ("Capabilities", "dim")), title="Tino Plugin Catalog (curated)")
     for e in sorted(entries, key=lambda e: (e.category, e.tier != "official", e.name)):
         tier = "[cyan]official[/cyan]" if e.tier == "official" else "[magenta]community[/magenta]"
         desc = e.description if len(e.description) <= 60 else e.description[:57] + "..."

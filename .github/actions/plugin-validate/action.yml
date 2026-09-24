@@ -32,12 +32,12 @@ runs:
     - name: Install hermes-agent
       shell: bash
       env:
-        _HERMES_REF: ${{ inputs.hermes-ref }}
+        _TINO_REF: ${{ inputs.hermes-ref }}
       run: |
         set -euo pipefail
         # CI-context install from git; the ref lets plugin authors validate
         # against a pinned hermes release instead of main.
-        pip install "git+https://github.com/NousResearch/hermes-agent@${_HERMES_REF}"
+        pip install "git+https://github.com/NousResearch/hermes-agent@${_TINO_REF}"
 
     - name: Validate plugin
       shell: bash

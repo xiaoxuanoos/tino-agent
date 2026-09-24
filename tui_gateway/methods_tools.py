@@ -29,7 +29,7 @@ def _profile_scoped_rpc(
     ``scoped=False`` ignores ``profile``.
 
     The scope is the same home + secret + terminal composition a turn binds
-    (``_session_profile_runtime_scope``), not HERMES_HOME alone: these bodies read config.yaml,
+    (``_session_profile_runtime_scope``), not TINO_HOME alone: these bodies read config.yaml,
     whose ``${VAR}`` refs (``config._env_ref_lookup``) and the MCP probe's own header/env
     interpolation resolve through ``get_secret`` — with only the home bound they read plain
     ``os.environ``, i.e. the launch profile's values, so ``mcp.servers.test`` for a secondary
@@ -85,7 +85,7 @@ def _rpc(name: str, fail_code: int, prefix: str = "", *, live_session: bool = Fa
 
 
 def _scoped_rpc(name: str, fail_code: int = 5024, **kw):
-    """``@method(name)`` + ``_profile_scoped_rpc`` (optional ``profile`` HERMES_HOME scope)."""
+    """``@method(name)`` + ``_profile_scoped_rpc`` (optional ``profile`` TINO_HOME scope)."""
     return lambda body: method(name)(_profile_scoped_rpc(fail_code, **kw)(body))
 
 
@@ -533,7 +533,7 @@ def _run_plugin_command(handler, arg: str) -> str:
 
 @contextlib.contextmanager
 def _session_home_scope(session, cwd: str | None = None):
-    """Bind HERMES_HOME and the logical cwd to the session for the block.
+    """Bind TINO_HOME and the logical cwd to the session for the block.
 
     Skill/bundle/quick-command resolution is home-keyed (``skills.external_dirs``, ``skill-bundles/``,
     ``quick_commands`` all live in the profile's config/home); nothing upstream of these RPC handlers
@@ -1042,9 +1042,9 @@ def _(rid, params: dict) -> dict:
 def _(rid, params: dict) -> dict:
     cfg = _load_cfg()
     get_secret = _tools_mod("agent.secret_scope").get_secret
-    api_key = get_secret("HERMES_API_KEY", "") or cfg.get("api_key", "")
+    api_key = get_secret("TINO_API_KEY", "") or cfg.get("api_key", "")
     masked = f"****{api_key[-4:]}" if len(api_key) > 4 else "(not set)"
-    base_url = get_secret("HERMES_BASE_URL", "") or cfg.get("base_url", "")
+    base_url = get_secret("TINO_BASE_URL", "") or cfg.get("base_url", "")
     sections = [
         {"title": "Model", "rows": [
             ["Model", _resolve_model()], ["Base URL", base_url or "(default)"], ["API Key", masked]]},
@@ -1123,7 +1123,7 @@ def _configure_session_tools(rid, params: dict, sid: str, session) -> dict:
 # ─── Cron / learning / skills ────────────────────────────────────────────────
 @_scoped_rpc("cron.manage", 5023)
 def _(rid, params: dict) -> dict:
-    """cronjob() keys off HERMES_HOME, so ``profile`` reaches a per-profile cron store."""
+    """cronjob() keys off TINO_HOME, so ``profile`` reaches a per-profile cron store."""
     cronjob = _tools_mod("tools.cronjob_tools").cronjob
     action, jid = params.get("action", "list"), params.get("name", "")
     if action == "list":

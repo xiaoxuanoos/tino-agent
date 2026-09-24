@@ -7,7 +7,7 @@ SIGTERM lands; the gateway classifies it as an unexpected kill, exits
 non-zero, and the journal records ``Failed with result exit-code`` even
 though the restart was intentional.
 
-The unit's ``Environment=HERMES_HOME=`` is inherited here, so the shared
+The unit's ``Environment=TINO_HOME=`` is inherited here, so the shared
 :func:`gateway.status.write_planned_stop_marker` helper lands the marker in
 the right profile home with PID + start-time identity. Best-effort and
 never blocking: any failure returns 0 so the stop/restart proceeds.

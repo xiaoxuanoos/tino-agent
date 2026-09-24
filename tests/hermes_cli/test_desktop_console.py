@@ -17,7 +17,7 @@ def test_packaged_console_output_drains_both_streams(caplog, monkeypatch):
         raise AssertionError("packaged startup attempted a synchronous console write")
 
     monkeypatch.setattr("builtins.print", blocked_console)
-    desktop_launch_notice("Starting Hermes")
+    desktop_launch_notice("Starting Tino")
     with desktop_console_output(source_mode=False) as streams:
         result = subprocess.run(
             [sys.executable, "-c", "import sys; sys.stdout.write('x'*131072); "
@@ -51,7 +51,7 @@ def test_stderr_survives_logging_threshold(caplog, level):
 def test_complete_records_reach_redacted_logs(tmp_path, monkeypatch, caplog, stream):
     import hermes_logging
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("TINO_HOME", str(tmp_path))
     hermes_logging._reset_queued_handlers()
     caplog.set_level(logging.INFO)
     caplog.set_level(logging.INFO, logger="hermes_cli.desktop")

@@ -8,7 +8,7 @@ import hermes_cli.oneshot as oneshot
 
 
 def _run(monkeypatch, tmp_path, response, result):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("TINO_HOME", str(tmp_path))
     usage = tmp_path / "usage.json"
     with mock.patch.object(oneshot, "_run_agent", return_value=(response, dict(result))):
         code = oneshot.run_oneshot("q", usage_file=str(usage))

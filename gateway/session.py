@@ -614,7 +614,7 @@ def build_channel_continuity_note(entry: "SessionEntry", source: SessionSource) 
         return None
     where = "thread" if source.thread_id else "channel"
     return (
-        f"[System note: This {where} had an earlier Hermes session (session_id: {prev}) that was "
+        f"[System note: This {where} had an earlier Tino session (session_id: {prev}) that was "
         f"auto-reset. If the user refers to earlier work here, or the request depends on this "
         f"{where}'s history, use the session_search tool to recall that prior session before "
         f"acting — do not assume an unrelated recent session is the right context.]"
@@ -814,7 +814,7 @@ class SessionStore(
         self._db_pinned = _DB_UNPINNED
         self._db_handles: Dict[Path, Any] = {}
         self._db_handles_lock = threading.Lock()
-        self._profile_home_cache: Dict[str, Optional[Path]] = {}  # profile -> HERMES_HOME (hits)
+        self._profile_home_cache: Dict[str, Optional[Path]] = {}  # profile -> TINO_HOME (hits)
         # session_id -> owning key for ids proven but not yet published in ``_entries`` (a
         # compression child row is written before its reroute is published).
         self._session_owner_hints: Dict[str, str] = {}

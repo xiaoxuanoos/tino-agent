@@ -45,7 +45,7 @@ def _snapshot_recovery_hint() -> str:
 
 # Directory names to skip (matched against each path component). ``hermes-agent`` only matches at
 # the root (``_should_exclude``) so skill dirs like ``skills/.../hermes-agent/`` survive. The
-# dependency/cache entries matter: one plugin venv or pip/uv cache under HERMES_HOME walked
+# dependency/cache entries matter: one plugin venv or pip/uv cache under TINO_HOME walked
 # file-by-file balloons a backup to hundreds of thousands of entries ("backup stuck for days").
 # Mostly mirrors ``agent.skill_utils.EXCLUDED_SKILL_DIRS``; ``.cache`` is backup-only. ``.archive``
 # is deliberately NOT excluded: the curator's ``skills/.archive/`` holds restorable user skills.
@@ -69,8 +69,8 @@ _EXCLUDED_DIRS = {
     ".cache", ".tox", ".nox", ".pytest_cache", ".mypy_cache", ".ruff_cache",
 }
 
-# Hermes-managed runtime downloads (see ``LOCAL_RUNTIME_ROOT_DIRS``). Matched ONLY at the root of
-# HERMES_HOME and at ``profiles/<name>/`` — a deeper dir of the same name (a skill's ``models/``)
+# Tino-managed runtime downloads (see ``LOCAL_RUNTIME_ROOT_DIRS``). Matched ONLY at the root of
+# TINO_HOME and at ``profiles/<name>/`` — a deeper dir of the same name (a skill's ``models/``)
 # is user data.
 _EXCLUDED_ROOT_DIRS = LOCAL_RUNTIME_ROOT_DIRS
 
@@ -128,14 +128,14 @@ _IMPORT_SKIP_NAMES = {"gateway_state.json", "gateway.pid", "cron.pid", "gateway.
 # excluded browser-profile/ snapshot) but must come back owner-only.
 _SECRET_FILE_NAMES = {".env", "auth.json", "state.db", "vault.key", "vault.json.enc"}
 
-# Reserved archive subtree for memory-provider state OUTSIDE HERMES_HOME (e.g. ~/.honcho, via
+# Reserved archive subtree for memory-provider state OUTSIDE TINO_HOME (e.g. ~/.honcho, via
 # MemoryProvider.backup_paths()), stored and restored relative to the user's home; paths not
 # under home are skipped.
 _EXTERNAL_PREFIX = "_external/"
 
 
 class BackupInProgressError(RuntimeError):
-    """Raised when another process already owns the Hermes backup slot."""
+    """Raised when another process already owns the Tino backup slot."""
 
 
 class _SQLiteSnapshotError(RuntimeError):
@@ -175,7 +175,7 @@ def _backup_operation_lock(hermes_home: Path, timeout_seconds: float = 0.25):
                 acquired = True
             except OSError:
                 if time.monotonic() >= deadline:
-                    raise BackupInProgressError("another Hermes backup is already running")
+                    raise BackupInProgressError("another Tino backup is already running")
                 time.sleep(0.05)
         yield
     finally:
@@ -295,7 +295,7 @@ def _iter_backup_files(hermes_root: Path, out_path: Path, skipped_dirs: Optional
             rel = rel_dir / fname
             fpath = hermes_root / rel
             # zipfile.write() follows file symlinks, so skip links before any archive write can
-            # copy data from outside HERMES_HOME; never archive the output zip into itself.
+            # copy data from outside TINO_HOME; never archive the output zip into itself.
             if _should_exclude(rel) or _is_non_regular_path(fpath):
                 continue
             with suppress(OSError, ValueError):
@@ -556,7 +556,7 @@ def _unlink_move_restore_db(src: Path, dst: Path) -> bool:
         return True
     except LiveConnectionError as exc2:
         logger.error("Refusing unlink+move restore of %s: %s Close the in-process "
-                     "database handles (or restart Hermes) and retry.", dst, exc2)
+                     "database handles (or restart Tino) and retry.", dst, exc2)
         return False
     except Exception as exc2:
         logger.error("Fallback restore also failed for %s -> %s: %s", src, dst, exc2)
@@ -664,7 +664,7 @@ def _collect_external_entries() -> tuple[list[tuple[Path, str]], list[str]]:
 
 
 def run_backup(args) -> bool:
-    """Create a zip backup of the Hermes home directory.
+    """Create a zip backup of the Tino home directory.
 
     True when every selected file landed in the archive (or there was nothing to back up); False
     when the zip was written but is incomplete — it is kept so the rest can still be restored, and
@@ -674,7 +674,7 @@ def run_backup(args) -> bool:
     hermes_root = get_default_hermes_root()
 
     if not hermes_root.is_dir():
-        print(f"Error: Hermes home directory not found at {hermes_root}")
+        print(f"Error: Tino home directory not found at {hermes_root}")
         sys.exit(1)
 
     try:
@@ -758,13 +758,13 @@ def _run_backup_locked(args, hermes_root: Path) -> bool:
 # --- Import ---
 
 def _validate_backup_zip(zf: zipfile.ZipFile) -> tuple[bool, str]:
-    """Check that a zip looks like a Hermes backup."""
+    """Check that a zip looks like a Tino backup."""
     names = zf.namelist()
     if not names:
         return False, "zip archive is empty"
     # Telltale files a hermes home has — at the root or one level deep (zipped directory).
     if not any(Path(n).name in {"config.yaml", ".env", "state.db"} for n in names):
-        return False, "zip does not appear to be a Hermes backup (no config.yaml, .env, or state databases found)"
+        return False, "zip does not appear to be a Tino backup (no config.yaml, .env, or state databases found)"
     return True, ""
 
 
@@ -826,7 +826,7 @@ def _extract_member_atomically(
 def _count_session_rows(path: Path) -> Optional[Tuple[int, int]]:
     """``(sessions, messages)`` in session database *path*; read-only, best effort.
 
-    ``None`` means "unknown" (missing, not a Hermes session store, unreadable) — never "zero":
+    ``None`` means "unknown" (missing, not a Tino session store, unreadable) — never "zero":
     acting on an unreadable database would mask the very loss this count exists to surface.
     Same contract as :func:`_count_cron_jobs`.
     """
@@ -889,7 +889,7 @@ def _confirm_import_overwrite(hermes_root: Path) -> bool:
     """Prompt before importing over an existing installation; True when import may proceed."""
     if not any((hermes_root / m).exists() for m in ("config.yaml", ".env")):
         return True
-    print("\nWarning: Target directory already has Hermes configuration.\n"
+    print("\nWarning: Target directory already has Tino configuration.\n"
           "Importing will overwrite existing files with backup contents.\n")
     try:
         answer = input("Continue? [y/N] ").strip().lower()
@@ -918,7 +918,7 @@ def _import_members(
     new_file_mode = default_new_file_mode()  # once: every member is published via mkstemp (0600)
     for member in members:
         # ``_external/`` members restore to their home-relative location (~/.honcho/config.json),
-        # NOT under HERMES_HOME; provider configs commonly hold credentials, so tighten to 0600.
+        # NOT under TINO_HOME; provider configs commonly hold credentials, so tighten to 0600.
         external = member.startswith(_EXTERNAL_PREFIX)
         if external:
             rel = member[len(_EXTERNAL_PREFIX):]
@@ -976,7 +976,7 @@ def _import_members(
 
 
 def run_import(args) -> None:
-    """Restore a Hermes backup from a zip file."""
+    """Restore a Tino backup from a zip file."""
     zip_path = Path(args.zipfile).expanduser().resolve()
     if not zip_path.is_file():
         print(f"Error: File not found: {zip_path}")
@@ -1034,7 +1034,7 @@ def run_import(args) -> None:
             for pname in restored_profiles:
                 print(f"  hermes -p {pname} gateway install")
         _revive_gateway_after_import(hermes_root)
-        print("Done. Your Hermes configuration has been restored.")
+        print("Done. Your Tino configuration has been restored.")
 
 
 def _restore_profile_wrappers(hermes_root: Path) -> List[str]:
@@ -1099,7 +1099,7 @@ def _revive_gateway_after_import(hermes_root: Path) -> None:
 
 # --- Quick state snapshots (used by /snapshot slash command and hermes backup --quick) ---
 
-# Critical state files (relative to HERMES_HOME) for quick snapshots; everything else is
+# Critical state files (relative to TINO_HOME) for quick snapshots; everything else is
 # regeneratable or managed separately (skills, repo, sessions/). Entries may be files OR
 # directories (recursive); missing entries are skipped. Pairing data lives in platform JSON blobs
 # outside state.db, so it is listed explicitly — ``hermes update`` snapshots this set (#15733).
@@ -1108,7 +1108,7 @@ _QUICK_STATE_FILES = (
     "gateway_state.json", "channel_directory.json", "channel_aliases.json", "processes.json",
     "gateway/discord_message_recovery.db",  # Discord reconnect replay ledger
     # Per-profile user stores, destroyed if the update flow replaces the file and the post-update
-    # schema-init re-creates an empty one (#52889). Skipped when outside HERMES_HOME.
+    # schema-init re-creates an empty one (#52889). Skipped when outside TINO_HOME.
     "projects.db",                      # per-profile project store
     "response_store.db",                # gateway conversation history / tool payloads
     "memory_store.db",                  # holographic memory facts/entities
@@ -1672,7 +1672,7 @@ def _prune_prefixed_zips(backup_dir: Path, prefix: str, keep: int, what: str) ->
 
 def _create_prefixed_full_backup(
     hermes_home: Optional[Path], prefix: str, keep: int, what: str, prune_what: str) -> Optional[Path]:
-    """Write ``<HERMES_HOME>/backups/<prefix><timestamp>.zip`` and prune older same-prefix zips.
+    """Write ``<TINO_HOME>/backups/<prefix><timestamp>.zip`` and prune older same-prefix zips.
     Returns the path, or ``None`` if nothing to back up or the write failed. Never raises."""
     hermes_root = hermes_home or get_default_hermes_root()
     if not hermes_root.is_dir():

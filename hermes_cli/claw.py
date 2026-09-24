@@ -56,7 +56,7 @@ def _print_banner(title: str) -> None:
     """Print the magenta boxed banner shared by the claw subcommands."""
     print()
     rule = "─" * 57
-    for line in (f"┌{rule}┐", f"│          ☤ Hermes — {title:<35s}│", f"└{rule}┘"):
+    for line in (f"┌{rule}┐", f"│          ☤ Tino — {title:<35s}│", f"└{rule}┘"):
         print(color(line, Colors.MAGENTA))
 
 
@@ -157,7 +157,7 @@ def _warn_if_openclaw_running(auto_yes: bool) -> None:
         auto_yes, "OpenClaw appears to be running:", running,
         ("Messaging platforms (Telegram, Discord, Slack) only allow one "
          "active session per bot token. If you continue, both OpenClaw and "
-         "Hermes may try to use the same token, causing disconnects.",
+         "Tino may try to use the same token, causing disconnects.",
          "Recommendation: stop OpenClaw before migrating."),
         "Continue anyway?", declined="Migration cancelled. Stop OpenClaw and try again.",
         non_tty=("Non-interactive session — continuing to preview only.",),
@@ -166,13 +166,13 @@ def _warn_if_openclaw_running(auto_yes: bool) -> None:
 
 
 def _warn_if_gateway_running(auto_yes: bool) -> None:
-    """Warn if a Hermes gateway has connected platforms (token conflicts, e.g. Telegram 409)."""
+    """Warn if a Tino gateway has connected platforms (token conflicts, e.g. Telegram 409)."""
     from gateway.status import get_running_pid, read_runtime_status
     platforms = ((read_runtime_status() or {}).get("platforms") or {}) if get_running_pid() else {}
     connected = [name for name, info in platforms.items()
                  if isinstance(info, dict) and info.get("state") == "connected"]
     if connected and _warn_running(
-        auto_yes, "Hermes gateway is running with active connections: " + ", ".join(connected), [],
+        auto_yes, "Tino gateway is running with active connections: " + ", ".join(connected), [],
         ("Migrating bot tokens while the gateway is active will cause "
          "conflicts (Telegram, Discord, and Slack only allow one active "
          "session per token).",
@@ -241,13 +241,13 @@ def claw_command(args):
         _cmd_cleanup(args)
     else:
         print("Usage: hermes claw <command> [options]\n\nCommands:\n"
-              "  migrate          Migrate settings from OpenClaw to Hermes\n"
+              "  migrate          Migrate settings from OpenClaw to Tino\n"
               "  cleanup          Archive leftover OpenClaw directories after migration\n\n"
               "Run 'hermes claw <command> --help' for options.")
 
 
 def _cmd_migrate(args):
-    """Run the OpenClaw → Hermes migration: preflight, preview, confirm, back up, apply."""
+    """Run the OpenClaw → Tino migration: preflight, preview, confirm, back up, apply."""
     opts = SimpleNamespace(**{k: getattr(args, k, d) for k, d in _MIGRATE_ARG_DEFAULTS})
     # Explicit --source, else first existing of current + legacy names; default to ~/.openclaw.
     opts.source_dir = (Path(opts.source) if opts.source
@@ -363,7 +363,7 @@ def _apply_migration(run_migrator: Callable[[bool], dict], opts: SimpleNamespace
         except Exception as e:
             return _error_block(
                 f"Could not create pre-migration backup: {e}",
-                "Re-run with --no-backup to skip, or free up disk space under the Hermes home.",
+                "Re-run with --no-backup to skip, or free up disk space under the Tino home.",
                 debug="Pre-migration backup error")
     try:
         report = run_migrator(True)

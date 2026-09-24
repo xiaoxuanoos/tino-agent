@@ -74,13 +74,13 @@ def _scan_dashboard_processes(*, exclude_pids: set[int] | None = None) -> list[t
     """``(pid, cmdline)`` of running ``dashboard``/``serve`` processes; empty on any scan error.
 
     A forgotten dashboard keeps the old Python backend against the new JS bundle after
-    ``hermes update`` (every API call 401s). *exclude_pids* (Desktop's HERMES_DESKTOP_CHILD_PID
+    ``hermes update`` (every API call 401s). *exclude_pids* (Desktop's TINO_DESKTOP_CHILD_PID
     backends) are never returned.
 
-    *exclude_pids* is an optional set of PIDs that must never be returned. This is used by the Hermes
+    *exclude_pids* is an optional set of PIDs that must never be returned. This is used by the Tino
     Desktop Electron app to protect its own backend child process: when the desktop spawns ``hermes serve``
     as a backend and triggers an auto-update, the update must not kill the backend that the desktop itself
-    manages. The desktop sets the environment variable ``HERMES_DESKTOP_CHILD_PID`` on the spawned backend
+    manages. The desktop sets the environment variable ``TINO_DESKTOP_CHILD_PID`` on the spawned backend
     process; ``_kill_stale_dashboard_processes`` reads it and passes it here. (#37532)
     """
     skip = {os.getpid(), *(exclude_pids or ())}
@@ -124,13 +124,13 @@ def _pid_environ(pid: int) -> dict[str, str] | None:
 
 
 def _hermes_home_for_pid(pid: int) -> str | None:
-    """The Hermes home *pid* runs on, tri-state: ``None`` ONLY when its environment is unreadable
+    """The Tino home *pid* runs on, tri-state: ``None`` ONLY when its environment is unreadable
     (another user, hardened ``/proc``) — callers spare those, never guess.
 
     A readable environment always resolves, replaying ``_apply_profile_override`` on the target's
-    exec-time env + argv (``hermes -p X serve`` rewrites ``HERMES_HOME`` in ``os.environ`` AFTER
-    startup, which ``/proc/<pid>/environ`` never reflects): a profile-shaped ``HERMES_HOME``
-    without a flag is the home; otherwise the root is ``HERMES_HOME`` (its grandparent when
+    exec-time env + argv (``hermes -p X serve`` rewrites ``TINO_HOME`` in ``os.environ`` AFTER
+    startup, which ``/proc/<pid>/environ`` never reflects): a profile-shaped ``TINO_HOME``
+    without a flag is the home; otherwise the root is ``TINO_HOME`` (its grandparent when
     profile-shaped) or the platform default of the process's own ``HOME`` / ``LOCALAPPDATA``, and
     the profile is the ``--profile``/``-p`` flag, else the root's sticky ``active_profile`` unless
     the process has a fixed identity (supervised child, post-swap updater, Desktop SSH backend).
@@ -141,10 +141,10 @@ def _hermes_home_for_pid(pid: int) -> str | None:
     from hermes_cli.main_dashboard import _dashboard_cmdline_for_pid
     from hermes_cli.profiles import get_active_profile, normalize_profile_name, profile_root_for_env_home
     argv = _dashboard_cmdline_for_pid(pid) or []
-    env_home = env.get("HERMES_HOME", "").strip()
+    env_home = env.get("TINO_HOME", "").strip()
     profile = _profile_flag_value(argv)
     if profile is None and env_home and (
-        Path(env_home).parent.name == "profiles" or env.get("HERMES_UPDATE_POST_SWAP") == "1"
+        Path(env_home).parent.name == "profiles" or env.get("TINO_UPDATE_POST_SWAP") == "1"
     ):
         return env_home
     if sys.platform == "win32":
@@ -154,8 +154,8 @@ def _hermes_home_for_pid(pid: int) -> str | None:
     else:
         default_home = Path(env.get("HOME") or Path.home()) / ".hermes"
     root = profile_root_for_env_home(env_home, default_home)
-    fixed_identity = any(env.get(k) for k in ("HERMES_SUPERVISED_CHILD", "HERMES_S6_SUPERVISED_CHILD",
-                                               "HERMES_GATEWAY_EXTERNAL_SUPERVISOR")) or "--ssh-session-token-file" in argv
+    fixed_identity = any(env.get(k) for k in ("TINO_SUPERVISED_CHILD", "TINO_S6_SUPERVISED_CHILD",
+                                               "TINO_GATEWAY_EXTERNAL_SUPERVISOR")) or "--ssh-session-token-file" in argv
     if profile is None and not fixed_identity:
         profile = get_active_profile(root)
     canon = normalize_profile_name(profile) if profile else "default"
@@ -224,10 +224,10 @@ def _normalized_home_for_compare(home: str) -> str:
 
 
 def _pids_owned_by_hermes_home(pids: list[int], home: str) -> list[int]:
-    """Return only *pids* whose resolved Hermes home (``_hermes_home_for_pid``) is ``home``.
+    """Return only *pids* whose resolved Tino home (``_hermes_home_for_pid``) is ``home``.
 
     Dashboard argv is discovery-only: it is not an ownership proof because
-    several Hermes installs and profiles can run the same command on one
+    several Tino installs and profiles can run the same command on one
     machine.  An unreadable process environment is deliberately not treated
     as a match, so a stop request fails closed rather than taking down an
     unrelated backend.
@@ -241,7 +241,7 @@ def _pids_owned_by_hermes_home(pids: list[int], home: str) -> list[int]:
 
 
 def _profile_key_for_respawn(argv: list[str], hermes_home: str | None = None) -> str:
-    """Stable owner key: ``HERMES_HOME`` when known, else ``--profile`` / ``-p``.
+    """Stable owner key: ``TINO_HOME`` when known, else ``--profile`` / ``-p``.
 
     A home ending in ``profiles/<name>`` → ``profile:<name>`` (shares a cap with an explicit
     ``--profile``); other homes keep a ``home:`` key so unrelated installs never collapse.
@@ -262,13 +262,13 @@ def _filter_dashboard_respawn_candidates(
     """Select which killed manual backends ``(pid, argv, hermes_home)`` to respawn after update.
 
     Rules: never resurrect Desktop ``--port 0`` backends; never replay a backend from a
-    **foreign** ``HERMES_HOME`` (the argv-only respawn would come back on this install's home
+    **foreign** ``TINO_HOME`` (the argv-only respawn would come back on this install's home
     and steal the foreign install's fixed port → EADDRINUSE crash-loop; unreadable ``None``
     stays eligible); dedupe by normalized cmdline; one backend per profile / home. PPID-1 is
     NOT skipped: a prior respawn detaches, so fixed-port manual backends sit under init.
 
     1. Never resurrect Desktop ephemeral ``serve|dashboard --port 0`` backends — Desktop
-    (``HERMES_DESKTOP_CHILD_PID``) owns their lifecycle. These are also the PPID-1 orphans that previously
+    (``TINO_DESKTOP_CHILD_PID``) owns their lifecycle. These are also the PPID-1 orphans that previously
     multiplied across updates because ``--port 0`` always binds a fresh free port. 2. A foreign install's
     backend is owned by that install's supervisor/user. 3. 4. See #78821, #94030.
     Intentionally does **not** blanket-skip every PPID-1 process: a prior ``hermes update`` respawn detaches
@@ -301,9 +301,9 @@ def _filter_dashboard_respawn_candidates(
 
 
 def _exclude_pids_from_env() -> set[int]:
-    """PIDs Desktop marks as live backends (``HERMES_DESKTOP_CHILD_PID``, comma-separated)."""
+    """PIDs Desktop marks as live backends (``TINO_DESKTOP_CHILD_PID``, comma-separated)."""
     out: set[int] = set()
-    for part in os.environ.get("HERMES_DESKTOP_CHILD_PID", "").split(","):
+    for part in os.environ.get("TINO_DESKTOP_CHILD_PID", "").split(","):
         with contextlib.suppress(ValueError):
             out.add(int(part))
     return out
@@ -558,7 +558,7 @@ def _kill_stale_dashboard_processes(
     ``.service`` suffix) are left untouched, not killed twice.
 
     When *scope_home* is supplied, only processes with that exact live
-    ``HERMES_HOME`` are candidates; unknown ownership fails closed. This is
+    ``TINO_HOME`` are candidates; unknown ownership fails closed. This is
     used by ``dashboard --stop`` and the per-profile update cleanup.
 
     Manually-started dashboards are not auto-restarted because we don't know the original launch args
@@ -610,9 +610,9 @@ def _kill_stale_dashboard_processes(
             if launchd_jobs and (job := _launchd_owner(pid, cmdline)):
                 pid_launchd[pid] = job
             elif cmdline:
-                # Manual process: exact argv + HERMES_HOME for the respawn and its profile cap.
+                # Manual process: exact argv + TINO_HOME for the respawn and its profile cap.
                 # Manually-started process: preserve its exact argv so we can respawn it after the update
-                # (#40449, #68934). Snapshot HERMES_HOME before the kill so per-profile caps still work
+                # (#40449, #68934). Snapshot TINO_HOME before the kill so per-profile caps still work
                 # after the process is gone (#78821).
                 pid_cmdline[pid] = cmdline
                 pid_home[pid] = _hermes_home_for_pid(pid)
@@ -838,7 +838,7 @@ _HEX32 = set("0123456789abcdef")
 
 
 def _hermes_home_dir() -> Path:
-    """The process's Hermes home: remote-backend locks are a process-level asset, so a request scoped
+    """The process's Tino home: remote-backend locks are a process-level asset, so a request scoped
     to another profile must still see the same lock dir."""
     from hermes_constants import get_process_hermes_home
     return get_process_hermes_home()
@@ -866,7 +866,7 @@ def _valid_lockfile_payload(parsed: object, ownership_id: str) -> bool:
     if any(not isinstance(parsed.get(f), str) or len(parsed[f]) > 1024
            for f in ("profile", "hermesPath", "hermesHome", "logPath", "startedAt")):
         return False
-    # Suffix-only check of logPath so a relocated HERMES_HOME can't reject a legitimate backend.
+    # Suffix-only check of logPath so a relocated TINO_HOME can't reject a legitimate backend.
     return parsed["logPath"].endswith(f"/{ownership_id}/{parsed['spawnNonce']}.log")
 
 
@@ -874,7 +874,7 @@ def _remote_lock_roots(base_dir: Path | None) -> list[Path]:
     """Every dir the Desktop may have written ``desktop-ssh/<ownershipId>/backend.lock.json`` under.
 
     The Desktop writes SSH locks beneath the ROOT home (``~/.hermes/desktop-ssh``), but a profile
-    backend (``hermes --profile X serve``) runs with ``HERMES_HOME=<root>/profiles/X`` — scanning only
+    backend (``hermes --profile X serve``) runs with ``TINO_HOME=<root>/profiles/X`` — scanning only
     the process home found no lock there and its reaper killed the sibling profile's live SSH
     backend on every profile switch (#89811)."""
     if base_dir is not None:
@@ -936,10 +936,10 @@ def _reap_orphaned_desktop_local_serves(
     When Electron dies uncleanly its ``serve --host 127.0.0.1 --port 0`` children are
     reparented to pid 1 with their MCP trees alive; each Desktop boot then stacks a fresh
     backend on the corpses until EMFILE. Reaped only if ALL hold: Desktop-local shape; ppid
-    0/1; not self / parent / HERMES_DESKTOP_CHILD_PID; not claimed by a valid
+    0/1; not self / parent / TINO_DESKTOP_CHILD_PID; not claimed by a valid
     ``backend.lock.json`` (SSH backends other clients started legitimately sit at ppid 1);
     older than ``_REAP_MIN_AGE_SECONDS`` with a determinable age (Desktop writes the lock only
-    after HERMES_BACKEND_READY, so a live sibling mid-startup is briefly unowned).
+    after TINO_BACKEND_READY, so a live sibling mid-startup is briefly unowned).
     """
     import signal as _signal
     import time as _time

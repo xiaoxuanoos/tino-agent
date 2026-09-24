@@ -54,7 +54,7 @@ def test_title_generation_present_in_default_config():
 def test_save_aux_choice_persists_to_config_yaml(tmp_path, monkeypatch):
     """Saving a task writes provider/model/base_url/api_key to auxiliary.<task>."""
     from pathlib import Path
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / ".hermes"))
+    monkeypatch.setenv("TINO_HOME", str(tmp_path / ".hermes"))
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
     (tmp_path / ".hermes").mkdir(exist_ok=True)
 
@@ -89,7 +89,7 @@ def test_save_aux_choice_persists_to_config_yaml(tmp_path, monkeypatch):
 def _isolate_home(tmp_path, monkeypatch):
     from pathlib import Path
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / ".hermes"))
+    monkeypatch.setenv("TINO_HOME", str(tmp_path / ".hermes"))
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
     (tmp_path / ".hermes").mkdir(exist_ok=True)
 
@@ -157,9 +157,9 @@ def test_delegation_cfg_as_task_projection():
     """Projection renders empty provider as auto via _format_aux_current."""
     assert _format_aux_current(_delegation_cfg_as_task({})) == "auto"
     shaped = _delegation_cfg_as_task(
-        {"delegation": {"provider": "nous", "model": "Hermes-4.5"}}
+        {"delegation": {"provider": "nous", "model": "Tino-4.5"}}
     )
-    assert _format_aux_current(shaped) == "nous · Hermes-4.5"
+    assert _format_aux_current(shaped) == "nous · Tino-4.5"
     # Non-dict delegation section must not crash
     assert _format_aux_current(_delegation_cfg_as_task({"delegation": "bogus"})) == "auto"
 
@@ -167,7 +167,7 @@ def test_delegation_cfg_as_task_projection():
 def test_leave_unchanged_replaces_cancel_label(tmp_path, monkeypatch):
     """The bottom cancel entry now reads 'Leave unchanged' (UX polish)."""
     from pathlib import Path
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / ".hermes"))
+    monkeypatch.setenv("TINO_HOME", str(tmp_path / ".hermes"))
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
     (tmp_path / ".hermes").mkdir(exist_ok=True)
 

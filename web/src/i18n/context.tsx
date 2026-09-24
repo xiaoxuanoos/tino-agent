@@ -47,7 +47,7 @@ export const LOCALE_META: Record<Locale, { name: string }> = Object.fromEntries(
   SUPPORTED_LOCALES.map((id) => [id, { name: LOCALE_ENDONYMS[id] }]),
 ) as Record<Locale, { name: string }>;
 
-const STORAGE_KEY = "hermes-locale";
+const STORAGE_KEY = "tino-locale";
 
 function isLocale(value: string): value is Locale {
   return (SUPPORTED_LOCALES as string[]).includes(value);
@@ -60,7 +60,7 @@ function getInitialLocale(): Locale {
   } catch {
     // SSR or privacy mode
   }
-  return "en";
+  return "zh";
 }
 
 interface I18nContextValue {
@@ -70,9 +70,9 @@ interface I18nContextValue {
 }
 
 const I18nContext = createContext<I18nContextValue>({
-  locale: "en",
+  locale: "zh",
   setLocale: () => {},
-  t: en,
+  t: zh,
 });
 
 export function I18nProvider({ children }: { children: ReactNode }) {

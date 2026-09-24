@@ -66,17 +66,17 @@ def _security_scan_skill(skill_dir: Path) -> Optional[str]:
 
 
 # All skills live in ~/.hermes/skills/ (single source of truth)
-HERMES_HOME = get_hermes_home()
-SKILLS_DIR = HERMES_HOME / "skills"
+TINO_HOME = get_hermes_home()
+SKILLS_DIR = TINO_HOME / "skills"
 _SKILLS_DIR_AT_IMPORT = SKILLS_DIR
 
 
 def _skills_dir() -> Path:
     """Active profile's skills dir at call time (multi-profile runtimes rebind per session).
-    An explicitly patched module-level ``SKILLS_DIR`` (tests) wins over the live HERMES_HOME.
+    An explicitly patched module-level ``SKILLS_DIR`` (tests) wins over the live TINO_HOME.
 
     Long-lived multi-profile runtimes (Dashboard/TUI/Desktop backend, cron, kanban workers) import this
-    module once under the launch HERMES_HOME and later bind a different profile per session (#40677).
+    module once under the launch TINO_HOME and later bind a different profile per session (#40677).
     """
     configured = Path(SKILLS_DIR)
     return configured if configured != _SKILLS_DIR_AT_IMPORT else get_hermes_home() / "skills"
@@ -407,7 +407,7 @@ def _attach_lint_findings(result: Dict[str, Any], skill_md: Path) -> None:
         {"severity": f.severity, "rule": f.rule, "message": f.message} for f in findings]
     result["lint_hint"] = (
         "The skill was created. These are advisory authoring-convention findings (not blockers) "
-        "— fix them with skill_manage(action='patch') to match Hermes skill standards.")
+        "— fix them with skill_manage(action='patch') to match Tino skill standards.")
 
 
 def _clip(text: str, n: int, ellipsis: str) -> str:

@@ -105,8 +105,8 @@ _SCHEMA_OVERRIDES: Dict[str, Dict[str, Any]] = {
     "auth.adopt_external_logins": {
         "type": "boolean",
         "description": (
-            "Borrow and refresh the Codex CLI / Claude Code logins when Hermes has no usable login of its own. "
-            "Off: Hermes uses only its own logins (`hermes auth add <provider>`)."
+            "Borrow and refresh the Codex CLI / Claude Code logins when Tino has no usable login of its own. "
+            "Off: Tino uses only its own logins (`hermes auth add <provider>`)."
         ),
         "category": "security",
     },
@@ -144,7 +144,7 @@ _SCHEMA_OVERRIDES: Dict[str, Dict[str, Any]] = {
         "", "minimal", "low", "medium", "high", "xhigh", "max", "ultra",
     ),
     "updates.non_interactive_local_changes": _select(
-        "When the chat app / gateway updates Hermes (no terminal prompt), "
+        "When the chat app / gateway updates Tino (no terminal prompt), "
         "what to do with uncommitted local source edits. 'stash' keeps them "
         "and re-applies them after the update; 'discard' throws them away. "
         "Terminal updates always ask, regardless of this setting.",
@@ -393,7 +393,7 @@ def _normalize_main_model_assignment(provider: str, model: str) -> tuple[str, st
     ``provider: anthropic`` + ``default: anthropic/claude-opus-4.6`` — an aggregator slug on
     the native provider, which 400s. Two repairs at this single chokepoint:
 
-    1. Vendor-name → Hermes-provider: when the provider is not a known provider/alias but the
+    1. Vendor-name → Tino-provider: when the provider is not a known provider/alias but the
        model is a vendor-prefixed slug, keep the user's CURRENT aggregator if on one, else
        openrouter. User-declared ``providers:``/``custom_providers:`` entries resolve first,
        and durable named-custom slugs (``custom`` / ``custom:<name>``) are excluded —
@@ -567,13 +567,13 @@ def _dashboard_skew_restart_hint() -> str:
 
     See #97046.
     """
-    if os.environ.get("HERMES_SERVE_HEADLESS") == "1":
+    if os.environ.get("TINO_SERVE_HEADLESS") == "1":
         return (
             "restart the Desktop-owned backend to load the new code "
-            "(use Restart backend in Hermes Desktop, or quit and reopen the app)"
+            "(use Restart backend in Tino Desktop, or quit and reopen the app)"
         )
     return (
-        "restart this Hermes process to load the new code "
+        "restart this Tino process to load the new code "
         "(hermes dashboard --port <port>, or the equivalent service restart for this install)"
     )
 

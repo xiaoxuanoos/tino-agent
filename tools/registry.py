@@ -232,9 +232,9 @@ _check_fn_cache_lock = threading.Lock()
 CHECK_FN_CACHE_BYPASS = ""
 _NO_CACHE_CHECK_FNS: Set[Callable] = set()
 _BROWSER_IDENTITY_KEYS = (
-    "HERMES_SESSION_ID",
-    "HERMES_BROWSER_CONTROL_PRINCIPAL",
-    "HERMES_BROWSER_CONTROL_TRANSPORT_FAMILY")
+    "TINO_SESSION_ID",
+    "TINO_BROWSER_CONTROL_PRINCIPAL",
+    "TINO_BROWSER_CONTROL_TRANSPORT_FAMILY")
 
 
 def no_cache_check_fn(fn: Callable) -> Callable:
@@ -264,7 +264,7 @@ def check_fn_cache_scope() -> Optional[str]:
     availability is request-bound (changes on every attach/detach), so a fully bound
     browser-control request bypasses this cache AND model_tools' outer definition cache (same
     sentinel) — one Browser session's live tools must not leak into another. Single-profile
-    processes keep the process-wide cache; a multiplex gateway installs a Hermes-home override
+    processes keep the process-wide cache; a multiplex gateway installs a Tino-home override
     per profile turn, so the canonical profile key is the boundary."""
     try:
         from gateway.session_context import get_session_env
@@ -385,10 +385,10 @@ def _check_fn_cached(fn: Callable) -> bool:
 
 
 def _core_tools_gated_by(fn: Callable) -> Set[str]:
-    """Names of ``_HERMES_CORE_TOOLS`` members whose registered ``check_fn`` is *fn*."""
+    """Names of ``_TINO_CORE_TOOLS`` members whose registered ``check_fn`` is *fn*."""
     try:
-        from toolsets import _HERMES_CORE_TOOLS
-        core = frozenset(_HERMES_CORE_TOOLS)
+        from toolsets import _TINO_CORE_TOOLS
+        core = frozenset(_TINO_CORE_TOOLS)
     except Exception:
         return set()
     return {e.name for e in registry._snapshot_entries() if e.check_fn is fn and e.name in core}
@@ -428,7 +428,7 @@ class ToolRegistry:
 
     def __init__(self):
         self._tools: Dict[str, ToolEntry] = {}  # built-in / process-global registrations
-        # Plugin overlays keyed by resolved HERMES_HOME; a profile sees its overlay first.
+        # Plugin overlays keyed by resolved TINO_HOME; a profile sees its overlay first.
         self._scoped_tools: Dict[str, Dict[str, ToolEntry]] = {}
         # Plugin namespace -> operator opt-in for built-in override (lifecycle-managed);
         # scope attribution stays durable after policy removal so delayed callbacks

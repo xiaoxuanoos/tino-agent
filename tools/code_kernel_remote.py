@@ -40,7 +40,7 @@ _CELL_POLL_INTERVAL = 0.5
 # persistent namespace, writes response files. Pure files + stdlib only (transport-agnostic);
 # cells and tool-RPC share the kernel dir under distinct prefixes.
 REMOTE_KERNEL_RUNNER_SOURCE = '''\
-"""Auto-generated Hermes REMOTE session-kernel runner (file cell protocol)."""
+"""Auto-generated Tino REMOTE session-kernel runner (file cell protocol)."""
 import contextlib
 import io
 import json
@@ -49,7 +49,7 @@ import sys
 import time
 import traceback
 
-KDIR = os.environ["HERMES_KERNEL_DIR"]
+KDIR = os.environ["TINO_KERNEL_DIR"]
 CELLS = os.path.join(KDIR, "cells")
 _CAPTURE_LIMIT = {capture_limit}
 IDLE_EXIT_SECONDS = {idle_exit}
@@ -217,8 +217,8 @@ def _spawn_remote_kernel(env, env_type: str, owner: str, task_env_id: str,
             cell_source=RUNNER_CELL_SOURCE, capture_limit=MAX_STDOUT_BYTES, idle_exit=idle_exit))
         _ship_file_to_remote(env, f"{kernel_dir}/hermes_tools.py",
                              generate_hermes_tools_module(list(sandbox_tools), transport="file"))
-        env_prefix = (f"HERMES_KERNEL_DIR={q_dir} HERMES_RPC_DIR={shlex.quote(kernel_dir + '/rpc')} "
-                      f"HERMES_RPC_TOKEN={shlex.quote(rpc_token)} PYTHONDONTWRITEBYTECODE=1 PYTHONPATH={q_dir}")
+        env_prefix = (f"TINO_KERNEL_DIR={q_dir} TINO_RPC_DIR={shlex.quote(kernel_dir + '/rpc')} "
+                      f"TINO_RPC_TOKEN={shlex.quote(rpc_token)} PYTHONDONTWRITEBYTECODE=1 PYTHONPATH={q_dir}")
         started = _sh(env, f"cd {q_dir} && nohup env {env_prefix} python3 kernel_runner.py "
                            f"> {q_dir}/runner.log 2>&1 & echo PID:$!", timeout=20)
         pid = next((line.strip()[4:].strip() for line in started.splitlines()

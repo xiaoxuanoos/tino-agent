@@ -1,6 +1,6 @@
 // @ts-check
 /**
- * Launch the Hermes desktop app from a captured launch spec and click the
+ * Launch the Tino desktop app from a captured launch spec and click the
  * real update flow: Settings -> About -> "Update now".
  *
  * The spec is written by launch-capture/sitecustomize.py at `hermes
@@ -12,14 +12,14 @@
  *
  * Usage (from the scratch dir where the driver installed @playwright/test):
  *   node launch-from-spec.mjs --spec /path/launch-spec.json \
- *     [--result $HERMES_HOME/.hermes-update-result.json] \
+ *     [--result $TINO_HOME/.hermes-update-result.json] \
  *     [--expect-sha <sha> --repo-dir <install dir>] [--no-update]
  *
  * --no-update: launch + wait for the window + close. The smoke arm.
  * Otherwise: click Update now, then poll for completion. Two signals,
  * either satisfies (poll whichever are given, first hit wins):
  *   --result      the windows hand-off's result file
- *                 (HERMES_HOME/.hermes-update-result.json)
+ *                 (TINO_HOME/.hermes-update-result.json)
  *   --expect-sha  the installed checkout reaching the expected commit -
  *                 the source-install signal, where the About pane's update
  *                 runs `hermes update` and no result file exists.
@@ -317,7 +317,7 @@ async function main() {
   // ── Post-update: observe the hand-off state, then relaunch and verify ──
   // On CI runners the rebuilt app cannot self-relaunch (chrome-sandbox needs
   // root ownership; user namespaces are restricted), so the product parks on
-  // an "update complete, reopen Hermes to finish" overlay and never exits;
+  // an "update complete, reopen Tino to finish" overlay and never exits;
   // a bare app.close() would wait on it forever. Record the hand-off state,
   // close with a bounded teardown, then do what the overlay asks (the real
   // user journey) and assert the relaunched app runs the updated code.
@@ -407,7 +407,7 @@ async function main() {
   // from a git checkout (statusbar/About); require the EXPECTED sha's short
   // form, or at minimum a live UI window, logging what we saw.
   phase('relaunch');
-  log('relaunching the updated app (the "reopen Hermes" step)');
+  log('relaunching the updated app (the "reopen Tino" step)');
   const relaunch = await _electron.launch({
     executablePath: launch.executablePath,
     args: launch.args,

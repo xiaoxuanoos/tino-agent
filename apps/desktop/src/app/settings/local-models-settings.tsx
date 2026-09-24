@@ -197,6 +197,19 @@ export function LocalModelsSettings() {
     }
 
     try {
+      // A model can be downloaded before the engine. In that case the same
+      // one-click setup path installs the engine and activates the staged
+      // catalog model, so "Use" does not fail after a successful download.
+      if (!status?.runtime_installed) {
+        const entry = catalog?.find(model => model.downloaded_model_id === target)
+
+        if (entry) {
+          await quickstartLocalModels(entry.id)
+          watchLocalRuntimeJobs()
+          return
+        }
+      }
+
       await activateLocalModel(target)
       watchLocalRuntimeJobs()
     } catch (err) {
@@ -654,7 +667,7 @@ export function LocalModelsSettings() {
                     </div>
                   ) : dJob ? undefined : (
                     <Button
-                      disabled={!model.fits || anyDownloadRunning || !status.runtime_installed}
+                      disabled={!model.fits || anyDownloadRunning}
                       onClick={() => void handleDownload(model)}
                       size="sm"
                       variant="outline"

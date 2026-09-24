@@ -1,6 +1,6 @@
 """Native OpenAI SDK streaming through Relay's managed execution path.
 
-Relay runs its finalizer as soon as the provider stream ends — concurrently with Hermes'
+Relay runs its finalizer as soon as the provider stream ends — concurrently with Tino'
 consumer thread, which may not have processed the last chunk yet. Each test forces that
 ordering deterministically (finalizer runs BEFORE the consumer sees a chosen chunk) and
 asserts Relay's LLM end event still records the full response.
@@ -30,8 +30,8 @@ def _stream_through_relay(tmp_path, monkeypatch, response_body: bytes, *, finali
     from agent import chat_completion_helpers, relay_llm, relay_runtime
     from run_agent import AIAgent
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "hermes-home"))
-    monkeypatch.setenv("HERMES_STREAM_RETRIES", "0")
+    monkeypatch.setenv("TINO_HOME", str(tmp_path / "hermes-home"))
+    monkeypatch.setenv("TINO_STREAM_RETRIES", "0")
 
     def respond(request):
         return httpx.Response(200, headers={"content-type": "text/event-stream"},

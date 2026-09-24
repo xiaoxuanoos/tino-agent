@@ -64,7 +64,7 @@ for (const status of [401, 403]) {
     let app: Awaited<ReturnType<typeof launchDesktop>>['app'] | undefined
     try {
       const launched = await launchDesktop(buildAppEnv(sandbox, {
-        HERMES_DESKTOP_DEV_SERVER: ''
+        TINO_DESKTOP_DEV_SERVER: ''
       }))
       app = launched.app
       const page = launched.page

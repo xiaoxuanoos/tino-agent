@@ -10,7 +10,7 @@ from gateway.platforms.base import SendResult
 
 @pytest.fixture(params=[None, False, True, "override"])
 def policy(request, monkeypatch, tmp_path):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("TINO_HOME", str(tmp_path))
     value = request.param
     config: dict = {} if value is None else {"display": {"suppress_warning_notifications": value is True}}
     if value == "override":
@@ -80,7 +80,7 @@ async def test_discord_admin_alert_uses_owner_and_logical_destination(tmp_path, 
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
     root = tmp_path / ".hermes"
     root.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(root))
+    monkeypatch.setenv("TINO_HOME", str(root))
     (root / "config.yaml").write_text("display: {suppress_warning_notifications: false}")
     for name, muted in [("a", setting), ("b", not bool(setting))]:
         home = root / "profiles" / name

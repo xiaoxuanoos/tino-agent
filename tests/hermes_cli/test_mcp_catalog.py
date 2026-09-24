@@ -41,16 +41,16 @@ def catalog_dir(tmp_path, monkeypatch):
     """Provide an isolated optional-mcps/ directory."""
     cat = tmp_path / "optional-mcps"
     cat.mkdir()
-    monkeypatch.setenv("HERMES_OPTIONAL_MCPS", str(cat))
+    monkeypatch.setenv("TINO_OPTIONAL_MCPS", str(cat))
     return cat
 
 
 @pytest.fixture(autouse=True)
 def _isolate_hermes_home(tmp_path, monkeypatch):
-    """Redirect all config I/O to a temp HERMES_HOME."""
+    """Redirect all config I/O to a temp TINO_HOME."""
     hh = tmp_path / "hermes-home"
     hh.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(hh))
+    monkeypatch.setenv("TINO_HOME", str(hh))
     monkeypatch.setattr(
         "hermes_cli.config.get_hermes_home", lambda: hh
     )
@@ -933,7 +933,7 @@ class TestShippedCatalog:
         """Asana's V1 ``/sse`` server is retired and V2 has no DCR: the shipped entry must install
         as the V2 Streamable HTTP URL plus a pre-registered client whose credentials are ``${VAR}``
         references the install path actually prompts for (never literal values)."""
-        monkeypatch.delenv("HERMES_OPTIONAL_MCPS", raising=False)
+        monkeypatch.delenv("TINO_OPTIONAL_MCPS", raising=False)
         from hermes_cli.mcp_catalog import _build_server_config, _catalog_root, _parse_manifest
 
         root = _catalog_root()
@@ -960,9 +960,9 @@ class TestShippedCatalog:
         manifest. Intentionally NOT a snapshot of catalog names (those are
         expected to change as PRs land).
         """
-        # Use the actual repo's optional-mcps directory (no HERMES_OPTIONAL_MCPS
+        # Use the actual repo's optional-mcps directory (no TINO_OPTIONAL_MCPS
         # override) so this test catches real manifests.
-        monkeypatch.delenv("HERMES_OPTIONAL_MCPS", raising=False)
+        monkeypatch.delenv("TINO_OPTIONAL_MCPS", raising=False)
         from hermes_cli.mcp_catalog import _catalog_root, _parse_manifest
 
         root = _catalog_root()
@@ -980,7 +980,7 @@ class TestShippedCatalog:
 
     def test_all_shipped_manifests_are_version_locked(self, monkeypatch):
         """Contract: catalog entries follow the same supply-chain rules as
-        pyproject dependencies — everything Hermes fetches/launches is pinned
+        pyproject dependencies — everything Tino fetches/launches is pinned
         to an exact version.
 
         - git installs must pin a full 40-char commit SHA (branches and tags
@@ -993,7 +993,7 @@ class TestShippedCatalog:
         pin at the transport layer (the server runs elsewhere / comes from the
         SHA-pinned clone), so they're exempt.
         """
-        monkeypatch.delenv("HERMES_OPTIONAL_MCPS", raising=False)
+        monkeypatch.delenv("TINO_OPTIONAL_MCPS", raising=False)
         from hermes_cli.mcp_catalog import _catalog_root, _parse_manifest
 
         root = _catalog_root()

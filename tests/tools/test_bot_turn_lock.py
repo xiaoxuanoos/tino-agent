@@ -150,7 +150,7 @@ def test_run_delivery_holds_profile_lock_during_turn(root, tmp_path, monkeypatch
     """The local `hermes -p <profile>` turn runs UNDER the profile lock."""
     home = root / ".hermes"
     home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("TINO_HOME", str(home))
     dm = tmp_path / "dm.txt"
     dm.write_text("hi", encoding="utf-8")
     observed = {}
@@ -184,7 +184,7 @@ def test_delivery_main_reports_target_busy_json(root, tmp_path, monkeypatch, cap
     """A queued delivery that exceeds its budget surfaces the structured error."""
     home = root / ".hermes"
     home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("TINO_HOME", str(home))
     monkeypatch.setattr(bot_relay, "turn_wait_seconds", lambda: 0.2)
     dm = tmp_path / "dm.txt"
     dm.write_text("hi", encoding="utf-8")
@@ -214,7 +214,7 @@ def test_peer_stdin_delivery_skips_local_lock(root, tmp_path, monkeypatch):
     """Peer transports run their turn on the remote gateway — no local lock."""
     home = root / ".hermes"
     home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("TINO_HOME", str(home))
     dm = tmp_path / "dm.txt"
     dm.write_text("hi", encoding="utf-8")
 
@@ -269,7 +269,7 @@ def test_relay_deliver_returns_target_busy_error(tmp_path, monkeypatch):
     h = tmp_path / "h"
     (h / "profiles" / "ops").mkdir(parents=True)
     (h / "profiles" / "ops" / "config.yaml").touch()  # identity marker: bare dirs are not profiles
-    monkeypatch.setenv("HERMES_HOME", str(h))
+    monkeypatch.setenv("TINO_HOME", str(h))
     monkeypatch.setattr(bot_relay, "turn_wait_seconds", lambda: 0.2)
 
     spawned = {}
@@ -321,7 +321,7 @@ def test_relay_deliver_serializes_then_succeeds(tmp_path, monkeypatch):
     h = tmp_path / "h"
     (h / "profiles" / "ops").mkdir(parents=True)
     (h / "profiles" / "ops" / "config.yaml").touch()  # identity marker: bare dirs are not profiles
-    monkeypatch.setenv("HERMES_HOME", str(h))
+    monkeypatch.setenv("TINO_HOME", str(h))
     monkeypatch.setattr(bot_relay, "turn_wait_seconds", lambda: 5.0)
 
     class _Proc:
@@ -381,7 +381,7 @@ def test_every_relay_refusal_carries_its_typed_reason(tmp_path, monkeypatch, fai
     h = tmp_path / "h"
     (h / "profiles" / "ops").mkdir(parents=True)
     (h / "profiles" / "ops" / "config.yaml").touch()  # identity marker: bare dirs are not profiles
-    monkeypatch.setenv("HERMES_HOME", str(h))
+    monkeypatch.setenv("TINO_HOME", str(h))
     monkeypatch.setattr(bot_relay, "local_delivery_command", lambda prof, tmp: ["__delivery__", prof])
 
     def _raise(argv, **kwargs):

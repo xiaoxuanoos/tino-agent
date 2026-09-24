@@ -103,7 +103,7 @@ _FOREGROUND_GUIDANCE = (
         _SHELL_LEVEL_BACKGROUND_RE.search,
         "Foreground command uses shell-level background wrappers (nohup/disown/setsid). "
         "Re-send WITHOUT the wrapper as terminal(command=\"<cmd>\", background=true, "
-        "notify_on_complete=true) so Hermes tracks the process, then run readiness "
+        "notify_on_complete=true) so Tino tracks the process, then run readiness "
         "checks and tests in separate commands.",
     ),
     (
@@ -190,7 +190,7 @@ def gateway_lifecycle_block(
     targeting hermes-gateway would SIGTERM the gateway — and this very
     subprocess — before completing, so the service may never come back.
     Applies unconditionally (``force=True`` cannot bypass it). Gated on the
-    SUPERVISED-gateway probe, not the raw ``_HERMES_GATEWAY`` marker: that
+    SUPERVISED-gateway probe, not the raw ``_TINO_GATEWAY`` marker: that
     marker leaks into every process that merely imports gateway.run (hermes
     serve, CLI, web server), which must still be able to restart the gateway;
     an unsupervised foreground ``hermes gateway run`` has no KeepAlive to turn
@@ -218,7 +218,7 @@ def gateway_lifecycle_block(
             "Blocked: launchctl submit/bootstrap is restricted inside a supervised "
             "gateway regardless of the job label, to prevent indirect gateway "
             "restart loops. This guard does not inspect the job's KeepAlive settings "
-            "or determine whether it is independent of Hermes. Perform authorized "
+            "or determine whether it is independent of Tino. Perform authorized "
             "LaunchAgent maintenance from a separate shell outside the gateway, "
             "not by switching launchctl verbs to bypass this rejection.",
             "error",

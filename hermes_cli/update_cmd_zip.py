@@ -284,7 +284,7 @@ def _require_staging_space(extracted: str, entries: list[str], project_root: str
 
 def _link_or_copy_artifact(source: str, destination: str) -> None:
     """Hardlink where the filesystem allows (apps/desktop/node_modules is hundreds of MB, and a link stays
-    valid after the swap unlinks the old tree; on Windows a link also succeeds on a locked Hermes.exe
+    valid after the swap unlinks the old tree; on Windows a link also succeeds on a locked Tino.exe
     where copy2 raises); byte copy otherwise."""
     try:
         os.link(source, destination)

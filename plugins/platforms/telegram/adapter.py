@@ -494,7 +494,7 @@ class TelegramAdapter(BasePlatformAdapter):
         self._telegram_typing_retrigger_interval: float = self._coerce_float_extra(
             "typing_retrigger_min_interval_seconds", 2.0, min_value=0.0, max_value=30.0)
         # Buffer album/photo bursts into a single MessageEvent instead of self-interrupting turns.
-        self._media_batch_delay_seconds = env_float("HERMES_TELEGRAM_MEDIA_BATCH_DELAY_SECONDS", 0.8)
+        self._media_batch_delay_seconds = env_float("TINO_TELEGRAM_MEDIA_BATCH_DELAY_SECONDS", 0.8)
         self._pending_photo_batches: Dict[str, MessageEvent] = {}
         self._pending_photo_batch_tasks: Dict[str, asyncio.Task] = {}
         self._media_group_events: Dict[str, MessageEvent] = {}
@@ -502,10 +502,10 @@ class TelegramAdapter(BasePlatformAdapter):
         # Aggregate client-side splits of long messages into one MessageEvent; bounds are conservative
         # for Telegram's ~1 edit/s flood envelope.
         self._text_batch_delay_seconds = self._env_float_clamped(
-            "HERMES_TELEGRAM_TEXT_BATCH_DELAY_SECONDS", self._TEXT_BATCH_DEFAULT_DELAY_S,
+            "TINO_TELEGRAM_TEXT_BATCH_DELAY_SECONDS", self._TEXT_BATCH_DEFAULT_DELAY_S,
             min_value=0.08, max_value=self._TEXT_BATCH_MAX_DELAY_S)
         self._text_batch_split_delay_seconds = self._env_float_clamped(
-            "HERMES_TELEGRAM_TEXT_BATCH_SPLIT_DELAY_SECONDS", self._TEXT_BATCH_DEFAULT_SPLIT_DELAY_S,
+            "TINO_TELEGRAM_TEXT_BATCH_SPLIT_DELAY_SECONDS", self._TEXT_BATCH_DEFAULT_SPLIT_DELAY_S,
             min_value=self._text_batch_delay_seconds, max_value=self._TEXT_BATCH_MAX_SPLIT_DELAY_S)
         self._drop_delayed_deliveries = False
         # Held across disconnect: PTB advances the offset before our drop-guard runs, so Telegram won't
@@ -983,7 +983,7 @@ class TelegramAdapter(BasePlatformAdapter):
 
     @staticmethod
     def _dm_topic_fallback(metadata: Optional[Dict[str, Any]]) -> bool:
-        """True for Hermes private-chat topic lanes (``telegram_dm_topic_reply_fallback``)."""
+        """True for Tino private-chat topic lanes (``telegram_dm_topic_reply_fallback``)."""
         return bool(metadata and metadata.get("telegram_dm_topic_reply_fallback"))
 
     @classmethod
@@ -1014,15 +1014,15 @@ class TelegramAdapter(BasePlatformAdapter):
         """Telegram send kwargs for forum and direct-message topic routing.
 
         Forum topics use ``message_thread_id``; native Bot API DM topics opt in via explicit ``direct_messages_topic_id``
-        metadata; Hermes private-chat topic lanes are marked ``telegram_dm_topic_reply_fallback``. Anchor-less synthetic sends
-        prefer the Hermes topic's ``message_thread_id`` (the native DM-topic id renders in a different chat lane).
+        metadata; Tino private-chat topic lanes are marked ``telegram_dm_topic_reply_fallback``. Anchor-less synthetic sends
+        prefer the Tino topic's ``message_thread_id`` (the native DM-topic id renders in a different chat lane).
         ``reply_to_mode="off"`` suppresses the anchor but keeps ``message_thread_id``.
 
         Live replies send the private topic thread id together with a reply anchor. Synthetic/resumed sends
         without an anchor (loop wakeups, background-process notifications, queued follow-ups after a gateway
-        restart) prefer the Hermes topic's ``message_thread_id`` so they stay in the active topic lane
+        restart) prefer the Tino topic's ``message_thread_id`` so they stay in the active topic lane
         (#87051); ``direct_messages_topic_id`` is only used when no topic thread resolves, since the native
-        DM-topic id does not match the Hermes topic lane and can render the message in a different chat
+        DM-topic id does not match the Tino topic lane and can render the message in a different chat
         lane.
         """
         fallback = cls._dm_topic_fallback(metadata)
@@ -1030,9 +1030,9 @@ class TelegramAdapter(BasePlatformAdapter):
             if reply_to_message_id is None:
                 reply_to_message_id = cls._metadata_reply_to_message_id(metadata)
             if reply_to_message_id is None:
-                # Anchor-less synthetic send: prefer the Hermes topic thread id (see docstring).
+                # Anchor-less synthetic send: prefer the Tino topic thread id (see docstring).
                 # Anchor-less synthetic sends (loop wakeups, watch notifications, restart-resumed
-                # follow-ups) must stay in the active topic lane: prefer the Hermes topic thread id when it
+                # follow-ups) must stay in the active topic lane: prefer the Tino topic thread id when it
                 # resolves (#87051). Routing via direct_messages_topic_id here sent these to a different
                 # lane than the topic the session runs in.
                 thread_message_id = cls._message_thread_id_for_send(thread_id)
@@ -2424,7 +2424,7 @@ class TelegramAdapter(BasePlatformAdapter):
         message = (
             "Telegram polling could not recover after %d retries (%ds total wait). "
             "The previous gateway session is still held open on Telegram's servers, "
-            "or another process is using the same bot token. To recover: ensure no other Hermes or OpenClaw instance is running "
+            "or another process is using the same bot token. To recover: ensure no other Tino or OpenClaw instance is running "
             "with this token, then restart the gateway with 'hermes gateway restart'."
             % (MAX_CONFLICT_RETRIES, sum(10 + i * 10 for i in range(1, MAX_CONFLICT_RETRIES + 1))))
         logger.error("[%s] %s Original error: %s", self.name, message, _redact_telegram_error_text(error))
@@ -2828,11 +2828,11 @@ class TelegramAdapter(BasePlatformAdapter):
         direct DNS; the getUpdates request is instrumented for polling-progress tracking."""
         # PTB's pool_timeout=1s default trips "Pool timeout" on flaky networks; safer defaults + env overrides.
         request_kwargs = {
-            "connection_pool_size": env_int("HERMES_TELEGRAM_HTTP_POOL_SIZE", 512),
-            "pool_timeout": env_float("HERMES_TELEGRAM_HTTP_POOL_TIMEOUT", 8.0),
-            "connect_timeout": env_float("HERMES_TELEGRAM_HTTP_CONNECT_TIMEOUT", 10.0),
-            "read_timeout": env_float("HERMES_TELEGRAM_HTTP_READ_TIMEOUT", 20.0),
-            "write_timeout": env_float("HERMES_TELEGRAM_HTTP_WRITE_TIMEOUT", 20.0),
+            "connection_pool_size": env_int("TINO_TELEGRAM_HTTP_POOL_SIZE", 512),
+            "pool_timeout": env_float("TINO_TELEGRAM_HTTP_POOL_TIMEOUT", 8.0),
+            "connect_timeout": env_float("TINO_TELEGRAM_HTTP_CONNECT_TIMEOUT", 10.0),
+            "read_timeout": env_float("TINO_TELEGRAM_HTTP_READ_TIMEOUT", 20.0),
+            "write_timeout": env_float("TINO_TELEGRAM_HTTP_WRITE_TIMEOUT", 20.0),
             # PTB routes file requests to media_write_timeout; httpx budgets it per socket write (stall
             # tolerance, not bandwidth), so 60s rides out congested-link buffer stalls.
             "media_write_timeout": 60.0,
@@ -2867,10 +2867,10 @@ class TelegramAdapter(BasePlatformAdapter):
                 kwargs["limits"] = _pool_limits
             return kwargs
 
-        disable_fallback = os.getenv("HERMES_TELEGRAM_DISABLE_FALLBACK_IPS", "").strip().lower() in {"1", "true", "yes", "on"}
+        disable_fallback = os.getenv("TINO_TELEGRAM_DISABLE_FALLBACK_IPS", "").strip().lower() in {"1", "true", "yes", "on"}
         fallback_ips = [] if disable_fallback else self._fallback_ips()
         if not fallback_ips and not disable_fallback:
-            discovery_timeout = self._env_float_clamped("HERMES_TELEGRAM_FALLBACK_DISCOVERY_TIMEOUT", 5.0, min_value=0.0)
+            discovery_timeout = self._env_float_clamped("TINO_TELEGRAM_FALLBACK_DISCOVERY_TIMEOUT", 5.0, min_value=0.0)
             logger.warning("[%s] Discovering Telegram API fallback IPs via DNS-over-HTTPS…", self.name)
             try:
                 fallback_ips = await _await_with_thread_deadline(discover_fallback_ips(), timeout=discovery_timeout)
@@ -2921,7 +2921,7 @@ class TelegramAdapter(BasePlatformAdapter):
         """``app.initialize()`` with a bounded retry ladder; rebuilds ``self._app``/``self._bot`` from
         ``builder`` after each failed attempt; OSError when the per-attempt or total watchdog expires."""
         _max_connect = 8
-        _init_timeout = env_float("HERMES_TELEGRAM_INIT_TIMEOUT", 30.0)  # per attempt
+        _init_timeout = env_float("TINO_TELEGRAM_INIT_TIMEOUT", 30.0)  # per attempt
         # Total watchdog: bounds the whole connect loop even if the retry loop silently stalls.
         _total_deadline = asyncio.get_running_loop().time() + _init_timeout * _max_connect + 120.0
         _timed_out = f"Telegram initialization timed out after {_max_connect} attempts ({_init_timeout:.0f}s each)"
@@ -2931,8 +2931,8 @@ class TelegramAdapter(BasePlatformAdapter):
                 if asyncio.get_running_loop().time() >= _total_deadline:
                     raise OSError(
                         f"{_timed_out} — total connect watchdog deadline ({_init_timeout * _max_connect + 120.0:.0f}s) exceeded. "
-                        f"Check network connectivity to api.telegram.org or set HERMES_TELEGRAM_HTTP_CONNECT_TIMEOUT / "
-                        f"HERMES_TELEGRAM_INIT_TIMEOUT to a lower value.")
+                        f"Check network connectivity to api.telegram.org or set TINO_TELEGRAM_HTTP_CONNECT_TIMEOUT / "
+                        f"TINO_TELEGRAM_INIT_TIMEOUT to a lower value.")
                 logger.warning("[%s] Connecting to Telegram (attempt %d/%d)…", self.name, _attempt + 1, _max_connect)
                 # On timeout the (possibly shielded) initialize() task is abandoned; release the half-built
                 # app's httpx client so it isn't leaked across the ladder.
@@ -2945,7 +2945,7 @@ class TelegramAdapter(BasePlatformAdapter):
                 if _attempt >= _max_connect - 1:
                     raise OSError(
                         f"{_timed_out}. Check network connectivity to api.telegram.org "
-                        f"or set HERMES_TELEGRAM_HTTP_CONNECT_TIMEOUT to a lower value.")
+                        f"or set TINO_TELEGRAM_HTTP_CONNECT_TIMEOUT to a lower value.")
                 wait = min(2 ** _attempt, 15)
                 logger.warning(
                     "[%s] Connect attempt %d/%d timed out after %.0fs — retrying in %ds", self.name, _attempt + 1,
@@ -6102,7 +6102,7 @@ class TelegramAdapter(BasePlatformAdapter):
         # Learn the live handle BEFORE any mention gate routes on it, then drop our own echoed messages.
         # Filter out the bot's own messages (returned by getUpdates in some environments like
         # groups/supergroups where the bot can see its own messages). Without this, outbound messages are
-        # counted as incoming unread in the Hermes inbox (#52363). Otherwise a BotFather rename leaves the
+        # counted as incoming unread in the Tino inbox (#52363). Otherwise a BotFather rename leaves the
         # stale handle in place and the exclusive-mention gate reads a message addressed to us as one
         # addressed to some other bot.
         self._observe_bot_identity_from_message(message)
@@ -6893,7 +6893,7 @@ class TelegramAdapter(BasePlatformAdapter):
 # is needed. ──────────────────────────────────────────────────────────────────────────
 def _resolve_notifications_mode() -> str:
     """Notification mode (all/important) from env, else config.yaml display.platforms.telegram.notifications."""
-    mode = os.getenv("HERMES_TELEGRAM_NOTIFICATIONS", "")
+    mode = os.getenv("TINO_TELEGRAM_NOTIFICATIONS", "")
     if not mode:
         try:
             from gateway.config import load_gateway_config
@@ -7028,7 +7028,7 @@ def _apply_yaml_config(yaml_cfg: dict, telegram_cfg: dict) -> dict | None:
 
 
 def register(ctx) -> None:
-    """Plugin entry point — called by the Hermes plugin system."""
+    """Plugin entry point — called by the Tino plugin system."""
     ctx.register_platform(
         name="telegram", label="Telegram", adapter_factory=_build_adapter, check_fn=telegram_deps_present,
         ensure_deps_fn=check_telegram_requirements, is_connected=_is_connected, required_env=["TELEGRAM_BOT_TOKEN"],

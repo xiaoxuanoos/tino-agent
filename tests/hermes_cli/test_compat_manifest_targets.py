@@ -93,7 +93,7 @@ def test_kanban_db_connect_opens_a_kanban_board(tmp_path, monkeypatch):
 
     assert kanban_db.connect is kanban_db_connect.connect
     assert kanban_db.connect_closing is kanban_db_connect.connect_closing
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("TINO_HOME", str(tmp_path))
     db = tmp_path / "board.db"
     conn = kanban_db.connect(db, board="qa")
     try:

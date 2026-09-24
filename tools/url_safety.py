@@ -5,7 +5,7 @@ names to private ranges); cloud metadata hostnames/IPs are **always** blocked. A
 that answers DNS with a fake-ip block (Mihomo/Clash fake-ip, Surge enhanced) declares that block
 in ``security.fake_ip_ranges`` so its sentinel answers are dialable instead of looking private;
 the list is empty by default, so the sentinel stays blocked for everyone else. DNS rebinding
-(TOCTOU) is closed for Hermes-owned httpx paths by ``create_ssrf_safe_[async_]client()``, which
+(TOCTOU) is closed for Tino-owned httpx paths by ``create_ssrf_safe_[async_]client()``, which
 re-apply the policy at TCP connect and dial the validated IP while preserving Host/SNI. Redirect
 bypass is mitigated by response hooks re-validating each target (``redirect_target_from_response``).
 """
@@ -36,7 +36,7 @@ def _proxy_is_configured() -> bool:
 
 
 def normalize_url_for_request(url: str) -> str:
-    """ASCII-safe HTTP URL for Hermes-owned URL tools (IRI -> URI, e.g. ``https://wttr.in/Köln``).
+    """ASCII-safe HTTP URL for Tino-owned URL tools (IRI -> URI, e.g. ``https://wttr.in/Köln``).
     Preserves URL syntax and existing percent escapes while IDNA-encoding the host and
     percent-encoding non-ASCII path/query/fragment text. URL tool inputs only — never shell commands."""
     if not isinstance(url, str):
@@ -137,7 +137,7 @@ _fake_ip_resolved, _cached_fake_ip_ranges = False, ()
 
 
 def _global_allow_private_urls() -> bool:
-    """True when the user has opted out of private-IP blocking. Priority: ``HERMES_ALLOW_PRIVATE_URLS``
+    """True when the user has opted out of private-IP blocking. Priority: ``TINO_ALLOW_PRIVATE_URLS``
     env, ``security.allow_private_urls``, legacy ``browser.allow_private_urls``. Profile-scoped turns
     (``get_hermes_home_override()`` set) bypass the process-global cache — a multiplex gateway serves
     several profiles in one process; the first profile's opt-out must not disable blocking for later ones."""
@@ -151,7 +151,7 @@ def _global_allow_private_urls() -> bool:
 
 def _resolve_allow_private_urls() -> bool:
     """Resolve the effective private-URL toggle from the active config scope."""
-    env_val = os.getenv("HERMES_ALLOW_PRIVATE_URLS", "").strip().lower()
+    env_val = os.getenv("TINO_ALLOW_PRIVATE_URLS", "").strip().lower()
     if env_val in {"true", "1", "yes"}:
         return True
     if env_val in {"false", "0", "no"}:

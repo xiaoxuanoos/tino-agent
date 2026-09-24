@@ -1,7 +1,7 @@
 """Single-use Anthropic OAuth grants never fork across profiles (#100339) and are never
 inherited from the root (#111724).
 
-Real imports, real temp HERMES_HOME root + named profile, real auth.json I/O.
+Real imports, real temp TINO_HOME root + named profile, real auth.json I/O.
 The Anthropic token endpoint is replaced at the ``urllib.request.urlopen``
 boundary with genuine single-use semantics (a refresh token redeems once;
 a second POST returns ``invalid_grant``).
@@ -20,7 +20,7 @@ import pytest
 
 @pytest.fixture
 def fleet(tmp_path, monkeypatch):
-    """Root HERMES_HOME with an expired-but-refreshable Anthropic pool row."""
+    """Root TINO_HOME with an expired-but-refreshable Anthropic pool row."""
     root = tmp_path / "hermes-root"
     root.mkdir()
     (tmp_path / "fakehome").mkdir()
@@ -29,7 +29,7 @@ def fleet(tmp_path, monkeypatch):
     monkeypatch.setenv("CLAUDE_CONFIG_DIR", str(tmp_path / "fakehome"))
     for var in ("ANTHROPIC_TOKEN", "ANTHROPIC_API_KEY", "CLAUDE_CODE_OAUTH_TOKEN"):
         monkeypatch.delenv(var, raising=False)
-    monkeypatch.setenv("HERMES_HOME", str(root))
+    monkeypatch.setenv("TINO_HOME", str(root))
     import hermes_constants
     hermes_constants._default_hermes_root_memo = None  # type: ignore[attr-defined]
 
@@ -90,7 +90,7 @@ def fleet(tmp_path, monkeypatch):
 
     def use(home):
         """Switch the process to *home* (root or a profile dir)."""
-        monkeypatch.setenv("HERMES_HOME", str(home))
+        monkeypatch.setenv("TINO_HOME", str(home))
         hermes_constants._default_hermes_root_memo = None  # type: ignore[attr-defined]
 
     def pool_rows(home):

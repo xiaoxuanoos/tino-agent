@@ -1,6 +1,6 @@
 """Honcho client construction and ``HonchoClientConfig`` resolution.
 
-Config file resolution: $HERMES_HOME/honcho.json -> ~/.honcho/config.json -> env vars
+Config file resolution: $TINO_HOME/honcho.json -> ~/.honcho/config.json -> env vars
 (HONCHO_API_KEY, HONCHO_ENVIRONMENT). Within a file, host-block fields win over
 flat/global fields, which win over defaults.
 """
@@ -56,7 +56,7 @@ def _sanitize_url(url: str | None) -> str | None:
 
 
 def profile_host_key(profile: str | None) -> str:
-    """Return the safe Honcho host key for a Hermes profile."""
+    """Return the safe Honcho host key for a Tino profile."""
     if not profile or profile in {"default", "custom"}:
         return HOST
     sanitized = "".join(c if c.isalnum() or c in "_-" else "_" for c in profile).strip("_")
@@ -73,11 +73,11 @@ def _host_block(raw: dict, host: str) -> dict:
 
 
 def resolve_active_host() -> str:
-    """Honcho host key: HERMES_HONCHO_HOST (profile-scoped .env), else the active profile. The config's
+    """Honcho host key: TINO_HONCHO_HOST (profile-scoped .env), else the active profile. The config's
     ``defaultHost`` is honored only for the default profile so named profiles stay isolated — which is
     also why the override is read through the secret scope: from raw environ it would fold every
     multiplexed profile onto the default profile's host block and peer."""
-    explicit = (get_secret("HERMES_HONCHO_HOST", "") or "").strip()
+    explicit = (get_secret("TINO_HONCHO_HOST", "") or "").strip()
     if explicit:
         return explicit
     try:
@@ -106,7 +106,7 @@ def resolve_global_config_path() -> Path:
 
 
 def resolve_config_path() -> Path:
-    """Active Honcho config path: $HERMES_HOME/honcho.json -> default profile's honcho.json
+    """Active Honcho config path: $TINO_HOME/honcho.json -> default profile's honcho.json
     (host blocks accumulate there via setup/clone) -> ~/.honcho/config.json (also the
     first-time-setup write target when nothing exists)."""
     local_path = get_hermes_home() / "honcho.json"
@@ -274,7 +274,7 @@ def _connection_fields(look: _HostLookup, host: str, path: Path) -> dict[str, An
                        "is NOT inherited (profiles are credential-isolated). Set apiKey on "
                        "hosts.%s in %s or this profile runs unauthenticated.", host, HOST, host, path)
     # The SDK's native format (and Claude Desktop) nests the URL at endpoint.baseUrl;
-    # read it before the flat Hermes spellings.
+    # read it before the flat Tino spellings.
     endpoint_block = raw.get("endpoint")
     native_base_url = endpoint_block.get("baseUrl") if isinstance(endpoint_block, dict) else None
     base_url = _sanitize_url(host_block.get("baseUrl") or host_block.get("base_url") or native_base_url
@@ -435,7 +435,7 @@ class HonchoClientConfig:
     @classmethod
     def from_global_config(cls, host: str | None = None, config_path: Path | None = None) -> HonchoClientConfig:
         """Config from the resolved Honcho config path, falling back to env. ``host=None``
-        derives it from the active Hermes profile."""
+        derives it from the active Tino profile."""
         resolved_host = host or resolve_active_host()
         path = config_path or resolve_config_path()
         if not path.exists():

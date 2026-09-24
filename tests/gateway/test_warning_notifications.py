@@ -110,7 +110,7 @@ def test_direct_warning_delivery_keeps_failure_state(tmp_path, monkeypatch, enab
     from gateway import run
 
     (tmp_path / "config.yaml").write_text(f"display: {{suppress_warning_notifications: {str(not enabled).lower()}}}")
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("TINO_HOME", str(tmp_path))
     monkeypatch.setattr(run, "_hermes_home", tmp_path)
     adapter = RecordingAdapter()
     source = SessionSource(platform=Platform.SLACK, chat_id="chat", user_id="user")

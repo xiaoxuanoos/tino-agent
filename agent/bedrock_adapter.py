@@ -51,7 +51,7 @@ _AWS_SCOPED_CREDENTIAL_VARS: Tuple[Tuple[str, str], ...] = (
 def scoped_aws_session_kwargs() -> Dict[str, str]:
     """``boto3.session.Session`` kwargs from the routed profile's secret scope, ``{}`` when unscoped.
 
-    Under a HERMES_HOME override the process env holds the LAUNCH profile's ``AWS_*`` (or nothing), so
+    Under a TINO_HOME override the process env holds the LAUNCH profile's ``AWS_*`` (or nothing), so
     every Bedrock client for a served profile must be built from that profile's own ``.env`` values.
     """
     from hermes_constants import get_hermes_home_override
@@ -82,7 +82,7 @@ def _require_boto3():
         raise ImportError(
             "The 'boto3' package is required for the AWS Bedrock provider. "
             "Install it with: pip install boto3\n"
-            "Or install Hermes with Bedrock support: pip install -e '.[bedrock]'"
+            "Or install Tino with Bedrock support: pip install -e '.[bedrock]'"
         )
     try:
         version = tuple(int(x) for x in boto3.__version__.split(".")[:3])

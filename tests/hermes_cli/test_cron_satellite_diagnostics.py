@@ -13,8 +13,8 @@ def served_root(tmp_path, monkeypatch):
     root = tmp_path / "home"
     home = root / "profiles" / "probe"
     home.mkdir(parents=True)
-    monkeypatch.setenv("HERMES_HOME", str(home))
-    monkeypatch.setenv("HERMES_PROFILE", "probe")
+    monkeypatch.setenv("TINO_HOME", str(home))
+    monkeypatch.setenv("TINO_PROFILE", "probe")
     monkeypatch.delenv("GATEWAY_MULTIPLEX_PROFILES", raising=False)
     monkeypatch.setattr("hermes_constants.get_default_hermes_root", lambda: root)
     monkeypatch.setattr(jobs, "CRON_DIR", home / "cron")
@@ -106,8 +106,8 @@ def test_standalone_guidance_matches_profile_membership(served_root, monkeypatch
     homes = {"default": served_root, "custom": served_root.parent / "custom", "named": served_root / "profiles/probe"}
     home = homes[home_kind]
     home.mkdir(exist_ok=True)
-    monkeypatch.setenv("HERMES_HOME", str(home))
-    monkeypatch.delenv("HERMES_PROFILE")
+    monkeypatch.setenv("TINO_HOME", str(home))
+    monkeypatch.delenv("TINO_PROFILE")
     monkeypatch.setattr("gateway.status.is_gateway_runtime_lock_active", lambda lock_path=None: False)
     cron_status()
     output = capsys.readouterr().out

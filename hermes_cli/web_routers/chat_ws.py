@@ -318,7 +318,7 @@ async def console_ws(ws: WebSocket) -> None:
             if command_id == command_generation:
                 pending_confirmation = None
                 await out.error_then_complete(
-                    "Command timed out. Hermes Console returned to the prompt.", line, command_id, "timeout",
+                    "Command timed out. Tino Console returned to the prompt.", line, command_id, "timeout",
                 )
         except Exception as exc:
             if command_id == command_generation:
@@ -444,7 +444,7 @@ async def pty_ws(ws: WebSocket) -> None:
         await ws.send_text(
             "\r\n\x1b[31mChat unavailable: the embedded terminal requires a "
             "POSIX PTY, which native Windows Python doesn't provide.\x1b[0m\r\n"
-            "\x1b[33mInstall Hermes inside WSL2 to use the dashboard's /chat "
+            "\x1b[33mInstall Tino inside WSL2 to use the dashboard's /chat "
             "tab — the rest of the dashboard works here.\x1b[0m\r\n"
         )
         await ws.close(code=1011)
@@ -491,7 +491,7 @@ async def pty_ws(ws: WebSocket) -> None:
     attach_token = ws.query_params.get("attach") or None
     registry_resume = raw_resume
     if raw_resume and env:
-        registry_resume = env.get("HERMES_TUI_RESUME") or raw_resume
+        registry_resume = env.get("TINO_TUI_RESUME") or raw_resume
     if attach_token is not None and (registry_resume or profile):
         # Key explicit resumes on their canonical target, never the active-session fallback.
         attach_token = f"{attach_token}\0{profile or ''}\0{registry_resume or ''}"
@@ -592,7 +592,7 @@ async def gateway_ws(ws: WebSocket) -> None:
 
 
 # --- /api/pub + /api/events: the PTY-side tui_gateway.entry opens /api/pub
-# (HERMES_TUI_SIDECAR_URL from /api/pty's env) and writes every dispatcher emit
+# (TINO_TUI_SIDECAR_URL from /api/pty's env) and writes every dispatcher emit
 # through it; the dashboard fans frames out to /api/events subscribers on the
 # same channel — the React sidebar's tool-call feed without touching the PTY
 # child's stdio handshake with Ink.

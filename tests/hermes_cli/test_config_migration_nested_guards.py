@@ -51,7 +51,7 @@ def test_malformed_nested_value_is_migrated_not_crashed(tmp_path, current_ver, c
 
     _write_config(tmp_path, {"_config_version": current_ver, **config})
     results = {"env_added": [], "config_added": [], "warnings": []}
-    with patch.dict(os.environ, {"HERMES_HOME": str(tmp_path)}):
+    with patch.dict(os.environ, {"TINO_HOME": str(tmp_path)}):
         run_migrations(current_ver, results, quiet=True)
 
     node = _read_config(tmp_path)
@@ -72,7 +72,7 @@ def test_failing_step_is_skipped_with_warning_and_config_still_migrates(tmp_path
 
     _write_config(tmp_path, {"_config_version": 12, "model": {"default": "x/y"}})
     ladder = tuple((v, _boom if v == 13 else fn) for v, fn in config_migrations.MIGRATIONS)
-    with patch.dict(os.environ, {"HERMES_HOME": str(tmp_path)}), \
+    with patch.dict(os.environ, {"TINO_HOME": str(tmp_path)}), \
             patch.object(config_migrations, "MIGRATIONS", ladder):
         results = migrate_config(interactive=False, quiet=True)
 

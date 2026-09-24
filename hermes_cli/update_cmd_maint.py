@@ -31,8 +31,8 @@ _PRE_UPDATE_SNAPSHOT_MAX_FILE_SIZE = 1 << 30  # 1 GiB
 #: Reinstalling through the official installer swaps in a Python whose SQLite is safe; the
 #: one-liner differs per OS (mirrors ``uninstall._REINSTALL_HINT``). windows -> command
 _REINSTALL_ONE_LINER = {
-    True: "iex (irm https://hermes-agent.nousresearch.com/install.ps1)",
-    False: "curl -fsSL https://hermes-agent.nousresearch.com/install.sh | bash",
+    True: "<your Tino install source>",
+    False: "<your Tino install source>",
 }
 
 
@@ -43,7 +43,7 @@ def _sqlite_partial_completion_lines(sqlite_version: str) -> list[str]:
     from hermes_cli.update_cmd import _m
     return [
         f"⚠ Update partially complete — your Python's SQLite ({sqlite_version}) has a known "
-        "corruption bug. Hermes works, but sessions could be damaged.",
+        "corruption bug. Tino works, but sessions could be damaged.",
         f"  Fix: run the installer again ({_REINSTALL_ONE_LINER[bool(_m()._is_windows())]}) "
         "which installs a safe Python, then run `hermes doctor` to confirm.",
     ]
@@ -84,7 +84,7 @@ def _print_curator_first_run_notice() -> None:
     )
     print("  Preview now:  hermes curator run --dry-run")
     print("  Pause it:     hermes curator pause")
-    print("  Docs:         https://hermes-agent.nousresearch.com/docs/user-guide/features/curator")
+    print("  Docs:         website/docs/user-guide/features/curator")
 
 
 def _print_fts_optimize_available_notice() -> None:
@@ -287,7 +287,7 @@ def _print_update_completion(message: str) -> None:
     """
     from hermes_cli.update_cmd import _branch_head_suffix
     print(f"{message}{_branch_head_suffix()}")
-    action_id = os.environ.get("HERMES_ACTION_ID", "")
+    action_id = os.environ.get("TINO_ACTION_ID", "")
     if len(action_id) == 32 and all(char in "0123456789abcdef" for char in action_id):
         print(f"=== hermes-update completed {action_id} ===")
 
@@ -333,7 +333,7 @@ def _post_update_sqlite_runtime_status():
 
 
 def _print_verified_update_completion(message: str) -> bool:
-    """Print a success completion only after probing the next Hermes runtime."""
+    """Print a success completion only after probing the next Tino runtime."""
     from hermes_cli.update_cmd import _post_update_sqlite_runtime_status
     if not message.startswith("✓"):
         _print_update_completion(message)
@@ -426,7 +426,7 @@ def _restore_state_db_from_snapshot(state_path: Path, snap_state: Path) -> bool:
     except LiveConnectionError as exc:
         print(
             f"  ✗ Auto-restore refused: {exc} Close the in-process database "
-            "handles (or restart Hermes) and retry."
+            "handles (or restart Tino) and retry."
         )
         return False
     restored = verify_sqlite_integrity(state_path, check_header=True, run_pragma=True)
@@ -553,7 +553,7 @@ def _ensure_fhs_path_guard() -> None:
         return  # already on PATH, nothing to do
 
     path_line = 'export PATH="/usr/local/bin:$PATH"'
-    path_comment = "# Hermes Agent — ensure /usr/local/bin is on PATH (RHEL non-login shells)"
+    path_comment = "# Tino Agent — ensure /usr/local/bin is on PATH (RHEL non-login shells)"
     wrote_any = False
     for candidate in (".bashrc", ".bash_profile"):
         cfg = Path(home) / candidate
@@ -609,7 +609,7 @@ def _ensure_acp_launcher() -> None:
                 continue
             shim = (
                 "#!/usr/bin/env bash\n"
-                "# Hermes Agent — ACP launcher (written by `hermes update`).\n"
+                "# Tino Agent — ACP launcher (written by `hermes update`).\n"
                 "# ACP hosts (Zed, JetBrains, Buzz) resolve the agent by this\n"
                 "# command name on the login-shell PATH.\n"
                 f'exec "{hermes_cmd}" acp "$@"\n'
@@ -711,7 +711,7 @@ def _run_quick_snapshots() -> Optional[str]:
 
 
 def _run_full_backup() -> None:
-    """Zip HERMES_HOME under ``backups/`` (restorable via ``hermes import``). Never raises."""
+    """Zip TINO_HOME under ``backups/`` (restorable via ``hermes import``). Never raises."""
     try:
         from hermes_cli.backup import create_pre_update_backup
     except Exception as exc:
@@ -764,7 +764,7 @@ def _run_pre_update_backup(args) -> Optional[str]:
 
     ``off`` — nothing. ``quick`` (default) — snapshot of critical small files under
     ``state-snapshots/``, files over 1 GiB skipped so a bloated state.db can't stall the update.
-    ``full`` — quick snapshot PLUS a zip of HERMES_HOME under ``backups/`` (``hermes import``).
+    ``full`` — quick snapshot PLUS a zip of TINO_HOME under ``backups/`` (``hermes import``).
 
     Explicit user opt-out is honored fully. See #34600.
     """
@@ -834,7 +834,7 @@ def _profile_skill_sync_status(r) -> str:
 def _sync_profiles_after_update() -> None:
     """Best-effort per-profile syncs: bundled skills, ``.env`` backfill, Honcho profiles."""
     # All profiles incl. the active one: seed_profile_skills() subprocesses with an explicit
-    # HERMES_HOME, so sync_skills()'s module-level HERMES_HOME cache can't skew it.
+    # TINO_HOME, so sync_skills()'s module-level TINO_HOME cache can't skew it.
     with suppress(Exception):
         from hermes_cli.profiles import list_profiles, seed_profile_skills
         all_profiles = list_profiles()
@@ -931,7 +931,7 @@ def _print_post_update_notices_and_self_heals() -> None:
         # Named profiles stopped inheriting the root auth.json (#111724): name every profile that
         # now has no provider of its own so nobody finds out from a dead bot.
         ('Profile credential notice failed: %s', _print_profiles_without_credentials_notice),
-        # Legacy HERMES_NEMO_RELAY_ATIF_*/ATOF_* vars produce no traces since the Relay cutover;
+        # Legacy TINO_NEMO_RELAY_ATIF_*/ATOF_* vars produce no traces since the Relay cutover;
         # generate each profile's relay-plugins.toml instead of leaving exports silently dead.
         ('Relay exporter migration failed: %s', _migrate_relay_exporter_env),
     ):
@@ -961,7 +961,7 @@ def _run_post_update_maintenance(
     if sys.platform == "darwin" and had_desktop_app_before_update:
         print()
         print(
-            "  ℹ macOS: if Hermes re-prompts for permissions you already "
+            "  ℹ macOS: if Tino re-prompts for permissions you already "
             "granted (toggle shows ON), the stored grant is stale — run "
             "`tccutil reset ScreenCapture com.nousresearch.hermes` (repeat "
             "per affected service), toggle it ON in System Settings, then "

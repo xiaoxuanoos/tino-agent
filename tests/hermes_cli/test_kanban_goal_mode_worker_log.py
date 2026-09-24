@@ -32,15 +32,15 @@ def test_goal_mode_worker_takes_the_same_stdout_rich_path_as_a_one_shot_worker(m
     monkeypatch.setattr(dispatch, "_resolve_worker_cli_toolsets", lambda home: None)
     plain = dispatch._worker_argv(_task(goal_mode=False), "worker", None)
     goal = dispatch._worker_argv(_task(goal_mode=True), "worker", None)
-    # The mode travels in HERMES_KANBAN_GOAL_MODE; the argv must not opt the worker out of
+    # The mode travels in TINO_KANBAN_GOAL_MODE; the argv must not opt the worker out of
     # the tool feed that the Worker log is made of.
     assert goal == plain
     assert "-Q" not in goal
 
 
 def test_non_quiet_one_shot_runs_the_goal_loop_through_cli_chat(monkeypatch):
-    monkeypatch.setenv("HERMES_KANBAN_TASK", "t_goal1")
-    monkeypatch.setenv("HERMES_KANBAN_GOAL_MODE", "1")
+    monkeypatch.setenv("TINO_KANBAN_TASK", "t_goal1")
+    monkeypatch.setenv("TINO_KANBAN_GOAL_MODE", "1")
     monkeypatch.setattr(cli, "_should_seed_interactive", lambda *a, **k: False)
     monkeypatch.setattr(cli, "_collect_query_images", lambda q, i: (q, []))
     monkeypatch.setattr(cli, "_collect_kanban_task_images", lambda imgs: [])

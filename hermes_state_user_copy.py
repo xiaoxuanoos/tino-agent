@@ -26,8 +26,8 @@ _DOCTOR = "Run `hermes {profile_arg}doctor --fix` to diagnose and repair."
 _STORAGE_FAILURES: dict[str, tuple[str, str, str]] = {
     "locked": (
         "storage_locked",
-        "the session database is locked by another Hermes process",
-        "Wait a moment and try again; if it persists, stop the other Hermes process "
+        "the session database is locked by another Tino process",
+        "Wait a moment and try again; if it persists, stop the other Tino process "
         "(`hermes {profile_arg}gateway stop`).",
     ),
     "disk_full": (
@@ -52,13 +52,13 @@ _STORAGE_FAILURES: dict[str, tuple[str, str, str]] = {
     ),
     "replaced": (
         "storage_replaced",
-        "the session database file was replaced while Hermes was running",
-        "Stop Hermes (`hermes {profile_arg}gateway stop`), run `hermes {profile_arg}doctor`, then start it again.",
+        "the session database file was replaced while Tino was running",
+        "Stop Tino (`hermes {profile_arg}gateway stop`), run `hermes {profile_arg}doctor`, then start it again.",
     ),
     "deleted_wal": (
         "storage_replaced",
-        "the session database file was changed or replaced while Hermes was running",
-        "Stop Hermes (`hermes {profile_arg}gateway stop`), run `hermes {profile_arg}doctor`, then start it again.",
+        "the session database file was changed or replaced while Tino was running",
+        "Stop Tino (`hermes {profile_arg}gateway stop`), run `hermes {profile_arg}doctor`, then start it again.",
     ),
     "compression": (
         "storage_busy",
@@ -72,7 +72,7 @@ _STORAGE_FAILURES: dict[str, tuple[str, str, str]] = {
     ),
     "turn_lease": (
         "storage_busy",
-        "another Hermes process took over this session",
+        "another Tino process took over this session",
         "Wait for it to finish, then send your message again.",
     ),
     "unknown": (

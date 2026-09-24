@@ -48,14 +48,14 @@ def configure_windows_stdio() -> bool:
     """Force UTF-8 stdio on Windows. No-op elsewhere.
 
     Idempotent; returns ``True`` only when something actually changed. Set
-    ``HERMES_DISABLE_WINDOWS_UTF8=1`` to opt out (forces the old cp1252 path for diagnosing
+    ``TINO_DISABLE_WINDOWS_UTF8=1`` to opt out (forces the old cp1252 path for diagnosing
     encoding bugs). Also sets a default ``EDITOR`` on Windows if none is set.
     """
     global _CONFIGURED
 
     if _CONFIGURED:
         return False
-    if not is_windows() or os.environ.get("HERMES_DISABLE_WINDOWS_UTF8") in {"1", "true", "True", "yes"}:
+    if not is_windows() or os.environ.get("TINO_DISABLE_WINDOWS_UTF8") in {"1", "true", "True", "yes"}:
         _CONFIGURED = True  # repeated calls on POSIX / opted-out are true no-ops
         return False
 
@@ -91,7 +91,7 @@ def _default_windows_editor() -> str:
 
 
 def _augment_path_with_known_tools() -> None:
-    r"""Prepend Hermes-managed tool directories to ``PATH`` (no-op on POSIX / missing dirs).
+    r"""Prepend Tino-managed tool directories to ``PATH`` (no-op on POSIX / missing dirs).
 
     install.ps1 adds entries like ``%LOCALAPPDATA%\hermes\git\bin`` to the User PATH via
     ``SetEnvironmentVariable``, but already-running shells never see that broadcast, so a hermes

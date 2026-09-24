@@ -8,7 +8,7 @@ from typing import Dict, List, Any, Set, Optional, Tuple
 # in `desktop_ui`/`project`, enabled per desktop-sourced session by the GUI gateway
 # (tui_gateway/server.py::_load_enabled_toolsets). HA, kanban and computer_use
 # entries are further gated by their tools' check_fns.
-_HERMES_CORE_TOOLS = [
+_TINO_CORE_TOOLS = [
     "web_search", "web_extract",
     "terminal", "process_manage",
     "read_file", "write_file", "patch", "search_files",
@@ -40,7 +40,7 @@ _HERMES_CORE_TOOLS = [
 ]
 
 # Webhook payloads are untrusted third-party content: no file/system execution.
-_HERMES_WEBHOOK_SAFE_TOOLS = ["web_search", "web_extract", "vision_analyze", "clarify"]
+_TINO_WEBHOOK_SAFE_TOOLS = ["web_search", "web_extract", "vision_analyze", "clarify"]
 _HA_TOOLS = ["ha_list_entities", "ha_get_state", "ha_list_services", "ha_call_service"]
 _FEISHU_TOOLS = [
     "feishu_doc_read", "feishu_drive_list_comments", "feishu_drive_list_comment_replies",
@@ -56,12 +56,12 @@ def _ts(description, tools=(), includes=(), **extra):
 
 def _bundle(description, extras=()):
     """A `hermes-*` platform bundle: the shared core tools plus optional platform extras."""
-    return _ts(description, _HERMES_CORE_TOOLS + list(extras))
+    return _ts(description, _TINO_CORE_TOOLS + list(extras))
 
 
 def _core_without(*excluded, kanban=True):
-    """_HERMES_CORE_TOOLS minus *excluded* (and, unless kanban=True, every kanban_* tool); order preserved."""
-    return [t for t in _HERMES_CORE_TOOLS if t not in excluded and (kanban or not t.startswith("kanban_"))]
+    """_TINO_CORE_TOOLS minus *excluded* (and, unless kanban=True, every kanban_* tool); order preserved."""
+    return [t for t in _TINO_CORE_TOOLS if t not in excluded and (kanban or not t.startswith("kanban_"))]
 
 
 # Coding posture: everything you reach for while pairing on code; drops messaging,
@@ -110,7 +110,7 @@ TOOLSETS = {
     "browser": _ts(
         "Browser automation for web interaction (navigate, click, type, scroll, "
         "iframes, hold-click)",
-        [t for t in _HERMES_CORE_TOOLS if t.startswith("browser_")],
+        [t for t in _TINO_CORE_TOOLS if t.startswith("browser_")],
     ),
     "cronjob": _ts(
         "Cronjob management tool - create, list, update, pause, resume, remove, and "
@@ -147,13 +147,13 @@ TOOLSETS = {
     "homeassistant": _ts("Home Assistant smart home control and monitoring", _HA_TOOLS),
     "kanban": _ts(
         "Kanban multi-agent coordination — only active when the agent is spawned by "
-        "the kanban dispatcher (HERMES_KANBAN_TASK env set). The dispatcher runs "
+        "the kanban dispatcher (TINO_KANBAN_TASK env set). The dispatcher runs "
         "inside the gateway by default; see `kanban.dispatch_in_gateway` in "
         "config.yaml. Lets workers mark tasks done with structured handoffs, enter "
         "first-class review (request_review — not a block), return review changes, "
         "block for human input, heartbeat during long ops, comment on threads, attach "
         "files, and (for orchestrators) list, unblock, and fan out tasks.",
-        [t for t in _HERMES_CORE_TOOLS if t.startswith("kanban_")],
+        [t for t in _TINO_CORE_TOOLS if t.startswith("kanban_")],
     ),
     "discord": _ts("Discord read and participate tools (fetch messages, search members, create threads)", ["discord"]),
     "discord_admin": _ts("Discord server management (list channels/roles, pin messages, assign roles)", ["discord_admin"]),
@@ -181,7 +181,7 @@ TOOLSETS = {
         posture=True,
     ),
 
-    # Full Hermes toolsets (CLI + messaging platforms). All share the core tools;
+    # Full Tino toolsets (CLI + messaging platforms). All share the core tools;
     # there is deliberately no agent-callable send_message tool. hermes-acp is the
     # coding posture minus the interactive clarify UI.
     "hermes-acp": _ts(
@@ -210,7 +210,7 @@ TOOLSETS = {
     "hermes-signal": _bundle("Signal bot toolset - encrypted messaging platform (full access)"),
     "hermes-bluebubbles": _bundle("BlueBubbles iMessage bot toolset - Apple iMessage via local BlueBubbles server"),
     "hermes-homeassistant": _bundle("Home Assistant bot toolset - smart home event monitoring and control"),
-    "hermes-email": _bundle("Email bot toolset - interact with Hermes via email (IMAP/SMTP)"),
+    "tino-email": _bundle("Email bot toolset - interact with Tino via email (IMAP/SMTP)"),
     "hermes-mattermost": _bundle("Mattermost bot toolset - self-hosted team messaging (full access)"),
     "hermes-matrix": _bundle("Matrix bot toolset - decentralized encrypted messaging (full access)"),
     "hermes-dingtalk": _bundle("DingTalk bot toolset - enterprise messaging platform (full access)"),
@@ -221,19 +221,19 @@ TOOLSETS = {
     "hermes-wecom-callback": _bundle("WeCom callback toolset - enterprise self-built app messaging (full access)"),
     "hermes-yuanbao": {
         "description": "Yuanbao Bot 元宝消息平台工具集 - 群信息、成员查询、私聊、贴纸表情",
-        "tools": _HERMES_CORE_TOOLS + _YUANBAO_TOOLS,
+        "tools": _TINO_CORE_TOOLS + _YUANBAO_TOOLS,
         "module": "tools.yuanbao_tools",
         "includes": [],
     },
-    "hermes-sms": _bundle("SMS bot toolset - interact with Hermes via SMS (Twilio)"),
-    "hermes-webhook": _ts("Webhook toolset - receive and process external webhook events", _HERMES_WEBHOOK_SAFE_TOOLS),
+    "tino-sms": _bundle("SMS bot toolset - interact with Tino via SMS (Twilio)"),
+    "hermes-webhook": _ts("Webhook toolset - receive and process external webhook events", _TINO_WEBHOOK_SAFE_TOOLS),
     "hermes-gateway": _ts(
         "Gateway toolset - union of all messaging platform tools",
         [],
         includes=[
             "hermes-telegram", "hermes-discord", "hermes-whatsapp", "hermes-slack",
-            "hermes-signal", "hermes-bluebubbles", "hermes-homeassistant", "hermes-email",
-            "hermes-sms", "hermes-mattermost", "hermes-matrix", "hermes-dingtalk",
+            "hermes-signal", "hermes-bluebubbles", "hermes-homeassistant", "tino-email",
+            "tino-sms", "hermes-mattermost", "hermes-matrix", "hermes-dingtalk",
             "hermes-feishu", "hermes-wecom", "hermes-wecom-callback", "hermes-weixin",
             "hermes-qqbot", "hermes-webhook", "hermes-yuanbao",
         ],
@@ -308,13 +308,13 @@ def get_toolset(name: str, *, include_registry: bool = True) -> Optional[Dict[st
 
 
 def bundle_non_core_tools(toolset_name: str) -> Set[str]:
-    """A bundle's tools minus _HERMES_CORE_TOOLS (one level of includes).
+    """A bundle's tools minus _TINO_CORE_TOOLS (one level of includes).
 
     Disabling a `core + extras` bundle must not strip the core tools every other
     toolset shares. One `includes` pass suffices (only hermes-gateway nests
     bundles). Unknown names: full resolution minus core.
     """
-    core = set(_HERMES_CORE_TOOLS)
+    core = set(_TINO_CORE_TOOLS)
     ts_def = get_toolset(toolset_name)
     if not (ts_def and "tools" in ts_def):
         return set(resolve_toolset(toolset_name)) - core
@@ -344,7 +344,7 @@ def _plugin_platform_bundle(name: str) -> List[str]:
             return []
     except Exception:
         return []
-    tools = set(_HERMES_CORE_TOOLS)
+    tools = set(_TINO_CORE_TOOLS)
     try:
         tools.update(e.name for e in _registry_call("get_all_entries", ()) if e.toolset == platform_name)
     except Exception:

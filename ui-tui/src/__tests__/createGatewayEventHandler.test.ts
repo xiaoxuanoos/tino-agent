@@ -659,7 +659,7 @@ describe('createGatewayEventHandler', () => {
   it('prefers raw text over Rich-rendered ANSI on message.complete (#16391)', () => {
     const appended: Msg[] = []
     const onEvent = createGatewayEventHandler(buildCtx(appended))
-    const raw = 'Hermes here.\n\nLine two.'
+    const raw = 'Tino here.\n\nLine two.'
     // Rich-rendered ANSI (`final_response_markdown: render`) used to win,
     // which left visible escape codes in Ink output. Raw text must win.
     const rendered = '\u001b[33mHermes here.\u001b[0m\n\n\u001b[2mLine two.\u001b[0m'
@@ -881,12 +881,12 @@ describe('createGatewayEventHandler', () => {
     }
 
     // Dark terminal (clean env): the dark-authored `colors` block wins.
-    vi.stubEnv('HERMES_TUI_BACKGROUND', '')
+    vi.stubEnv('TINO_TUI_BACKGROUND', '')
     createGatewayEventHandler(buildCtx(appended))({ payload: skin, type: 'skin.changed' } as any)
     expect(getUiState().theme.color.primary).toBe('#00FF88')
 
     // Light terminal: the hand-tuned light_colors block wins over adaptation.
-    vi.stubEnv('HERMES_TUI_BACKGROUND', '#ffffff')
+    vi.stubEnv('TINO_TUI_BACKGROUND', '#ffffff')
     createGatewayEventHandler(buildCtx(appended))({ payload: skin, type: 'skin.changed' } as any)
     expect(getUiState().theme.color.primary).toBe('#8B0000')
     vi.unstubAllEnvs()
@@ -1025,7 +1025,7 @@ describe('createGatewayEventHandler', () => {
     patchUiState({ sid: 'old-session' })
 
     createGatewayEventHandler(ctx)({
-      payload: { phrase: 'hey hermes', start_new_session: true },
+      payload: { phrase: 'hey tino', start_new_session: true },
       type: 'wake.detected'
     } as any)
 
@@ -1044,7 +1044,7 @@ describe('createGatewayEventHandler', () => {
     patchUiState({ sid: 'current-session' })
 
     createGatewayEventHandler(ctx)({
-      payload: { phrase: 'hey hermes', start_new_session: false },
+      payload: { phrase: 'hey tino', start_new_session: false },
       type: 'wake.detected'
     } as any)
 

@@ -114,7 +114,7 @@ class TestRekeyProfileState:
             backend_id="be1", pid=123, started_at=time.time(),
             profile="oldname", host="h")
         # delivery_obligations is created lazily by the delivery ledger against the same state.db.
-        monkeypatch.setenv("HERMES_HOME", str(db.db_path.parent))
+        monkeypatch.setenv("TINO_HOME", str(db.db_path.parent))
         from gateway import delivery_ledger
         monkeypatch.setattr(delivery_ledger, "_db_path", lambda: db.db_path)
         with delivery_ledger._connect() as conn:

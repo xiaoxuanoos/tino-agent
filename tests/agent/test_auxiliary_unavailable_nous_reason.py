@@ -19,7 +19,7 @@ def _reset(monkeypatch):
 def test_goal_judge_reason_names_nous_auth_failure_and_still_fails_open(tmp_path, monkeypatch):
     """Real judge_goal → call_llm → ladder with goal_judge pinned to nous and no Nous login."""
     _reset(monkeypatch)
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("TINO_HOME", str(tmp_path))
     (tmp_path / "config.yaml").write_text(yaml.safe_dump({
         "model": {"provider": "nous", "default": "test-model"},
         "auxiliary": {"goal_judge": {"provider": "nous", "model": "test-model"}},
@@ -54,8 +54,8 @@ def test_nous_credential_failure_is_remembered_and_warned_once(caplog, monkeypat
 def test_never_logged_in_is_debug_but_a_dead_credential_warns(caplog, monkeypatch, tmp_path):
     """The auto-route walk resolves Nous on every pass; users who never chose Nous must not be nagged."""
     _reset(monkeypatch)
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
-    not_logged_in = AuthError("Hermes is not logged into Nous Portal.", provider="nous", relogin_required=True)
+    monkeypatch.setenv("TINO_HOME", str(tmp_path))
+    not_logged_in = AuthError("Tino is not logged into Nous Portal.", provider="nous", relogin_required=True)
     dead = AuthError("Invalid refresh token", provider="nous", code="invalid_grant", relogin_required=True)
     with caplog.at_level(logging.DEBUG, logger="agent.auxiliary_unavailable"):
         quiet = unavailable.record_nous_credential_failure(not_logged_in)

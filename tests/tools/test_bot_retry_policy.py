@@ -67,7 +67,7 @@ def home(tmp_path, monkeypatch):
     h = tmp_path / ".hermes"
     (h / "profiles" / "ops").mkdir(parents=True)
     (h / "profiles" / "ops" / "config.yaml").touch()  # identity marker: bare dirs are not profiles
-    monkeypatch.setenv("HERMES_HOME", str(h))
+    monkeypatch.setenv("TINO_HOME", str(h))
     return h
 
 
@@ -279,8 +279,8 @@ def test_run_local_turn_retry_reads_the_stream_the_cli_writes_and_resumes_the_pe
         return _Proc(0, stdout="the reply text")
 
     monkeypatch.setattr(bot_mode_dm.subprocess, "run", _fake_run)
-    rc = bot_mode_dm._run_local_turn(["hermes", "-p", "ops", "chat"], str(dm), env={"HERMES_HOME": str(tmp_path)})
+    rc = bot_mode_dm._run_local_turn(["hermes", "-p", "ops", "chat"], str(dm), env={"TINO_HOME": str(tmp_path)})
     assert rc == 0
-    assert envs[0] == {"HERMES_HOME": str(tmp_path)}
-    assert envs[1] == {"HERMES_HOME": str(tmp_path), RESUME_UNANSWERED_TURN_ENV: "1"}
+    assert envs[0] == {"TINO_HOME": str(tmp_path)}
+    assert envs[1] == {"TINO_HOME": str(tmp_path), RESUME_UNANSWERED_TURN_ENV: "1"}
     assert "the reply text" in capsys.readouterr().out

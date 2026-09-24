@@ -34,7 +34,7 @@ def _run_prerequisites(tmp_path: Path, *, uv_find_script: str) -> subprocess.Com
     for tool in ("git", "node", "npm", "curl", "rg", "g++", "c++"):
         _exe(bin_dir / tool, "#!/bin/sh\ncase \"$1\" in --version|-v) echo 'v22.12.0 2.50.0';; esac\nexit 0\n")
     env = os.environ.copy()
-    env.update({"HOME": str(home), "HERMES_HOME": str(hermes_home),
+    env.update({"HOME": str(home), "TINO_HOME": str(hermes_home),
                 "PATH": f"{bin_dir}{os.pathsep}{env.get('PATH', os.defpath)}"})
     bash = shutil.which("bash") or "/bin/bash"
     return subprocess.run([bash, str(INSTALL_SH), "--stage", "prerequisites", "--non-interactive"],

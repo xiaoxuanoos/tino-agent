@@ -104,7 +104,7 @@ HOST_INTERPRETER_KILL_REJECTION = (
     "Blocked: this command kills every process whose image/name matches the Python "
     "interpreter, which is the process hosting this gateway (and this command). "
     "Stop only the process you own instead: process(action=\"kill\", session_id=\"proc_…\") "
-    "for a background job Hermes started, or kill/taskkill by its explicit PID."
+    "for a background job Tino started, or kill/taskkill by its explicit PID."
 )
 
 
@@ -264,7 +264,7 @@ _PROFILE_FLAG_LIFECYCLE_PATTERN = re.compile(
 _LAUNCHCTL_LIFECYCLE_VERBS_RE = re.compile(
     r"(?i)\blaunchctl\s+(?:kickstart|unload|load|stop|restart|bootout|kill|disable|remove)\b"
 )
-_HERMES_GATEWAY_LABEL_RE = re.compile(r"(?i)\bhermes[.\-]?gateway\b")
+_TINO_GATEWAY_LABEL_RE = re.compile(r"(?i)\bhermes[.\-]?gateway\b")
 
 _SHELL_EXECUTABLES = frozenset({"sh", "bash", "dash", "ksh", "zsh"})
 _SHELL_OPTIONS_WITH_VALUES = frozenset({"-O", "+O", "-o", "+o"})
@@ -366,9 +366,9 @@ _BINARY_MAGICS = (
 # --- profile identity -------------------------------------------------------------------------
 
 def _current_profile_name() -> Optional[str]:
-    """Profile running the guard: ``HERMES_PROFILE_NAME``/``HERMES_PROFILE`` env first, then
-    ``hermes_cli.profiles.get_active_profile_name`` (from ``HERMES_HOME``); ``None`` if neither."""
-    for env_name in ("HERMES_PROFILE_NAME", "HERMES_PROFILE"):
+    """Profile running the guard: ``TINO_PROFILE_NAME``/``TINO_PROFILE`` env first, then
+    ``hermes_cli.profiles.get_active_profile_name`` (from ``TINO_HOME``); ``None`` if neither."""
+    for env_name in ("TINO_PROFILE_NAME", "TINO_PROFILE"):
         value = os.environ.get(env_name)
         if value and value.strip():
             return value.strip()
@@ -392,7 +392,7 @@ def _named_profile_is_current(named: str) -> bool:
 def _contains_launchctl_gateway_lifecycle(normalized_text: str) -> bool:
     """Order-independent companion to Branch B — see the verbs regex comment."""
     return bool(_LAUNCHCTL_LIFECYCLE_VERBS_RE.search(normalized_text)) and bool(
-        _HERMES_GATEWAY_LABEL_RE.search(normalized_text)
+        _TINO_GATEWAY_LABEL_RE.search(normalized_text)
     )
 
 
@@ -839,7 +839,7 @@ def _resolved_or_nothing(candidate: str, cwd: Optional[str]) -> Iterator[Path]:
 
 def _resolve_script_path(script_path: str) -> Optional[Path]:
     """Resolve a cron ``script`` value the way ``cron.scheduler`` does (relative paths live under
-    ``<HERMES_HOME>/scripts/``) so the guard scans the file that will actually run."""
+    ``<TINO_HOME>/scripts/``) so the guard scans the file that will actually run."""
     from hermes_constants import get_hermes_home
 
     raw = _expand_candidate_path(script_path)
@@ -850,7 +850,7 @@ def _resolve_script_path(script_path: str) -> Optional[Path]:
     try:
         return get_hermes_home() / "scripts" / raw
     except (RuntimeError, OSError):
-        # get_hermes_home() falls back to Path.home(), which raises when neither HERMES_HOME nor
+        # get_hermes_home() falls back to Path.home(), which raises when neither TINO_HOME nor
         # HOME is resolvable (launchd/systemd) — same ingestion contract: nothing to scan.
         return None
 

@@ -27,6 +27,14 @@ const BUILTIN_LITERAL: Record<string, string> = {
   "/system": "System",
 };
 
+const CHINESE_LITERAL: Record<string, string> = {
+  "/files": "文件",
+  "/channels": "消息渠道",
+  "/webhooks": "Webhook",
+  "/pairing": "配对",
+  "/system": "系统",
+};
+
 export function resolvePageTitle(
   pathname: string,
   t: Translations,
@@ -44,7 +52,9 @@ export function resolvePageTitle(
   if (key) {
     return t.app.nav[key];
   }
-  const literal = BUILTIN_LITERAL[normalized];
+  const literal = t.app.nav.chat === "对话"
+    ? (CHINESE_LITERAL[normalized] ?? BUILTIN_LITERAL[normalized])
+    : BUILTIN_LITERAL[normalized];
   if (literal) {
     return literal;
   }

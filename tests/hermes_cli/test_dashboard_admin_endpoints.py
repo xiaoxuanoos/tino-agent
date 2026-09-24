@@ -24,7 +24,7 @@ def _client():
 
     client = TestClient(app)
     client.headers[_SESSION_HEADER_NAME] = _SESSION_TOKEN
-    # Keep the state DB under the isolated HERMES_HOME for any handler that
+    # Keep the state DB under the isolated TINO_HOME for any handler that
     # touches it.
     hermes_state.DEFAULT_DB_PATH = get_hermes_home() / "state.db"
     return client, _SESSION_HEADER_NAME
@@ -893,6 +893,15 @@ class TestUpdateCheckEndpoint:
 
 
 
+def test_tino_provider_catalog_does_not_offer_upstream_account(_isolate_hermes_home, monkeypatch):
+    from hermes_cli.web_routers.oauth import _build_oauth_catalog
+
+    monkeypatch.setenv("TINO_AGENT_BRANDED", "1")
+    assert "nous" not in {provider["id"] for provider in _build_oauth_catalog()}
+    client, _ = _client()
+    assert client.post("/api/providers/oauth/nous/start").status_code == 404
+
+
 class TestDebugShareEndpoint:
     """POST /api/ops/debug-share returns the paste URLs synchronously so the
     dashboard can render them as copyable links (not a backgrounded log tail)."""
@@ -907,6 +916,12 @@ class TestDebugShareEndpoint:
         (logs / "agent.log").write_text("agent line\n")
         (logs / "errors.log").write_text("err line\n")
         (logs / "gateway.log").write_text("gw line\n")
+
+    def test_tino_never_uploads_diagnostics(self, monkeypatch):
+        monkeypatch.setenv("TINO_AGENT_BRANDED", "1")
+        monkeypatch.setattr("hermes_cli.debug.build_debug_share", lambda **kw: pytest.fail("upload called"))
+        response = self.client.post("/api/ops/debug-share")
+        assert response.status_code == 403
 
 
     def test_redact_false_is_honored(self, monkeypatch):
@@ -1009,13 +1024,13 @@ class TestToolsConfigEndpoints:
 
 def test_spawn_hermes_action_scrubs_gateway_loop_guard_env(monkeypatch, tmp_path):
     """The dashboard runs inside the gateway, so os.environ has
-    _HERMES_GATEWAY=1. Spawned actions (e.g. `gateway restart`) must NOT inherit
+    _TINO_GATEWAY=1. Spawned actions (e.g. `gateway restart`) must NOT inherit
     it, or the in-process restart-loop guard rejects the restart and it silently
     fails (#52470).
     """
     import hermes_cli.web_server as ws
 
-    monkeypatch.setenv("_HERMES_GATEWAY", "1")
+    monkeypatch.setenv("_TINO_GATEWAY", "1")
     monkeypatch.setenv("OPENAI_API_KEY", "default-action-provider-key")
     monkeypatch.setattr(_web_server_gateway, "_ACTION_LOG_DIR", tmp_path)
     # Isolate the module-global proc registry: _spawn_hermes_action stores
@@ -1036,8 +1051,8 @@ def test_spawn_hermes_action_scrubs_gateway_loop_guard_env(monkeypatch, tmp_path
 
     _web_server_gateway._spawn_hermes_action(["gateway", "restart"], "gateway-restart")
 
-    assert "_HERMES_GATEWAY" not in captured["env"]
-    assert captured["env"]["HERMES_NONINTERACTIVE"] == "1"
+    assert "_TINO_GATEWAY" not in captured["env"]
+    assert captured["env"]["TINO_NONINTERACTIVE"] == "1"
     # Default-profile actions preserve the historical process environment.
     assert captured["env"]["OPENAI_API_KEY"] == "default-action-provider-key"
 
@@ -1080,7 +1095,7 @@ def test_named_profile_action_isolates_parent_env_and_loads_target_env(monkeypat
     )
 
     monkeypatch.setattr(Path, "home", lambda: user_home)
-    monkeypatch.setenv("HERMES_HOME", str(default_home))
+    monkeypatch.setenv("TINO_HOME", str(default_home))
     for key, value in {
         "DISCORD_BOT_TOKEN": "default-discord",
         "API_SERVER_ENABLED": "true",
@@ -1093,7 +1108,7 @@ def test_named_profile_action_isolates_parent_env_and_loads_target_env(monkeypat
         "ZAI_API_KEY": "default-zai",
         "A2A_AUTH_MINI": "default-a2a-auth",
         "EXTERNAL_PROFILE_AUTH": "default-secret-source-auth",
-        "HERMES_ACP_AUTH_METHOD": "default-acp",
+        "TINO_ACP_AUTH_METHOD": "default-acp",
         "PROFILE_ENV_TEST_BENIGN": "keep-me",
     }.items():
         monkeypatch.setenv(key, value)
@@ -1124,13 +1139,13 @@ def test_named_profile_action_isolates_parent_env_and_loads_target_env(monkeypat
 
     child_env = captured["env"]
     assert captured["cmd"][-4:] == ["-p", "verifier", "gateway", "restart"]
-    assert child_env["HERMES_HOME"] == str(target_home)
-    assert child_env["HERMES_NONINTERACTIVE"] == "1"
+    assert child_env["TINO_HOME"] == str(target_home)
+    assert child_env["TINO_NONINTERACTIVE"] == "1"
     assert child_env["PROFILE_ENV_TEST_BENIGN"] == "keep-me"
     for leaked_key in (
         "DISCORD_BOT_TOKEN", "API_SERVER_ENABLED", "API_SERVER_KEY", "BLUEBUBBLES_SERVER_URL",
         "BLUEBUBBLES_PASSWORD", "NTFY_TOPIC", "NTFY_TOKEN", "OPENAI_API_KEY", "ZAI_API_KEY",
-        "A2A_AUTH_MINI", "EXTERNAL_PROFILE_AUTH", "HERMES_ACP_AUTH_METHOD",
+        "A2A_AUTH_MINI", "EXTERNAL_PROFILE_AUTH", "TINO_ACP_AUTH_METHOD",
     ):
         assert leaked_key not in child_env, leaked_key
 
@@ -1143,7 +1158,7 @@ def test_named_profile_action_isolates_parent_env_and_loads_target_env(monkeypat
             sys.executable, "-c",
             "import json, os; "
             "from hermes_cli.env_loader import load_hermes_dotenv; "
-            "load_hermes_dotenv(hermes_home=os.environ['HERMES_HOME']); "
+            "load_hermes_dotenv(hermes_home=os.environ['TINO_HOME']); "
             "keys=['A2A_PORT','OPENAI_API_KEY','TARGET_ONLY_TOKEN','DISCORD_BOT_TOKEN',"
             "'API_SERVER_ENABLED','API_SERVER_KEY','BLUEBUBBLES_SERVER_URL','BLUEBUBBLES_PASSWORD',"
             "'NTFY_TOPIC','NTFY_TOKEN','ZAI_API_KEY','A2A_AUTH_MINI','EXTERNAL_PROFILE_AUTH']; "
@@ -1182,7 +1197,7 @@ def test_desktop_lifespan_reaps_orphan_gateways_on_startup(
     Graceful shutdown reaps the managed child, but an abnormal exit reparents
     the old gateway to launchd (PPID=1) where it keeps holding the QQ
     WebSocket. The lifespan calls _reap_unsupervised_gateway_orphans() once at
-    startup under HERMES_DESKTOP=1 so the stale orphan is cleared first.
+    startup under TINO_DESKTOP=1 so the stale orphan is cleared first.
     """
     import hermes_cli.web_server as ws
 
@@ -1192,7 +1207,7 @@ def test_desktop_lifespan_reaps_orphan_gateways_on_startup(
         called.append(True)
         return True
 
-    monkeypatch.setenv("HERMES_DESKTOP", "1")
+    monkeypatch.setenv("TINO_DESKTOP", "1")
     # Keep the lifespan cheap: don't re-import the gateway module or spin up the
     # real cron scheduler thread.
     monkeypatch.setattr(ws, "_warm_gateway_module", lambda: None)
@@ -1223,7 +1238,7 @@ def test_desktop_lifespan_terminates_managed_gateway_restart(monkeypatch):
         def terminate(self):
             calls.append("terminate")
 
-    monkeypatch.setenv("HERMES_DESKTOP", "1")
+    monkeypatch.setenv("TINO_DESKTOP", "1")
     monkeypatch.setattr(ws, "_warm_gateway_module", lambda: None)
     monkeypatch.setattr(ws, "_start_desktop_cron_ticker", lambda *_args: None)
     monkeypatch.setitem(_web_server_gateway._ACTION_PROCS, "gateway-restart", _FakeRunningProc())

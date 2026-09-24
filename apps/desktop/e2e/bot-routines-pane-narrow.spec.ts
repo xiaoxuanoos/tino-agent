@@ -95,7 +95,7 @@ function seedRoutine(profileHome: string, title: string): void {
 
   execFileSync(python, ['-c', script], {
     cwd: repoRoot,
-    env: { ...process.env, HERMES_HOME: profileHome },
+    env: { ...process.env, TINO_HOME: profileHome },
     stdio: 'pipe'
   })
 }

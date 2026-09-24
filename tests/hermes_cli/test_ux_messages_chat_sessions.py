@@ -79,7 +79,7 @@ def test_owned_message_first_line_is_plain_and_details_follow():
         "surface": "desktop", "pid": 123, "started_at": 1,
     })
     first, *rest = message.splitlines()
-    assert first == ("This chat is open in another Hermes window/terminal. "
+    assert first == ("This chat is open in another Tino window/terminal. "
                      "Use it there, or start a new chat here.")
     for jargon in ("lease", "pid", "owner", "takeover"):
         assert jargon not in first.lower()

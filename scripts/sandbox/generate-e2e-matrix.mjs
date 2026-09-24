@@ -36,7 +36,7 @@ import { fileURLToPath } from 'node:url';
  * strings, so they are types, not conventions.
  *
  * @typedef {'latest'} InstallerVersion
- *   The artifact published on the website right now -- Hermes-Setup.exe has
+ *   The artifact published on the website right now -- Tino-Setup.exe has
  *   no versioned archive yet. Widen this union when one exists.
  * @typedef {'installer-script' | 'installer-script+desktop' | 'desktop-installer' | 'packaged-app'} InstallMethod
  *   installer-script is the platform's one-liner (curl | bash on
@@ -97,11 +97,11 @@ export const SPEC = {
     install: [
       // irm https://hermes.nousresearch.com/install.ps1 | iex
       { method: 'installer-script' },
-      // The same one-liner with -IncludeDesktop: builds Hermes.exe AND
+      // The same one-liner with -IncludeDesktop: builds Tino.exe AND
       // registers Start Menu / Desktop shortcuts, so it is a second real
       // path to a hand-launchable app.
       { method: 'installer-script+desktop' },
-      // Website Hermes-Setup.exe, clicked through the GUI.
+      // Website Tino-Setup.exe, clicked through the GUI.
       { method: 'desktop-installer', versions: ['latest'] },
     ],
     update: [
@@ -121,7 +121,7 @@ export const SPEC = {
     install: [
       { method: 'installer-script' },
       { method: 'installer-script+desktop' },
-      // The published Hermes-Setup.dmg from the website, mounted and run.
+      // The published Tino-Setup.dmg from the website, mounted and run.
       { method: 'desktop-installer', versions: ['latest'] },
     ],
     update: [

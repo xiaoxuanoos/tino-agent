@@ -543,7 +543,7 @@ def test_has_agent_browser_import_failure_falls_back_to_hermes_managed_node_path
     monkeypatch, tmp_path
 ):
     """If tools.browser_tool_install cannot be imported, the managed-Node rung must
-    still find a runnable agent-browser under the Hermes Node dir even when
+    still find a runnable agent-browser under the Tino Node dir even when
     it's absent from the probe process's PATH — the Windows installer shape
     where install succeeded but the GUI still said needs setup."""
     monkeypatch.setitem(sys.modules, "tools.browser_tool_install", None)

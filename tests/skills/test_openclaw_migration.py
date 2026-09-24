@@ -48,12 +48,12 @@ def test_extract_markdown_entries_promotes_heading_context():
 
 ### Active Projects
 
-- Hermes Agent
+- Tino Agent
 """
     entries = mod.extract_markdown_entries(text)
     assert "Tyler Williams: Founder of VANTA Research" in entries
     assert "Tyler Williams: Timezone: America/Los_Angeles" in entries
-    assert "Tyler Williams > Active Projects: Hermes Agent" in entries
+    assert "Tyler Williams > Active Projects: Tino Agent" in entries
 
 
 
@@ -146,7 +146,7 @@ def _allowlist_migrator(mod, tmp_path: Path, existing_config: str):
     ), target / "config.yaml"
 
 
-MALFORMED_HERMES_CONFIG = """\
+MALFORMED_TINO_CONFIG = """\
 model: hermes-4-405b
 api_key_env: OPENROUTER_API_KEY
 command_allowlist:
@@ -169,7 +169,7 @@ def test_unreadable_config_is_refused_not_overwritten(tmp_path: Path):
     """
     mod = load_module()
     migrator, config_path = _allowlist_migrator(
-        mod, tmp_path, MALFORMED_HERMES_CONFIG)
+        mod, tmp_path, MALFORMED_TINO_CONFIG)
     before = config_path.read_bytes()
 
     report = migrator.migrate()
@@ -185,7 +185,7 @@ def test_unreadable_config_blocks_later_config_steps_instead_of_partial_writes(
     """One refusal flips the existing _config_apply_blocked short-circuit."""
     mod = load_module()
     migrator, config_path = _allowlist_migrator(
-        mod, tmp_path, MALFORMED_HERMES_CONFIG)
+        mod, tmp_path, MALFORMED_TINO_CONFIG)
 
     report = migrator.migrate()
 
@@ -196,7 +196,7 @@ def test_unreadable_config_blocks_later_config_steps_instead_of_partial_writes(
     }
     # Nothing claimed a successful config write.
     assert "migrated" not in statuses
-    assert config_path.read_text(encoding="utf-8") == MALFORMED_HERMES_CONFIG
+    assert config_path.read_text(encoding="utf-8") == MALFORMED_TINO_CONFIG
 
 
 def test_readable_config_keeps_every_pre_existing_key(tmp_path: Path):
@@ -282,7 +282,7 @@ def test_unreadable_config_refused_by_model_config_too(tmp_path: Path):
         encoding="utf-8",
     )
     config_path = target / "config.yaml"
-    config_path.write_text(MALFORMED_HERMES_CONFIG, encoding="utf-8")
+    config_path.write_text(MALFORMED_TINO_CONFIG, encoding="utf-8")
 
     report = mod.Migrator(
         source_root=source, target_root=target, execute=True,
@@ -290,7 +290,7 @@ def test_unreadable_config_refused_by_model_config_too(tmp_path: Path):
         output_dir=None, selected_options={"model-config"},
     ).migrate()
 
-    assert config_path.read_text(encoding="utf-8") == MALFORMED_HERMES_CONFIG
+    assert config_path.read_text(encoding="utf-8") == MALFORMED_TINO_CONFIG
     items = [i for i in report["items"] if i["kind"] == "model-config"]
     assert items and items[0]["status"] == mod.STATUS_ERROR
 
@@ -601,13 +601,13 @@ def test_skill_installs_cleanly_under_skills_guard():
 
 def test_rebrand_text_replaces_openclaw_variants():
     mod = load_module()
-    # Mixed-case / capitalized matches → capital-H ``Hermes``.
-    assert mod.rebrand_text("OpenClaw prefers Python 3.11") == "Hermes prefers Python 3.11"
-    assert mod.rebrand_text("I told Open Claw to use dark mode") == "I told Hermes to use dark mode"
-    assert mod.rebrand_text("Open-Claw config is great") == "Hermes config is great"
-    assert mod.rebrand_text("OPENCLAW uses tools well") == "Hermes uses tools well"
+    # Mixed-case / capitalized matches → capital-H ``Tino``.
+    assert mod.rebrand_text("OpenClaw prefers Python 3.11") == "Tino prefers Python 3.11"
+    assert mod.rebrand_text("I told Open Claw to use dark mode") == "I told Tino to use dark mode"
+    assert mod.rebrand_text("Open-Claw config is great") == "Tino config is great"
+    assert mod.rebrand_text("OPENCLAW uses tools well") == "Tino uses tools well"
     # All-lowercase matches → lowercase ``hermes``; this preserves the
-    # real filesystem path ``~/.hermes`` (Hermes home) when rebranding
+    # real filesystem path ``~/.hermes`` (Tino home) when rebranding
     # memory entries that reference ``~/.openclaw`` or ``openclaw`` prose.
     assert mod.rebrand_text("openclaw should always respond concisely") == "hermes should always respond concisely"
 

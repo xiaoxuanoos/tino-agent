@@ -142,6 +142,14 @@ export function I18nProvider({ children, configClient = defaultConfigClient, ini
             return
           }
 
+          // A product-level initial locale is an explicit default for this
+          // build. Keep it until the user saves a different language.
+          if (initialLocale != null) {
+            setLocaleState(normalizeLocale(initialLocale))
+
+            return
+          }
+
           // Keep inference unsaved so OS language changes apply on the next boot
           // until the user explicitly picks a language.
           const machineProfile = await window.hermesDesktop?.getMachineProfile?.().catch(() => null)

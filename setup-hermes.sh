@@ -1,6 +1,6 @@
 #!/bin/bash
 # ============================================================================
-# Hermes Agent Setup Script
+# Tino Agent Setup Script
 # ============================================================================
 # Quick setup for developers who cloned the repo manually.
 # Uses uv for desktop/server setup and Python's stdlib venv + pip on Termux.
@@ -56,7 +56,7 @@ get_command_link_display_dir() {
 }
 
 echo ""
-echo -e "${CYAN}☤ Hermes Agent Setup${NC}"
+echo -e "${CYAN}☤ Tino Agent Setup${NC}"
 echo ""
 
 # ============================================================================
@@ -87,8 +87,8 @@ else
         # full, etc.) instead of "✗ Failed to install uv" with zero
         # diagnostic.  Two-stage to avoid `curl | sh` masking curl
         # failures (sh exits 0 on empty stdin under no pipefail).
-        _uv_log="$(mktemp 2>/dev/null || echo "${TMPDIR:-${HERMES_HOME:-$HOME/.hermes}}/hermes-uv-install.$$.log")"
-        _uv_installer="$(mktemp 2>/dev/null || echo "${TMPDIR:-${HERMES_HOME:-$HOME/.hermes}}/hermes-uv-installer.$$.sh")"
+        _uv_log="$(mktemp 2>/dev/null || echo "${TMPDIR:-${TINO_HOME:-$HOME/.hermes}}/hermes-uv-install.$$.log")"
+        _uv_installer="$(mktemp 2>/dev/null || echo "${TMPDIR:-${TINO_HOME:-$HOME/.hermes}}/hermes-uv-installer.$$.sh")"
         if ! curl -LsSf https://astral.sh/uv/install.sh -o "$_uv_installer" 2>"$_uv_log"; then
             echo -e "${RED}✗${NC} Failed to download uv installer."
             sed 's/^/    /' "$_uv_log" >&2
@@ -133,7 +133,7 @@ fi
 echo -e "${CYAN}→${NC} Checking Python $PYTHON_VERSION..."
 
 if is_termux; then
-    # Hermes currently declares requires-python >=3.11,<3.14. Termux can expose
+    # Tino currently declares requires-python >=3.11,<3.14. Termux can expose
     # a newer default `python` before dependencies have compatible wheels, so
     # prefer explicit compatible minors and verify the upper bound before using
     # the interpreter to create the venv.
@@ -152,7 +152,7 @@ if is_termux; then
     if [ -z "${PYTHON_PATH:-}" ]; then
         if command -v python >/dev/null 2>&1; then
             PYTHON_FOUND_VERSION="$(python --version 2>/dev/null || true)"
-            echo -e "${RED}✗${NC} Termux Python $PYTHON_FOUND_VERSION is not supported; Hermes requires Python >=3.11,<3.14"
+            echo -e "${RED}✗${NC} Termux Python $PYTHON_FOUND_VERSION is not supported; Tino requires Python >=3.11,<3.14"
             echo "    Install a supported interpreter and re-run this script:"
             echo "      pkg install tur-repo && pkg install python3.13"
         else
@@ -384,11 +384,11 @@ fi
 
 echo -e "${CYAN}→${NC} Setting up hermes command..."
 
-HERMES_BIN="$SCRIPT_DIR/venv/bin/hermes"
+TINO_BIN="$SCRIPT_DIR/venv/bin/hermes"
 COMMAND_LINK_DIR="$(get_command_link_dir)"
 COMMAND_LINK_DISPLAY_DIR="$(get_command_link_display_dir)"
 mkdir -p "$COMMAND_LINK_DIR"
-ln -sf "$HERMES_BIN" "$COMMAND_LINK_DIR/hermes"
+ln -sf "$TINO_BIN" "$COMMAND_LINK_DIR/hermes"
 echo -e "${GREEN}✓${NC} Symlinked hermes → $COMMAND_LINK_DISPLAY_DIR/hermes"
 
 if is_termux; then
@@ -420,7 +420,7 @@ else
         if ! echo "$PATH" | tr ':' '\n' | grep -q "^$HOME/.local/bin$"; then
             if ! grep -q '\.local/bin' "$SHELL_CONFIG" 2>/dev/null; then
                 echo "" >> "$SHELL_CONFIG"
-                echo "# Hermes Agent — ensure ~/.local/bin is on PATH" >> "$SHELL_CONFIG"
+                echo "# Tino Agent — ensure ~/.local/bin is on PATH" >> "$SHELL_CONFIG"
                 echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$SHELL_CONFIG"
                 echo -e "${GREEN}✓${NC} Added ~/.local/bin to PATH in $SHELL_CONFIG"
             else
@@ -436,8 +436,8 @@ fi
 # Seed bundled skills into ~/.hermes/skills/
 # ============================================================================
 
-HERMES_SKILLS_DIR="${HERMES_HOME:-$HOME/.hermes}/skills"
-mkdir -p "$HERMES_SKILLS_DIR"
+TINO_SKILLS_DIR="${TINO_HOME:-$HOME/.hermes}/skills"
+mkdir -p "$TINO_SKILLS_DIR"
 
 echo ""
 echo "Syncing bundled skills to ~/.hermes/skills/ ..."
@@ -446,7 +446,7 @@ if "$SCRIPT_DIR/venv/bin/python" "$SCRIPT_DIR/tools/skills_sync.py" 2>/dev/null;
 else
     # Fallback: copy if sync script fails (missing deps, etc.)
     if [ -d "$SCRIPT_DIR/skills" ]; then
-        cp -rn "$SCRIPT_DIR/skills/"* "$HERMES_SKILLS_DIR/" 2>/dev/null || true
+        cp -rn "$SCRIPT_DIR/skills/"* "$TINO_SKILLS_DIR/" 2>/dev/null || true
         echo -e "${GREEN}✓${NC} Skills copied"
     fi
 fi

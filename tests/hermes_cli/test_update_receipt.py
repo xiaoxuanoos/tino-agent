@@ -23,12 +23,12 @@ from hermes_cli import update_cmd, update_cmd_maint
 
 @pytest.fixture()
 def receipt_home(tmp_path, monkeypatch):
-    """Isolated HERMES_HOME for receipt writes."""
+    """Isolated TINO_HOME for receipt writes."""
     home = tmp_path / ".hermes"
     home.mkdir()
     # ``_receipt_dir`` resolves through ``hermes_constants.get_hermes_home`` (env var), not
     # ``hermes_cli.config`` — patch where production reads.
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("TINO_HOME", str(home))
     # ensure no receipt bleeds between tests
     ur._current = None
     yield home
@@ -305,7 +305,7 @@ class TestFleetClassification:
 
         home = tmp_path / "fleet_home"
         home.mkdir()
-        monkeypatch.setenv("HERMES_HOME", str(home))
+        monkeypatch.setenv("TINO_HOME", str(home))
         monkeypatch.setattr(
             "hermes_cli.build_info.get_code_identity",
             lambda refresh=False: {"sha": "a" * 40, "short_sha": "a" * 8,

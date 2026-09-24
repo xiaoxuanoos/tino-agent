@@ -162,7 +162,7 @@ def _write_named_provider(tmp_path, monkeypatch):
         "providers:\n  jetson-vllm:\n    base_url: http://127.0.0.1:8000/v1\n"
         "    api_key: EMPTY\n    api_mode: chat_completions\n    models: [nemotron-nano-30b]\n"
     )
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("TINO_HOME", str(home))
     monkeypatch.setattr(model_switch, "DIRECT_ALIASES", {})
     from hermes_cli.config import load_config
     return load_config()
@@ -193,16 +193,16 @@ def test_oneshot_and_tui_qualified_model_never_reaches_default_provider(tmp_path
     from hermes_cli.oneshot import _resolve_model_and_provider
 
     cfg = _write_named_provider(tmp_path, monkeypatch)
-    from tui_gateway import server as tui_server  # binds the config path at import: after HERMES_HOME
-    monkeypatch.delenv("HERMES_INFERENCE_PROVIDER", raising=False)
-    monkeypatch.delenv("HERMES_TUI_PROVIDER", raising=False)
+    from tui_gateway import server as tui_server  # binds the config path at import: after TINO_HOME
+    monkeypatch.delenv("TINO_INFERENCE_PROVIDER", raising=False)
+    monkeypatch.delenv("TINO_TUI_PROVIDER", raising=False)
     monkeypatch.setattr(
         "hermes_cli.models.detect_provider_for_model",
         lambda *_a, **_k: pytest.fail("auto-detection ran on a provider-qualified model"))
     monkeypatch.setattr(
         "hermes_cli.models.detect_static_provider_for_model",
         lambda *_a, **_k: pytest.fail("auto-detection ran on a provider-qualified model"))
-    monkeypatch.setenv("HERMES_INFERENCE_MODEL", "custom:jetson-vllm:nemotron-nano-30b")
+    monkeypatch.setenv("TINO_INFERENCE_MODEL", "custom:jetson-vllm:nemotron-nano-30b")
     choice = _resolve_model_and_provider(cfg, None, None)
     assert (choice.provider, choice.model) == ("custom:jetson-vllm", "nemotron-nano-30b")
     assert tui_server._resolve_startup_runtime() == ("nemotron-nano-30b", "custom:jetson-vllm")

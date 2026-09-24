@@ -145,7 +145,7 @@ class TestTimezoneValidation:
         [issue] = _tz_issues({"timezone": "Asia/Tokio", "model": {"provider": "nous"}})
         assert issue.severity == "error"
         assert "Asia/Tokio" in issue.message
-        assert "IANA" in issue.hint and "HERMES_TIMEZONE" in issue.hint
+        assert "IANA" in issue.hint and "TINO_TIMEZONE" in issue.hint
         [issue] = _tz_issues({"timezone": 9, "model": {"provider": "nous"}})
         assert issue.severity == "error" and "string" in issue.message
 

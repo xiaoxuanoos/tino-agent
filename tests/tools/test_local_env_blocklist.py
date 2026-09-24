@@ -1,8 +1,8 @@
 """Tests for subprocess env sanitization in LocalEnvironment.
 
-Verifies that Hermes-managed provider, tool, and gateway env vars are
+Verifies that Tino-managed provider, tool, and gateway env vars are
 stripped from subprocess environments so external CLIs are not silently
-misrouted or handed Hermes secrets.
+misrouted or handed Tino secrets.
 
 See: https://github.com/NousResearch/hermes-agent/issues/1002
 See: https://github.com/NousResearch/hermes-agent/issues/1264
@@ -18,8 +18,8 @@ import pytest
 
 from tools.environments.local import LocalEnvironment
 from tools.environments.local_env_policy import (
-    _HERMES_PROVIDER_ENV_BLOCKLIST,
-    _HERMES_PROVIDER_ENV_FORCE_PREFIX,
+    _TINO_PROVIDER_ENV_BLOCKLIST,
+    _TINO_PROVIDER_ENV_FORCE_PREFIX,
 )
 
 
@@ -103,14 +103,14 @@ class TestProviderEnvBlocklist:
             assert var not in result_env, f"{var} leaked into subprocess env"
 
     def test_bedrock_bearer_token_is_stripped(self):
-        """The Bedrock-specific bearer token is a Hermes inference secret
+        """The Bedrock-specific bearer token is a Tino inference secret
         (analogous to OPENAI_API_KEY) and must not leak into subprocesses.
 
         Regression for #32314: AWS_BEARER_TOKEN_BEDROCK leaked into terminal /
         execute_code children because the ``bedrock`` ProviderConfig declares
         ``api_key_env_vars=()`` (auth_type="aws_sdk") and the blocklist builder
         only consulted that field. The reporter caught it when ``opencode
-        models`` run inside a Hermes terminal enumerated the entire Bedrock
+        models`` run inside a Tino terminal enumerated the entire Bedrock
         catalog off the leaked bearer token.
         """
         result_env = _run_with_env(extra_os_env={
@@ -154,9 +154,9 @@ class TestProviderEnvBlocklist:
         Stripping these would (a) break every user who does AWS work in the
         agent terminal — not just Bedrock users, since the registry is iterated
         unconditionally — and (b) be unrecoverable, because env_passthrough.py
-        refuses to re-allow anything in _HERMES_PROVIDER_ENV_BLOCKLIST
+        refuses to re-allow anything in _TINO_PROVIDER_ENV_BLOCKLIST
         (GHSA-rhgp-j443-p4rf). Only the Bedrock inference bearer token is
-        Hermes-managed; the rest belongs to the user.
+        Tino-managed; the rest belongs to the user.
         """
         general_chain = {
             "AWS_ACCESS_KEY_ID": "AKIAIOSFODNN7EXAMPLE",
@@ -208,7 +208,7 @@ class TestProviderEnvBlocklist:
             "HASS_TOKEN": "ha-secret",
             "EMAIL_PASSWORD": "email-secret",
             "FIRECRAWL_API_KEY": "fc-secret",
-            "HERMES_DASHBOARD_SESSION_TOKEN": "dashboard-session-secret",
+            "TINO_DASHBOARD_SESSION_TOKEN": "dashboard-session-secret",
             "BROWSERBASE_PROJECT_ID": "bb-project",
             "ELEVENLABS_API_KEY": "el-secret",
             "GITHUB_TOKEN": "ghp_secret",
@@ -238,7 +238,7 @@ class TestProviderEnvBlocklist:
         assert "PATH" in result_env
 
     def test_bare_hermes_resolves_from_sanitized_subprocess_path(self):
-        """Cron children can resolve Hermes even when the gateway PATH cannot."""
+        """Cron children can resolve Tino even when the gateway PATH cannot."""
         from tools.environments.local import _sanitize_subprocess_env
 
         with patch(
@@ -290,7 +290,7 @@ class TestTerminalFirstPartyPlatformEnv:
 
     Issue #78026: Buzz platform agents could not use the ``buzz`` CLI from the
     terminal tool because BUZZ_PRIVATE_KEY / BUZZ_AUTH_TAG / BUZZ_RELAY_URL
-    (and the other BUZZ_* vars) are stripped by _HERMES_PROVIDER_ENV_BLOCKLIST
+    (and the other BUZZ_* vars) are stripped by _TINO_PROVIDER_ENV_BLOCKLIST
     and env_passthrough refuses to re-allow them (GHSA-rhgp-j443-p4rf).
 
     The carve-out is TERMINAL-ONLY and CONTEXT-GATED: it applies when the
@@ -352,7 +352,7 @@ class TestTerminalFirstPartyPlatformEnv:
         from tools.environments.local import _make_run_env, _sanitize_subprocess_env
 
         monkeypatch.delenv("BUZZ_MANAGED_AGENT", raising=False)
-        monkeypatch.delenv("HERMES_SESSION_PLATFORM", raising=False)
+        monkeypatch.delenv("TINO_SESSION_PLATFORM", raising=False)
         buzz_vars = {
             "BUZZ_PRIVATE_KEY": "nsec1faketestkey",
             "BUZZ_AUTH_TAG": '["tag","data","kind","sig"]',
@@ -398,7 +398,7 @@ class TestTerminalFirstPartyPlatformEnv:
         BUZZ_* must remain blocked for every non-terminal surface (execute_code,
         hermes_subprocess_env, env_passthrough registration)."""
         assert {"BUZZ_PRIVATE_KEY", "BUZZ_AUTH_TAG", "BUZZ_RELAY_URL"} <= \
-            _HERMES_PROVIDER_ENV_BLOCKLIST
+            _TINO_PROVIDER_ENV_BLOCKLIST
 
     def test_buzz_vars_use_plain_value_under_multiplex_without_scope(self, monkeypatch):
         """First-party platform vars are the process's own env values: with
@@ -526,24 +526,24 @@ class TestTerminalFirstPartySnapshotIsolation:
 
 
 class TestForceEnvOptIn:
-    """Callers can opt in to passing a blocked var via _HERMES_FORCE_ prefix."""
+    """Callers can opt in to passing a blocked var via _TINO_FORCE_ prefix."""
 
     def test_force_prefix_passes_blocked_var(self):
-        """_HERMES_FORCE_OPENAI_API_KEY in self.env should inject OPENAI_API_KEY."""
+        """_TINO_FORCE_OPENAI_API_KEY in self.env should inject OPENAI_API_KEY."""
         result_env = _run_with_env(self_env={
-            f"{_HERMES_PROVIDER_ENV_FORCE_PREFIX}OPENAI_API_KEY": "sk-explicit",
+            f"{_TINO_PROVIDER_ENV_FORCE_PREFIX}OPENAI_API_KEY": "sk-explicit",
         })
 
         assert "OPENAI_API_KEY" in result_env
         assert result_env["OPENAI_API_KEY"] == "sk-explicit"
         # The force-prefixed key itself must not appear
-        assert f"{_HERMES_PROVIDER_ENV_FORCE_PREFIX}OPENAI_API_KEY" not in result_env
+        assert f"{_TINO_PROVIDER_ENV_FORCE_PREFIX}OPENAI_API_KEY" not in result_env
 
     def test_force_prefix_overrides_os_environ_block(self):
         """Force-prefix in self.env wins even when os.environ has the blocked var."""
         result_env = _run_with_env(
             extra_os_env={"OPENAI_BASE_URL": "http://leaked/v1"},
-            self_env={f"{_HERMES_PROVIDER_ENV_FORCE_PREFIX}OPENAI_BASE_URL": "http://intended/v1"},
+            self_env={f"{_TINO_PROVIDER_ENV_FORCE_PREFIX}OPENAI_BASE_URL": "http://intended/v1"},
         )
 
         assert result_env["OPENAI_BASE_URL"] == "http://intended/v1"
@@ -556,9 +556,9 @@ class TestActiveVenvMarkerStripping:
     VIRTUAL_ENV (and possibly CONDA_PREFIX). If those leak into commands the
     agent runs against ANOTHER Python project, ``uv``/``poetry`` treat the
     inherited value as the active environment and build that project's deps
-    into the Hermes venv path instead of the project's own ``.venv`` —
-    silently clobbering the Hermes environment (and, when the other project
-    pins a different Python, breaking the gateway outright). The Hermes venv
+    into the Tino venv path instead of the project's own ``.venv`` —
+    silently clobbering the Tino environment (and, when the other project
+    pins a different Python, breaking the gateway outright). The Tino venv
     stays reachable via PATH, so stripping the markers is safe.
     """
 
@@ -632,26 +632,26 @@ def _physical_repo_root(tmp_path: Path) -> Path:
 
 
 class TestPythonpathSelectiveStrip:
-    """PYTHONPATH Hermes-owned entry stripping (#74817).
+    """PYTHONPATH Tino-owned entry stripping (#74817).
 
-    The Desktop Electron app injects the Hermes repo root and the Hermes
+    The Desktop Electron app injects the Tino repo root and the Tino
     venv's site-packages (Python 3.11) into PYTHONPATH.  When this leaks
     into subprocesses running a different Python (e.g. 3.13), 3.11 C
     extensions appear on sys.path and crash with ImportError.
     ``_strip_hermes_owned_pythonpath`` surgically removes only the
-    entries Hermes itself owns (repo root, own venv site-packages),
+    entries Tino itself owns (repo root, own venv site-packages),
     preserving user paths — including user paths whose names merely
     contain another Python version.
     """
 
     def test_owned_entries_stripped_matrix(self):
-        """Exact Hermes-owned entries are removed; everything else survives
+        """Exact Tino-owned entries are removed; everything else survives
         verbatim (ordering, duplicates, empty components).
 
         Covers: the running venv's site-packages, the repo root (computed
         independently via parents[2] so an off-by-one in _hermes_repo_root
-        cannot silently pass), duplicate Hermes entries, all-owned input
-        (PYTHONPATH key removed), and mixed user/Hermes ordering with an
+        cannot silently pass), duplicate Tino entries, all-owned input
+        (PYTHONPATH key removed), and mixed user/Tino ordering with an
         empty component preserved.
         """
         from tools.environments.local_pythonpath import _strip_hermes_owned_pythonpath
@@ -685,7 +685,7 @@ class TestPythonpathSelectiveStrip:
         "",
     ])
     def test_non_owned_entries_preserved(self, user_pp):
-        """Anything not proven Hermes-owned is preserved byte-for-byte.
+        """Anything not proven Tino-owned is preserved byte-for-byte.
 
         One invariant, one matrix: ordinary user paths, Nix store paths,
         other-major/minor-version site-packages, paths merely containing a
@@ -701,7 +701,7 @@ class TestPythonpathSelectiveStrip:
 
     def test_non_owned_runtime_shaped_entries_preserved(self):
         """Runtime-derived user spellings are preserved: site-packages for a
-        different interpreter version, a descendant of the Hermes venv
+        different interpreter version, a descendant of the Tino venv
         site-packages, and direct/deeper children of the repo root.  The
         repo root is computed independently (parents[2] of this file) so an
         off-by-one in _hermes_repo_root cannot silently pass; no launcher
@@ -730,16 +730,16 @@ class TestPythonpathSelectiveStrip:
             assert env["PYTHONPATH"] == user_pp
 
     def test_windows_backslash_paths(self):
-        """Windows-style backslash paths are handled for Hermes-owned entries.
+        """Windows-style backslash paths are handled for Tino-owned entries.
 
         On Windows, os.pathsep is ';'.  We mock it so the test runs
         correctly on POSIX CI.  On a POSIX host a backslash path is a
         single path component, so ``Path`` cannot identify it as
-        Hermes-owned — the critical invariant is that user Windows paths
+        Tino-owned — the critical invariant is that user Windows paths
         (including site-packages paths for another Python version) are
         never destroyed.  On a real Windows host, Path splits on
-        backslashes and Hermes venv site-packages entries are stripped
-        by the same Hermes-owned check (covered by the Windows-only test
+        backslashes and Tino venv site-packages entries are stripped
+        by the same Tino-owned check (covered by the Windows-only test
         below).
         """
         from tools.environments.local_pythonpath import _strip_hermes_owned_pythonpath
@@ -757,14 +757,14 @@ class TestPythonpathSelectiveStrip:
         assert "PYTHONPATH" in env
         entries = env["PYTHONPATH"].split(";")
         # Both survive on POSIX: user paths must always be preserved, and
-        # the Hermes-owned check cannot match a backslash path here.
+        # the Tino-owned check cannot match a backslash path here.
         assert hermes_win in entries
         assert user_win in entries
 
     @pytest.mark.windows_only
     def test_windows_hermes_owned_paths_stripped(self):
-        """On Windows, a Hermes venv site-packages entry written with
-        backslashes is stripped by the same Hermes-owned check, while a
+        """On Windows, a Tino venv site-packages entry written with
+        backslashes is stripped by the same Tino-owned check, while a
         user Windows path is preserved.  Windows-only: POSIX ``Path`` does
         not split on backslashes, so this cannot be meaningfully simulated
         on a POSIX host."""
@@ -823,9 +823,9 @@ class TestPythonpathSelectiveStrip:
     def test_base_python_sanitizer_uses_validated_separate_runtime_venv(self, tmp_path, monkeypatch):
         """A base interpreter strips the exact Windows runtime site-packages.
 
-        This deliberately uses a synthetic Hermes venv separate from the test
+        This deliberately uses a synthetic Tino venv separate from the test
         runner: sys.prefix represents base Python, while validated VIRTUAL_ENV
-        identifies ``<repo>/venv`` as the Hermes runtime producer contract.
+        identifies ``<repo>/venv`` as the Tino runtime producer contract.
         """
         import tools.environments.local as local
         from tools.environments import local_pythonpath
@@ -895,7 +895,7 @@ class TestPythonpathSelectiveStrip:
     ])
     def test_builders_strip_hermes_venv_pythonpath(self, builder):
         """Every subprocess env builder applies the same sanitation contract:
-        Hermes venv site-packages is stripped, user entries survive.
+        Tino venv site-packages is stripped, user entries survive.
         """
         from tools.environments import local as local_mod
 
@@ -918,7 +918,7 @@ class TestPythonpathSelectiveStrip:
         assert "/home/user/my-lib" in entries
 
     def test_scrub_child_env_strips_hermes_venv_pythonpath(self):
-        """execute_code's _scrub_child_env path: after scrubbing, Hermes venv
+        """execute_code's _scrub_child_env path: after scrubbing, Tino venv
         site-packages entries should be stripped when
         _strip_hermes_owned_pythonpath is applied (as the spawn path does),
         while user entries (even for another Python version) are preserved.
@@ -948,12 +948,12 @@ class TestPythonpathSelectiveStrip:
     def test_execute_code_composition_strips_inherited_hermes_entries(self, same_env):
         """Integration: execute_code's real spawn path composes a clean PYTHONPATH.
 
-        Seeds a contaminated inherited PYTHONPATH (Hermes repo root + Hermes
+        Seeds a contaminated inherited PYTHONPATH (Tino repo root + Tino
         venv site-packages + user entries) through os.environ and drives
         execute_code all the way to Popen.  Proves the #84500 conditional
         composition and the #82581 selective strip compose correctly:
 
-        * inherited Hermes venv site-packages never survive into the sandbox;
+        * inherited Tino venv site-packages never survive into the sandbox;
         * the staging tmpdir stays the first entry;
         * the repo root is deliberately re-added exactly once for a same-env
           child (the single occurrence proves the inherited copy was stripped
@@ -1014,7 +1014,7 @@ class TestPythonpathSelectiveStrip:
         assert norm_parts[0] == norm_staging, \
             "staging tmpdir must be the first PYTHONPATH entry"
         assert norm_venv not in norm_parts, \
-            "inherited Hermes venv site-packages must be stripped"
+            "inherited Tino venv site-packages must be stripped"
         assert norm_user_a in norm_parts and norm_user_b in norm_parts, \
             "user PYTHONPATH entries must survive"
         assert norm_parts.index(norm_user_a) > norm_parts.index(norm_staging), \
@@ -1070,7 +1070,7 @@ class TestPythonpathSelectiveStrip:
             _make_directory_link(configured_home, physical_home)
         except OSError as exc:
             pytest.skip(f"directory link unavailable on this host: {exc}")
-        monkeypatch.setenv("HERMES_HOME", str(configured_home))
+        monkeypatch.setenv("TINO_HOME", str(configured_home))
 
         launcher_entry = Path(_preserve_hermes_home_path(physical_root))
         aliases = local_pythonpath._build_hermes_repo_root_aliases(
@@ -1101,9 +1101,9 @@ class TestPythonpathSelectiveStrip:
     def test_profile_rehome_keeps_junction_lexical_alias(self, tmp_path, monkeypatch):
         """Profile re-home must not lose the launcher's lexical repo-root spelling.
 
-        The desktop/CLI spawn children with HERMES_HOME and PYTHONPATH in the
+        The desktop/CLI spawn children with TINO_HOME and PYTHONPATH in the
         configured (junction) spelling, but --profile / sticky active_profile
-        re-home HERMES_HOME through resolve_profile_env() before the
+        re-home TINO_HOME through resolve_profile_env() before the
         sanitizer loads.  Regression (junction + profile re-home): the alias
         builder must still recover the lexical root so the inherited lexical
         repo-root entry is stripped.
@@ -1124,7 +1124,7 @@ class TestPythonpathSelectiveStrip:
             pytest.skip(f"directory link unavailable on this host: {exc}")
 
         # Launcher contract: the configured spelling is the env and the root.
-        monkeypatch.setenv("HERMES_HOME", str(configured_home))
+        monkeypatch.setenv("TINO_HOME", str(configured_home))
         lexical_root = configured_home / "hermes-agent"
 
         # Profile re-home keeps the configured spelling (physically identical
@@ -1132,7 +1132,7 @@ class TestPythonpathSelectiveStrip:
         assert Path(resolve_profile_env("default")) == configured_home
         assert Path(resolve_profile_env("coder")) == configured_home / "profiles" / "coder"
 
-        # The sanitizer now runs under the re-homed (profile) HERMES_HOME.
+        # The sanitizer now runs under the re-homed (profile) TINO_HOME.
         aliases = local_pythonpath._build_hermes_repo_root_aliases(
             physical_root.resolve(),
             physical_root,
@@ -1286,11 +1286,11 @@ class TestPythonpathSelectiveStrip:
 
 
 class TestPythonhomeSanitized:
-    """PYTHONHOME must not leak from the Hermes runtime into subprocesses.
+    """PYTHONHOME must not leak from the Tino runtime into subprocesses.
 
     The gateway inherits/sets PYTHONHOME in its process environment; a child
     interpreter (system Python, another venv, cron no_agent scripts) that
-    inherits it redirects its stdlib search to the Hermes venv and crashes
+    inherits it redirects its stdlib search to the Tino venv and crashes
     with version-mismatch errors before importing anything (#75018).
     """
 
@@ -1406,14 +1406,14 @@ class TestBlocklistCoverage:
             "ANTHROPIC_API_KEY",
             "LLM_MODEL",
         }
-        assert must_block.issubset(_HERMES_PROVIDER_ENV_BLOCKLIST)
+        assert must_block.issubset(_TINO_PROVIDER_ENV_BLOCKLIST)
 
     def test_registry_vars_are_in_blocklist(self):
         """Every api_key_env_var and base_url_env_var from PROVIDER_REGISTRY
         must appear in the blocklist — ensures no drift.
 
         CLAUDE_CODE_OAUTH_TOKEN is the one deliberate exemption: it is owned
-        by the user's Claude Code install, not Hermes (#55878).
+        by the user's Claude Code install, not Tino (#55878).
         """
         from hermes_cli.auth import PROVIDER_REGISTRY
 
@@ -1422,25 +1422,25 @@ class TestBlocklistCoverage:
             for var in pconfig.api_key_env_vars:
                 if var in exempt:
                     continue
-                assert var in _HERMES_PROVIDER_ENV_BLOCKLIST, (
+                assert var in _TINO_PROVIDER_ENV_BLOCKLIST, (
                     f"Registry var {var} (provider={pconfig.id}) missing from blocklist"
                 )
             if pconfig.base_url_env_var:
-                assert pconfig.base_url_env_var in _HERMES_PROVIDER_ENV_BLOCKLIST, (
+                assert pconfig.base_url_env_var in _TINO_PROVIDER_ENV_BLOCKLIST, (
                     f"Registry base_url_env_var {pconfig.base_url_env_var} "
                     f"(provider={pconfig.id}) missing from blocklist"
                 )
 
     def test_bedrock_bearer_token_is_in_blocklist(self):
-        """auth_type='aws_sdk' providers contribute their Hermes-managed
+        """auth_type='aws_sdk' providers contribute their Tino-managed
         inference token (the Bedrock bearer) to the blocklist, keyed off
         auth_type so any future SDK-cred provider is covered automatically."""
-        assert "AWS_BEARER_TOKEN_BEDROCK" in _HERMES_PROVIDER_ENV_BLOCKLIST
+        assert "AWS_BEARER_TOKEN_BEDROCK" in _TINO_PROVIDER_ENV_BLOCKLIST
 
     def test_general_aws_chain_not_in_blocklist(self):
         """The general AWS credential chain must NOT be in the blocklist —
         no-regression guard for #32314. These belong to the user's trusted
-        operator shell (SECURITY.md §3.2), not to Hermes, and blocklisting
+        operator shell (SECURITY.md §3.2), not to Tino, and blocklisting
         them would be unrecoverable via env_passthrough (GHSA-rhgp-j443-p4rf).
         """
         general_chain = {
@@ -1455,7 +1455,7 @@ class TestBlocklistCoverage:
             "AWS_WEB_IDENTITY_TOKEN_FILE",
             "AWS_ROLE_ARN",
         }
-        leaked_block = general_chain & _HERMES_PROVIDER_ENV_BLOCKLIST
+        leaked_block = general_chain & _TINO_PROVIDER_ENV_BLOCKLIST
         assert not leaked_block, (
             f"General AWS chain vars must stay inheritable, but these are "
             f"blocklisted: {sorted(leaked_block)} (capability regression, #32314)"
@@ -1465,15 +1465,15 @@ class TestBlocklistCoverage:
         """Non-registry auth vars (ANTHROPIC_TOKEN) must also be in the
         blocklist."""
         extras = {"ANTHROPIC_TOKEN"}
-        assert extras.issubset(_HERMES_PROVIDER_ENV_BLOCKLIST)
+        assert extras.issubset(_TINO_PROVIDER_ENV_BLOCKLIST)
 
     def test_claude_code_oauth_token_is_inheritable(self):
         """CLAUDE_CODE_OAUTH_TOKEN is owned by the user's Claude Code install
-        (subscription OAuth), not a Hermes inference credential. Stripping it
+        (subscription OAuth), not a Tino inference credential. Stripping it
         made agent-spawned ``claude`` fall through to the shared Keychain /
         ~/.claude credential store and clobber the user's interactive login
         on auth failure (#55878). It must stay inheritable."""
-        assert "CLAUDE_CODE_OAUTH_TOKEN" not in _HERMES_PROVIDER_ENV_BLOCKLIST
+        assert "CLAUDE_CODE_OAUTH_TOKEN" not in _TINO_PROVIDER_ENV_BLOCKLIST
 
     def test_non_registry_provider_vars_are_in_blocklist(self):
         extras = {
@@ -1488,7 +1488,7 @@ class TestBlocklistCoverage:
             "XAI_API_KEY",
             "HELICONE_API_KEY",
         }
-        assert extras.issubset(_HERMES_PROVIDER_ENV_BLOCKLIST)
+        assert extras.issubset(_TINO_PROVIDER_ENV_BLOCKLIST)
 
     def test_optional_tool_and_messaging_vars_are_in_blocklist(self):
         """Tool/messaging vars from OPTIONAL_ENV_VARS should stay covered."""
@@ -1497,11 +1497,11 @@ class TestBlocklistCoverage:
         for name, metadata in OPTIONAL_ENV_VARS.items():
             category = metadata.get("category")
             if category in {"tool", "messaging"}:
-                assert name in _HERMES_PROVIDER_ENV_BLOCKLIST, (
+                assert name in _TINO_PROVIDER_ENV_BLOCKLIST, (
                     f"Optional env var {name} (category={category}) missing from blocklist"
                 )
             elif category == "setting" and metadata.get("password"):
-                assert name in _HERMES_PROVIDER_ENV_BLOCKLIST, (
+                assert name in _TINO_PROVIDER_ENV_BLOCKLIST, (
                     f"Secret setting env var {name} missing from blocklist"
                 )
 
@@ -1535,7 +1535,7 @@ class TestBlocklistCoverage:
             "EMAIL_SMTP_HOST",
             "EMAIL_HOME_ADDRESS",
             "EMAIL_HOME_ADDRESS_NAME",
-            "HERMES_DASHBOARD_SESSION_TOKEN",
+            "TINO_DASHBOARD_SESSION_TOKEN",
             "GATEWAY_ALLOWED_USERS",
             "GH_TOKEN",
             "GITHUB_APP_ID",
@@ -1549,7 +1549,7 @@ class TestBlocklistCoverage:
             "VERCEL_PROJECT_ID",
             "VERCEL_TEAM_ID",
         }
-        assert extras.issubset(_HERMES_PROVIDER_ENV_BLOCKLIST)
+        assert extras.issubset(_TINO_PROVIDER_ENV_BLOCKLIST)
 
 
 class TestSanePathIncludesHomebrew:
@@ -1562,10 +1562,10 @@ class TestSanePathIncludesHomebrew:
         TestHermesBinDirOnPath) so a real ``hermes`` on the test runner's PATH
         doesn't shift the asserted PATH layout."""
         from tools.environments import local as local_mod
-        saved = local_mod._HERMES_BIN_DIR
-        local_mod._HERMES_BIN_DIR = None  # resolved -> no dir to inject
+        saved = local_mod._TINO_BIN_DIR
+        local_mod._TINO_BIN_DIR = None  # resolved -> no dir to inject
         yield
-        local_mod._HERMES_BIN_DIR = saved
+        local_mod._TINO_BIN_DIR = saved
 
     def test_sane_path_includes_homebrew_bin(self):
         from tools.environments.local import _SANE_PATH
@@ -1644,7 +1644,7 @@ class TestHermesBinDirOnPath:
 
     def _reset_cache(self):
         from tools.environments import local as local_mod
-        local_mod._HERMES_BIN_DIR = local_mod._SENTINEL
+        local_mod._TINO_BIN_DIR = local_mod._SENTINEL
 
     def test_resolves_via_which(self, monkeypatch):
         from tools.environments import local as local_mod
@@ -1658,7 +1658,7 @@ class TestHermesBinDirOnPath:
     def test_prepend_noop_when_unresolved(self, monkeypatch):
         from tools.environments import local as local_mod
         self._reset_cache()
-        local_mod._HERMES_BIN_DIR = None
+        local_mod._TINO_BIN_DIR = None
         assert local_mod._prepend_hermes_bin_dir("/usr/bin:/bin") == "/usr/bin:/bin"
 
     def test_make_run_env_injects_hermes_bin_dir(self):
@@ -1669,7 +1669,7 @@ class TestHermesBinDirOnPath:
         from tools.environments import local as local_mod
         from tools.environments.local import _make_run_env
         self._reset_cache()
-        local_mod._HERMES_BIN_DIR = "/opt/hermes/bin"
+        local_mod._TINO_BIN_DIR = "/opt/hermes/bin"
         with patch.dict(
             os.environ,
             {"PATH": os.pathsep.join(["/usr/bin", "/bin"])},
@@ -1682,10 +1682,10 @@ class TestHermesBinDirOnPath:
 
 
 class TestHermesInternalDynamicSecrets:
-    """Dynamically-named Hermes secrets injected at gateway/CLI startup must
+    """Dynamically-named Tino secrets injected at gateway/CLI startup must
     not leak into terminal subprocesses.
 
-    The static ``_HERMES_PROVIDER_ENV_BLOCKLIST`` is name-based and derived
+    The static ``_TINO_PROVIDER_ENV_BLOCKLIST`` is name-based and derived
     from provider/tool registries, so it cannot enumerate:
 
     - ``AUXILIARY_<TASK>_API_KEY`` / ``AUXILIARY_<TASK>_BASE_URL`` — per-task
@@ -1789,6 +1789,6 @@ class TestHermesInternalDynamicSecrets:
     def test_gateway_relay_static_names_in_blocklist(self):
         """The static relay names are also added to the name-based blocklist so
         the exact-match path catches them independently of the predicate."""
-        assert "GATEWAY_RELAY_SECRET" in _HERMES_PROVIDER_ENV_BLOCKLIST
-        assert "GATEWAY_RELAY_DELIVERY_KEY" in _HERMES_PROVIDER_ENV_BLOCKLIST
-        assert "GATEWAY_RELAY_ID" in _HERMES_PROVIDER_ENV_BLOCKLIST
+        assert "GATEWAY_RELAY_SECRET" in _TINO_PROVIDER_ENV_BLOCKLIST
+        assert "GATEWAY_RELAY_DELIVERY_KEY" in _TINO_PROVIDER_ENV_BLOCKLIST
+        assert "GATEWAY_RELAY_ID" in _TINO_PROVIDER_ENV_BLOCKLIST

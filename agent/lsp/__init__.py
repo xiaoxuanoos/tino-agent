@@ -1,4 +1,4 @@
-"""Language Server Protocol (LSP) integration for Hermes Agent.
+"""Language Server Protocol (LSP) integration for Tino Agent.
 
 Real language servers (pyright, gopls, ...) run as subprocesses and their
 ``publishDiagnostics`` feed the post-write lint delta filter of ``write_file`` /
@@ -18,7 +18,7 @@ from agent.lsp.manager import LSPService
 logger = logging.getLogger("agent.lsp")
 
 _service: Optional[LSPService] = None
-# Routed multiplex profiles (HERMES_HOME override) each get their own service: ``lsp.*`` config
+# Routed multiplex profiles (TINO_HOME override) each get their own service: ``lsp.*`` config
 # (enabled, servers, idle timeout) is per profile, so one process-wide singleton would let the first
 # profile's settings decide whether every other profile gets diagnostics.
 _services_by_home: dict = {}

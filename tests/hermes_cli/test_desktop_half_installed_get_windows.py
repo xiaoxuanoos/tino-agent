@@ -14,7 +14,7 @@ from hermes_cli import main_desktop
 def _desktop_checkout(tmp_path: Path, monkeypatch, *, electron_dir: Path | None = None) -> Path:
     """A minimal checkout with a staged Electron package; returns the electron dir."""
     import hermes_cli.main as main_mod
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "home"))
+    monkeypatch.setenv("TINO_HOME", str(tmp_path / "home"))
     (tmp_path / "home").mkdir()
     monkeypatch.setattr(main_mod, "PROJECT_ROOT", tmp_path)
     monkeypatch.setattr(main_desktop, "_nixos_build_env", lambda: {})

@@ -24,12 +24,12 @@ from hermes_cli import kanban_db_connect as kbc
 
 from utils import env_int
 
-HERMES_KANBAN_SPECIFY_MAX_TOKENS = max(1500, env_int("HERMES_KANBAN_SPECIFY_MAX_TOKENS", 6000))
+TINO_KANBAN_SPECIFY_MAX_TOKENS = max(1500, env_int("TINO_KANBAN_SPECIFY_MAX_TOKENS", 6000))
 
 logger = logging.getLogger(__name__)
 
 
-_SYSTEM_PROMPT = """You are the Kanban triage specifier for the Hermes Agent board.
+_SYSTEM_PROMPT = """You are the Kanban triage specifier for the Tino Agent board.
 A user dropped a rough idea into the Triage column. Your job is to turn it
 into a concrete, actionable task spec that an autonomous worker can pick up
 and execute without further clarification.
@@ -119,7 +119,7 @@ def _title_body(parsed: dict) -> tuple[Optional[str], Optional[str]]:
 def _profile_author(default: str = "specifier") -> str:
     """Mirror of ``hermes_cli.kanban._profile_author``. Kept local to
     avoid a circular import when kanban.py imports this module."""
-    return os.environ.get("HERMES_PROFILE") or os.environ.get("USER") or default
+    return os.environ.get("TINO_PROFILE") or os.environ.get("USER") or default
 
 
 def _load_triage_task(task_id: str) -> tuple[Optional[kb.Task], str]:
@@ -202,7 +202,7 @@ def specify_task(
     raw, reason = _call_aux(
         "specify", task_id, aux_task="triage_specifier", system=_SYSTEM_PROMPT,
         user=_USER_TEMPLATE.format(**_task_prompt_fields(task)),
-        max_tokens=HERMES_KANBAN_SPECIFY_MAX_TOKENS, timeout=timeout or 120,
+        max_tokens=TINO_KANBAN_SPECIFY_MAX_TOKENS, timeout=timeout or 120,
     )
     if raw is None:
         return SpecifyOutcome(task_id, False, reason)

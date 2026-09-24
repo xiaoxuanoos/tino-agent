@@ -1,4 +1,4 @@
-"""Python dependencies declared by user plugins: read, resolve against Hermes' own ranges, install,
+"""Python dependencies declared by user plugins: read, resolve against Tino's own ranges, install,
 and re-apply after ``hermes update`` rebuilds the venv.
 
 A plugin declares deps in its ``pyproject.toml`` (``[project].dependencies``) or, without one, in
@@ -7,10 +7,10 @@ external`` in the manifest opts a plugin out: it manages its own interpreter (si
 is never handed to the resolver.
 
 Contract (agreed with the Mnemosyne team, Sep 2026): the union of every enabled plugin's declarations
-is resolved together with Hermes' declared ranges; a candidate that has no solution is refused without
+is resolved together with Tino's declared ranges; a candidate that has no solution is refused without
 touching the live venv or disabling anything already installed. After an update, the union is
 re-applied; if core moved and the union no longer resolves, non-memory plugins are dropped first and
-disabled with a loud warning, because a Hermes that boots without memory reads as data loss.
+disabled with a loud warning, because a Tino that boots without memory reads as data loss.
 
 Lifted in shape from ethernet8023's ``pm/plugin_declarations.py`` / ``pm/workspace.py`` (#102765).
 """
@@ -142,8 +142,8 @@ def _marker_applies(req: Requirement) -> bool:
 
 
 def applicable_requirement(spec: str) -> Optional[str]:
-    """``spec`` reduced to ``name[extras]specifier`` when Hermes should install it here; ``None`` when
-    its environment marker excludes this platform, when it names Hermes itself (always satisfied by the
+    """``spec`` reduced to ``name[extras]specifier`` when Tino should install it here; ``None`` when
+    its environment marker excludes this platform, when it names Tino itself (always satisfied by the
     running checkout — installing ``hermes-agent`` from an index would clobber it), or when it points
     at a URL/path (see :func:`unsupported_specs`; the resolver must only see index packages)."""
     req = _parse_requirement(spec)
@@ -158,13 +158,13 @@ def applicable_specs(specs: Iterable[str]) -> list[str]:
 
 
 def unsupported_specs(specs: Iterable[str]) -> list[str]:
-    """Direct URL/path requirements: never installed by Hermes (arbitrary git/tarball sources are a
+    """Direct URL/path requirements: never installed by Tino (arbitrary git/tarball sources are a
     supply-chain surface the reviewed pin does not cover); surfaced so the user can install them."""
     return [s for s in specs if _parse_requirement(s).url]
 
 
 def core_constraints(project_root: Path) -> list[str]:
-    """Hermes' own declared ranges (``[project].dependencies`` + every extra), as constraint lines.
+    """Tino' own declared ranges (``[project].dependencies`` + every extra), as constraint lines.
     Plugins resolve inside these, so they can move transitives but never a core package out of range."""
     document = tomllib.loads((Path(project_root) / "pyproject.toml").read_text(encoding="utf-8"))
     project = document.get("project", {})
@@ -321,7 +321,7 @@ class DepsOutcome:
     status: str
     specs: tuple[str, ...] = ()
     detail: str = ""
-    skipped: tuple[str, ...] = ()  # direct-URL requirements Hermes never installs
+    skipped: tuple[str, ...] = ()  # direct-URL requirements Tino never installs
 
     @property
     def message(self) -> str:
@@ -353,7 +353,7 @@ def refuse_conflicting_candidate(plugin_dir: Path, *, home: Path) -> None:
         check_candidate(read_declaration(plugin_dir), home=home, project_root=project_root())
     except DependencyConflict as exc:
         raise DependencyConflict(
-            f"its Python dependencies conflict with Hermes or an enabled plugin:\n{exc}") from exc
+            f"its Python dependencies conflict with Tino or an enabled plugin:\n{exc}") from exc
     except DependencyInstallError as exc:
         logger.warning("Dependency pre-check skipped (%s); the install will retry for real", exc)
     except (ValueError, tomllib.TOMLDecodeError, yaml.YAMLError) as exc:
@@ -437,7 +437,7 @@ def reapply_all(*, project_root: Path, disable: Callable[[Path, str], None]) -> 
     report = ReapplyReport(installed=specs, dropped=[])
     for victim in dropped:
         home = next(h for h, decls in per_home if victim in decls)
-        reason = "its Python dependencies no longer resolve against this Hermes"
+        reason = "its Python dependencies no longer resolve against this Tino"
         disable(home, victim.name)
         report.dropped.append((victim.name, reason))
     return report

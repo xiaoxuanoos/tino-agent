@@ -30,7 +30,7 @@ def served_root(tmp_path, monkeypatch):
     (root / "gateway_state.json").write_text(json.dumps(
         {"pid": os.getpid(), "hermes_home": str(root), "gateway_state": "running",
          "served_profiles": ["default", "coder"]}))
-    monkeypatch.setenv("HERMES_HOME", str(root / "profiles" / "coder"))
+    monkeypatch.setenv("TINO_HOME", str(root / "profiles" / "coder"))
     monkeypatch.delenv("GATEWAY_MULTIPLEX_PROFILES", raising=False)
     import hermes_constants
     import gateway.status as status
@@ -115,7 +115,7 @@ def test_setup_gateway_service_step_skips_install_for_served_profile(served_root
     assert calls == []
     assert "already served by the default multiplexer" in capsys.readouterr().out
 
-    monkeypatch.setenv("HERMES_HOME", str(served_root / "profiles" / "other"))  # not in the live record
+    monkeypatch.setenv("TINO_HOME", str(served_root / "profiles" / "other"))  # not in the live record
     assert gw.ensure_gateway_service(context="setup") is True
     assert calls == ["install", "start"]
 
@@ -217,11 +217,11 @@ def test_dashboard_lifecycle_verbs_target_the_multiplexer(served_root, monkeypat
     from hermes_cli import profiles as profiles_mod
     from hermes_cli.web_server_gateway import _gateway_subcommand, _profile_action_environment, multiplexed_profile_refusal
     monkeypatch.setattr(profiles_mod, "_check_gateway_running", lambda home: False)
-    # This process's own HERMES_HOME is coder's; the restart child must still run under the DEFAULT
+    # This process's own TINO_HOME is coder's; the restart child must still run under the DEFAULT
     # home (the multiplexer's) — a bare `gateway restart` here would inherit coder's home and exit 78.
     restart = _gateway_subcommand("coder", "restart")
     assert restart[-2:] == ["gateway", "restart"] and "coder" not in restart
-    assert _profile_action_environment(restart)["HERMES_HOME"] == str(served_root)
+    assert _profile_action_environment(restart)["TINO_HOME"] == str(served_root)
     assert multiplexed_profile_refusal("coder", "stop") and multiplexed_profile_refusal("coder", "start")
     assert _gateway_subcommand("other", "restart") == ["-p", "other", "gateway", "restart"]
     assert multiplexed_profile_refusal("other", "stop") is None

@@ -937,6 +937,8 @@ function ModelSettingsPanel({
   refreshKey: number;
   onSaved(): void;
 }) {
+  const { locale } = useI18n();
+  const chinese = locale === "zh";
   const [auxModalOpen, setAuxModalOpen] = useState(false);
   const [moaModalOpen, setMoaModalOpen] = useState(false);
   const [moa, setMoa] = useState<MoaConfigResponse | null>(null);
@@ -986,9 +988,9 @@ function ModelSettingsPanel({
       <CardHeader className="min-w-0 pb-3">
         <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
           <Settings2 className="h-4 w-4 shrink-0 text-muted-foreground" />
-          <CardTitle className="text-sm">Model Settings</CardTitle>
+          <CardTitle className="text-sm">{chinese ? "模型设置" : "Model Settings"}</CardTitle>
           <span className="max-w-full min-w-0 text-xs text-text-secondary [overflow-wrap:anywhere]">
-            applies to new sessions
+            {chinese ? "适用于新会话" : "applies to new sessions"}
           </span>
         </div>
       </CardHeader>
@@ -1000,13 +1002,13 @@ function ModelSettingsPanel({
             <div className="flex items-center gap-2 mb-0.5">
               <Star className="h-3 w-3 text-primary" />
               <span className="text-display text-xs font-medium tracking-wider">
-                Main model
+                {chinese ? "主模型" : "Main model"}
               </span>
             </div>
             <div className="text-xs font-mono text-text-secondary truncate">
-              {mainProv || "(unset)"}
+              {mainProv || (chinese ? "（未设置）" : "(unset)")}
               {mainProv && mainModel && " · "}
-              {mainModel || "(unset)"}
+              {mainModel || (chinese ? "（未设置）" : "(unset)")}
             </div>
           </div>
           <Button
@@ -1014,7 +1016,7 @@ function ModelSettingsPanel({
             onClick={() => setPicker({ kind: "main" })}
             className="shrink-0 self-start text-xs uppercase sm:self-center"
           >
-            Change
+            {chinese ? "更改" : "Change"}
           </Button>
         </div>
 
@@ -1024,13 +1026,13 @@ function ModelSettingsPanel({
             <div className="flex items-center gap-2 mb-0.5">
               <Cpu className="h-3 w-3 text-text-tertiary" />
               <span className="text-display text-xs font-medium tracking-wider">
-                Auxiliary tasks
+                {chinese ? "辅助任务" : "Auxiliary tasks"}
               </span>
             </div>
             <div className="text-xs font-mono text-text-secondary truncate">
               {auxOverrideCount > 0
-                ? `${auxOverrideCount} override${auxOverrideCount > 1 ? "s" : ""} · ${AUX_TASKS.length - auxOverrideCount} auto`
-                : `${AUX_TASKS.length} tasks · all auto`}
+                ? chinese ? `${auxOverrideCount} 项覆盖 · ${AUX_TASKS.length - auxOverrideCount} 项自动` : `${auxOverrideCount} override${auxOverrideCount > 1 ? "s" : ""} · ${AUX_TASKS.length - auxOverrideCount} auto`
+                : chinese ? `${AUX_TASKS.length} 项任务 · 全部自动` : `${AUX_TASKS.length} tasks · all auto`}
             </div>
           </div>
           <Button
@@ -1039,7 +1041,7 @@ function ModelSettingsPanel({
             onClick={() => setAuxModalOpen(true)}
             className="shrink-0 self-start text-xs uppercase sm:self-center"
           >
-            Configure
+            {chinese ? "配置" : "Configure"}
           </Button>
         </div>
 
@@ -1048,13 +1050,13 @@ function ModelSettingsPanel({
             <div className="flex items-center gap-2 mb-0.5">
               <Brain className="h-3 w-3 text-text-tertiary" />
               <span className="text-display text-xs font-medium tracking-wider">
-                Mixture of Agents
+                {chinese ? "多模型协作" : "Mixture of Agents"}
               </span>
             </div>
             <div className="text-xs font-mono text-text-secondary truncate">
               {moa
-                ? `${moa.reference_models.length} reference${moa.reference_models.length === 1 ? "" : "s"} · ${moa.aggregator.provider}/${shortModelName(moa.aggregator.model)}`
-                : "not loaded"}
+                ? chinese ? `${moa.reference_models.length} 个参考模型 · ${moa.aggregator.provider}/${shortModelName(moa.aggregator.model)}` : `${moa.reference_models.length} reference${moa.reference_models.length === 1 ? "" : "s"} · ${moa.aggregator.provider}/${shortModelName(moa.aggregator.model)}`
+                : chinese ? "未加载" : "not loaded"}
             </div>
           </div>
           <Button
@@ -1064,7 +1066,7 @@ function ModelSettingsPanel({
             disabled={!moa}
             className="shrink-0 self-start text-xs uppercase sm:self-center"
           >
-            Configure
+            {chinese ? "配置" : "Configure"}
           </Button>
         </div>
 
@@ -1073,7 +1075,7 @@ function ModelSettingsPanel({
             key={`picker-${refreshKey}`}
             loader={api.getModelOptions}
             alwaysGlobal
-            title="Set Main Model"
+            title={chinese ? "设置主模型" : "Set Main Model"}
             onApply={async ({ provider, model, confirmExpensiveModel }) => {
               const result = await applyAssignment({
                 confirmExpensiveModel,
@@ -1302,13 +1304,13 @@ export default function ModelsPage() {
               </div>
               {!showTokens && (
                 <p className="mt-4 text-xs text-text-tertiary leading-relaxed">
-                  Token & cost analytics are hidden because the local counts
-                  exclude auxiliary calls (compression, vision, web extract,
-                  …) and provider retries, so they diverge from your provider
-                  bill. Enable{" "}
+                  {t.app.nav.chat === "对话"
+                    ? "已隐藏 Token 与费用统计：本地计数不含压缩、视觉等辅助调用和服务商重试，可能与账单不同。如需调试估算，请在"
+                    : "Token & cost analytics are hidden because local counts exclude auxiliary calls and provider retries. Enable "}
                   <span className="font-mono">dashboard.show_token_analytics</span>{" "}
-                  in <a href="/config" className="underline">Config</a> to
-                  show the local debug estimate anyway.
+                  {t.app.nav.chat === "对话" ? "中开启，位置：" : "in "}
+                  <a href="/config" className="underline">{t.app.nav.chat === "对话" ? "配置" : "Config"}</a>
+                  {t.app.nav.chat === "对话" ? "。" : " to show the local debug estimate."}
                 </p>
               )}
             </CardContent>

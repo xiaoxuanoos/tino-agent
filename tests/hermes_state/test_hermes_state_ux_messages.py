@@ -68,7 +68,7 @@ def test_db_unavailable_commands_are_pinned_to_the_failing_profile(monkeypatch, 
     profile whose store failed, like the table's actions do."""
     from hermes_constants import profile_cli_selector
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / ".hermes" / "profiles" / "research"))
+    monkeypatch.setenv("TINO_HOME", str(tmp_path / ".hermes" / "profiles" / "research"))
     selector = profile_cli_selector()
     assert selector.strip()
     hermes_state._set_last_init_error(None)

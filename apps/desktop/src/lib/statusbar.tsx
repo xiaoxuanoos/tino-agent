@@ -65,7 +65,7 @@ export function contextBarLabel(usage: UsageStats): string {
 export function cacheHitLabel(usage: UsageStats): string {
   const pct = usage.cache_hit_pct
 
-  return typeof pct === 'number' && Number.isFinite(pct) ? `${Math.round(pct)}%` : ''
+  return typeof pct === 'number' && Number.isFinite(pct) ? `${Number(pct.toFixed(1))}%` : ''
 }
 
 /** `42 t/s` for the rolling throughput; '' before the first completed call. */
@@ -73,6 +73,34 @@ export function tokensPerSecondLabel(usage: UsageStats): string {
   const tps = usage.avg_tps
 
   return typeof tps === 'number' && Number.isFinite(tps) && tps > 0 ? `${Math.round(tps)} t/s` : ''
+}
+
+/** Compact, truthful session summary. Rounds, tool time and first-token
+ * latency are deliberately omitted: the gateway does not report them yet. */
+export function sessionPerformanceLabel(usage: UsageStats, chinese = false): string {
+  if (!usage.calls) {
+    return ''
+  }
+
+  const parts = chinese
+    ? [`模型 ${usage.calls} 次`]
+    : [`${usage.calls} model calls`]
+  const tps = tokensPerSecondLabel(usage)
+  const cache = cacheHitLabel(usage)
+
+  if (typeof usage.avg_latency_s === 'number' && Number.isFinite(usage.avg_latency_s) && usage.avg_latency_s > 0) {
+    parts.push(chinese ? `平均 ${usage.avg_latency_s.toFixed(1)} 秒/次` : `${usage.avg_latency_s.toFixed(1)} s/call`)
+  }
+  if (tps) {
+    parts.push(tps.replace(' t/s', ' tok/s'))
+  }
+  if (cache) {
+    parts.push(chinese ? `缓存 ${cache}` : `cache ${cache}`)
+  }
+  parts.push(chinese ? `输入 ${compactNumber(usage.input)} tok` : `in ${compactNumber(usage.input)} tok`)
+  parts.push(chinese ? `输出 ${compactNumber(usage.output)} tok` : `out ${compactNumber(usage.output)} tok`)
+
+  return parts.join(' · ')
 }
 
 export function LiveDuration({ since }: { since: number | null | undefined }) {

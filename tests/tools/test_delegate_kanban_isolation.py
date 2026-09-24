@@ -32,10 +32,10 @@ def _make_running_kanban_task(monkeypatch, tmp_path):
     attachments_root = tmp_path / "attachments"
     workspace = tmp_path / "parent-workspace"
     workspace.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
-    monkeypatch.setenv("HERMES_PROFILE", "parent-worker")
-    monkeypatch.setenv("HERMES_KANBAN_WORKSPACE", str(workspace))
-    monkeypatch.setenv("HERMES_KANBAN_ATTACHMENTS_ROOT", str(attachments_root))
+    monkeypatch.setenv("TINO_HOME", str(home))
+    monkeypatch.setenv("TINO_PROFILE", "parent-worker")
+    monkeypatch.setenv("TINO_KANBAN_WORKSPACE", str(workspace))
+    monkeypatch.setenv("TINO_KANBAN_ATTACHMENTS_ROOT", str(attachments_root))
 
     from hermes_cli import kanban_db as kb
     from hermes_cli import kanban_db_connect as kbc
@@ -57,22 +57,22 @@ def _make_running_kanban_task(monkeypatch, tmp_path):
     finally:
         conn.close()
 
-    monkeypatch.setenv("HERMES_KANBAN_TASK", tid)
-    monkeypatch.setenv("HERMES_KANBAN_RUN_ID", str(run_id))
+    monkeypatch.setenv("TINO_KANBAN_TASK", tid)
+    monkeypatch.setenv("TINO_KANBAN_RUN_ID", str(run_id))
     return kb, tid, workspace, attachments_root
 
 
 def test_delegated_child_context_suppresses_env_gated_kanban_tools(monkeypatch, tmp_path):
     """A delegate_task child must not inherit the parent's Kanban tool schema.
 
-    The parent process may be a dispatcher worker with HERMES_KANBAN_TASK set;
+    The parent process may be a dispatcher worker with TINO_KANBAN_TASK set;
     the child is only a subagent, not the run owner.
     """
-    monkeypatch.setenv("HERMES_KANBAN_TASK", "t_parent")
-    monkeypatch.setenv("HERMES_KANBAN_RUN_ID", "123")
+    monkeypatch.setenv("TINO_KANBAN_TASK", "t_parent")
+    monkeypatch.setenv("TINO_KANBAN_RUN_ID", "123")
     home = tmp_path / ".hermes"
     home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("TINO_HOME", str(home))
 
     import tools.kanban_tools  # noqa: F401 - ensure registered
     from agent.delegation_context import delegated_child_context
@@ -141,18 +141,18 @@ def test_delegate_child_execute_code_env_bridges_contextvar_and_scrubs_kanban(
 
     Regression coverage for the vulnerable path: delegate_task marks child
     execution with a ContextVar, while execute_code used to scrub plain
-    ``os.environ`` and therefore never wrote HERMES_DELEGATED_CHILD_CONTEXT into
+    ``os.environ`` and therefore never wrote TINO_DELEGATED_CHILD_CONTEXT into
     the sandbox env.
     """
     home = tmp_path / ".hermes"
     home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
-    monkeypatch.setenv("HERMES_KANBAN_TASK", "t_parent")
-    monkeypatch.setenv("HERMES_KANBAN_RUN_ID", "123")
-    monkeypatch.setenv("HERMES_KANBAN_DB", str(home / "kanban.db"))
-    monkeypatch.setenv("HERMES_KANBAN_WORKSPACE", str(tmp_path / "parent-workspace"))
-    monkeypatch.setenv("HERMES_KANBAN_CLAIM_LOCK", "lock")
-    monkeypatch.delenv("HERMES_DELEGATED_CHILD_CONTEXT", raising=False)
+    monkeypatch.setenv("TINO_HOME", str(home))
+    monkeypatch.setenv("TINO_KANBAN_TASK", "t_parent")
+    monkeypatch.setenv("TINO_KANBAN_RUN_ID", "123")
+    monkeypatch.setenv("TINO_KANBAN_DB", str(home / "kanban.db"))
+    monkeypatch.setenv("TINO_KANBAN_WORKSPACE", str(tmp_path / "parent-workspace"))
+    monkeypatch.setenv("TINO_KANBAN_CLAIM_LOCK", "lock")
+    monkeypatch.delenv("TINO_DELEGATED_CHILD_CONTEXT", raising=False)
 
     from agent.delegation_context import delegated_child_context
     from tools.code_execution_env import _scrub_child_env
@@ -160,19 +160,19 @@ def test_delegate_child_execute_code_env_bridges_contextvar_and_scrubs_kanban(
     with delegated_child_context():
         env = _scrub_child_env(
             dict(os.environ),
-            is_passthrough=lambda k: k.startswith("HERMES_KANBAN_"),
+            is_passthrough=lambda k: k.startswith("TINO_KANBAN_"),
             is_windows=False,
         )
 
-    assert os.environ.get("HERMES_DELEGATED_CHILD_CONTEXT") is None
-    assert env["HERMES_HOME"] == str(home)
-    assert env["HERMES_DELEGATED_CHILD_CONTEXT"]  # fenced board root (path), not a bare flag
-    assert "HERMES_KANBAN_TASK" not in env
-    assert "HERMES_KANBAN_RUN_ID" not in env
-    assert "HERMES_KANBAN_CLAIM_LOCK" not in env
+    assert os.environ.get("TINO_DELEGATED_CHILD_CONTEXT") is None
+    assert env["TINO_HOME"] == str(home)
+    assert env["TINO_DELEGATED_CHILD_CONTEXT"]  # fenced board root (path), not a bare flag
+    assert "TINO_KANBAN_TASK" not in env
+    assert "TINO_KANBAN_RUN_ID" not in env
+    assert "TINO_KANBAN_CLAIM_LOCK" not in env
     # Board location and workspace routing ride along with the fence marker.
-    assert env["HERMES_KANBAN_DB"] == str(home / "kanban.db")
-    assert env["HERMES_KANBAN_WORKSPACE"] == str(tmp_path / "parent-workspace")
+    assert env["TINO_KANBAN_DB"] == str(home / "kanban.db")
+    assert env["TINO_KANBAN_WORKSPACE"] == str(tmp_path / "parent-workspace")
 
 
 def test_auto_heartbeat_reports_failure_without_mutating_fenced_child_board(
@@ -192,7 +192,7 @@ def test_auto_heartbeat_reports_failure_without_mutating_fenced_child_board(
     try:
         task_before = kb.get_task(conn, tid)
         events_before = kb.list_events(conn, tid)
-        monkeypatch.setenv("HERMES_DELEGATED_CHILD_CONTEXT", str(tmp_path / ".hermes"))
+        monkeypatch.setenv("TINO_DELEGATED_CHILD_CONTEXT", str(tmp_path / ".hermes"))
         monkeypatch.setattr(kanban_tools, "_auto_heartbeat_last_attempt", 0.0)
         # raising=False: a regression that drops the module flag must fail on the
         # symptom assertions below, not on this attribute probe.
@@ -202,10 +202,10 @@ def test_auto_heartbeat_reports_failure_without_mutating_fenced_child_board(
             assert kanban_tools.heartbeat_current_worker_from_env() is False
             monkeypatch.setattr(kanban_tools, "_auto_heartbeat_last_attempt", 0.0)
             assert kanban_tools.heartbeat_current_worker_from_env() is False
-        fence_warnings = [r for r in caplog.records if "HERMES_DELEGATED_CHILD_CONTEXT" in r.getMessage()]
+        fence_warnings = [r for r in caplog.records if "TINO_DELEGATED_CHILD_CONTEXT" in r.getMessage()]
         assert len(fence_warnings) == 1 and tid in fence_warnings[0].getMessage()
 
-        monkeypatch.delenv("HERMES_DELEGATED_CHILD_CONTEXT")
+        monkeypatch.delenv("TINO_DELEGATED_CHILD_CONTEXT")
         monkeypatch.setattr(kanban_tools, "_auto_heartbeat_last_attempt", 0.0)
         with delegated_child_context("child-1"):
             assert kanban_tools.heartbeat_current_worker_from_env() is False

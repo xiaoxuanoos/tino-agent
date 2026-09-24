@@ -833,8 +833,8 @@ class CLIAgentSetupMixin:
         # role -> (label, label style, body style, continuation indent)
         role_styles = {
             "user": ("  ● You: ", f"dim bold {_session_label_c}", "dim", " " * 9),
-            "assistant": ("  ◆ Hermes: ", f"dim bold {_assistant_label_c}", "dim", " " * 12),
-            "assistant_last": ("  ◆ Hermes: ", f"bold {_assistant_label_c}", "", " " * 12),  # full, non-dim
+            "assistant": ("  ◆ Tino: ", f"dim bold {_assistant_label_c}", "dim", " " * 12),
+            "assistant_last": ("  ◆ Tino: ", f"bold {_assistant_label_c}", "", " " * 12),  # full, non-dim
         }
         lines = Text()
         if skipped:

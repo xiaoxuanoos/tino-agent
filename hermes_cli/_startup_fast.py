@@ -35,22 +35,22 @@ def project_root_str() -> str:
 
 
 def normalize_hermes_home_env() -> None:
-    """Expand ``~``/``$VAR`` in ``HERMES_HOME`` once, at process entry, and write it back.
+    """Expand ``~``/``$VAR`` in ``TINO_HOME`` once, at process entry, and write it back.
 
     fish does not expand ``~`` inside ``VAR=~/...`` and every shell passes a quoted value
     through verbatim, so a literal tilde reaches the process. ``Path("~/.hermes")`` is
-    *relative*: the many raw ``os.environ["HERMES_HOME"]`` readers (this fast path, the
+    *relative*: the many raw ``os.environ["TINO_HOME"]`` readers (this fast path, the
     active_profile probe, profile re-home, the dotenv loader) would each resolve it against
     cwd and scaffold a full home under ``<cwd>/~/.hermes``. One expansion here gives every
     reader the same absolute spelling; ``hermes_constants`` expands as well for non-CLI
     entry points. A relative value that is not tilde/variable-shaped is left alone.
     """
-    raw = os.environ.get("HERMES_HOME", "")
+    raw = os.environ.get("TINO_HOME", "")
     if not raw.strip():
         return
     expanded = os.path.expanduser(os.path.expandvars(raw.strip()))
     if expanded != raw:
-        os.environ["HERMES_HOME"] = expanded
+        os.environ["TINO_HOME"] = expanded
 
 
 def ensure_project_root_on_path() -> None:
@@ -85,7 +85,7 @@ def is_container_startup_environment() -> bool:
 
 
 def active_profile_may_override_home(hermes_root: str) -> bool:
-    """Cheap probe: does an active non-default profile redirect HERMES_HOME?"""
+    """Cheap probe: does an active non-default profile redirect TINO_HOME?"""
     active = (_read_text(os.path.join(hermes_root, "active_profile")) or "").strip()
     return bool(active and active != "default")
 
@@ -95,7 +95,7 @@ def _default_home() -> str:
 
 
 def _resolved_home() -> str:
-    return os.environ.get("HERMES_HOME", "").strip() or _default_home()
+    return os.environ.get("TINO_HOME", "").strip() or _default_home()
 
 
 def container_mode_may_be_active() -> bool:
@@ -105,9 +105,9 @@ def container_mode_may_be_active() -> bool:
     they'd print the host's version instead of the container's — so any profile ambiguity means "may
     be active".
     """
-    if os.environ.get("HERMES_DEV") == "1" or is_container_startup_environment():
+    if os.environ.get("TINO_DEV") == "1" or is_container_startup_environment():
         return False
-    hermes_home = os.environ.get("HERMES_HOME", "").strip()
+    hermes_home = os.environ.get("TINO_HOME", "").strip()
     if hermes_home:
         if os.path.exists(os.path.join(hermes_home, ".container-mode")):
             return True
@@ -161,7 +161,7 @@ def print_fast_version_info(*, check_updates: bool = True) -> None:
     except Exception:
         from hermes_cli import __release_date__, __version__
 
-        print(f"Hermes Agent v{__version__} ({__release_date__})")
+        print(f"Tino Agent v{__version__} ({__release_date__})")
     print(f"Install directory: {project_root_str()}")
     # Authoritative resolver first (code-scoped stamp → managed → nix → git → pip; also self-heals
     # poisoned shared-home 'docker' stamps); cheap stdlib stamp probe only if it fails.
@@ -203,12 +203,12 @@ def try_fast_version(argv: list[str] | None = None) -> bool:
 
     Only ``--version``/``-V`` (``--version`` carries the full output incl. update status), and never
     when container mode may need to route the command into the container. Termux keeps the
-    HERMES_TERMUX_DISABLE_FAST_CLI escape hatch.
+    TINO_TERMUX_DISABLE_FAST_CLI escape hatch.
     """
     if argv is None:
         argv = sys.argv[1:]
     is_termux = is_termux_env()
-    if is_termux and os.environ.get("HERMES_TERMUX_DISABLE_FAST_CLI") == "1":
+    if is_termux and os.environ.get("TINO_TERMUX_DISABLE_FAST_CLI") == "1":
         return False
     if is_termux:
         if not is_termux_fast_version_argv(argv):

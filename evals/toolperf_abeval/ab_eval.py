@@ -18,8 +18,8 @@ Usage:
 
 Environment:
   ABEVAL_ROOT    working/results root   (default: ./abeval-workspace)
-  ABEVAL_HOME    HERMES_HOME for runs   (default: $ABEVAL_ROOT/home)
-                 Must be a configured Hermes home with credentials for the
+  ABEVAL_HOME    TINO_HOME for runs   (default: $ABEVAL_ROOT/home)
+                 Must be a configured Tino home with credentials for the
                  models under test. See README.md for a minimal setup.
 
 Results append to $ABEVAL_ROOT/results/<model>/<arm>/meta.jsonl (resume-safe:
@@ -191,8 +191,8 @@ mode = "overwrite"
             env = dict(os.environ)
             env.update({
                 "PYTHONPATH": pythonpath,
-                "HERMES_HOME": str(HOME),
-                "HERMES_NEMO_RELAY_PLUGINS_TOML": str(relay_config),
+                "TINO_HOME": str(HOME),
+                "TINO_NEMO_RELAY_PLUGINS_TOML": str(relay_config),
             })
             q = TASKS[name].replace("{WORK}", str(work))
             t0 = time.time()

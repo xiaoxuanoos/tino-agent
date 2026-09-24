@@ -15,7 +15,7 @@ logger = logging.getLogger("tools.environments.docker")
 
 _EGRESS_LABEL_KEY = "hermes-egress"
 _CONTAINER_CA = "/etc/ssl/certs/hermes-egress-ca.crt"
-_NODE_OPTIONS_SENTINEL = "_HERMES_EGRESS_NODE_OPTIONS_APPEND"
+_NODE_OPTIONS_SENTINEL = "_TINO_EGRESS_NODE_OPTIONS_APPEND"
 _CA_MODE_FLAGS = {"--use-openssl-ca", "--use-bundled-ca"}
 
 # Env names whose override would weaken or bypass enforced egress.
@@ -97,14 +97,14 @@ def _egress_proxy_args_for_docker() -> tuple[list[str], dict[str, str], list[str
         "SSL_CERT_FILE": _CONTAINER_CA,
         "CURL_CA_BUNDLE": _CONTAINER_CA,
         "NODE_EXTRA_CA_CERTS": _CONTAINER_CA,
-        "HERMES_EGRESS_PROXY": "1",  # lets the in-sandbox agent know it is proxy-aware
+        "TINO_EGRESS_PROXY": "1",  # lets the in-sandbox agent know it is proxy-aware
         _NODE_OPTIONS_SENTINEL: "--use-openssl-ca"}
 
     # Proxy tokens under the standard provider env names (and their aliases) so
-    # SDKs work unchanged; HERMES_PROXY_TOKEN_* copies are for diagnostics.
+    # SDKs work unchanged; TINO_PROXY_TOKEN_* copies are for diagnostics.
     for m in mappings:
         env_overrides[m.real_env_name] = m.proxy_token
-        env_overrides[f"HERMES_PROXY_TOKEN_{m.real_env_name}"] = m.proxy_token
+        env_overrides[f"TINO_PROXY_TOKEN_{m.real_env_name}"] = m.proxy_token
         for alias in getattr(m, "alias_env_names", ()) or ():
             env_overrides[alias] = m.proxy_token
 

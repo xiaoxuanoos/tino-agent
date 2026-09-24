@@ -90,7 +90,7 @@ def test_every_state_carries_a_clock(progress):
         ("running", ""),
         ("running", "Installing the new app"),
         ("done", ""),
-        ("manual", "Reopen Hermes to finish."),
+        ("manual", "Reopen Tino to finish."),
         ("error", "Update failed."),
     ]:
         progress.publish(state, message)
@@ -120,23 +120,35 @@ FAKE_HERMES = """#!/bin/bash
 # real update call; answer it without consuming a counted call so the
 # exits.N mapping below still refers to actual update attempts.
 case "$*" in *--help*) echo "--keep-stash"; exit 0 ;; esac
-n="$(cat "$HERMES_TEST_CALLS" 2>/dev/null || echo 0)"; n=$((n + 1))
-printf '%s' "$n" > "$HERMES_TEST_CALLS"
+n="$(cat "$TINO_TEST_CALLS" 2>/dev/null || echo 0)"; n=$((n + 1))
+printf '%s' "$n" > "$TINO_TEST_CALLS"
 for f in "$TMPDIR"/hermes-update-status.[0-9]*; do
   case "$f" in *.tmp) continue ;; esac
-  cp "$f" "$HERMES_TEST_CAPTURE.$n" 2>/dev/null
+  cp "$f" "$TINO_TEST_CAPTURE.$n" 2>/dev/null
 done
-exit "$(cat "$HERMES_TEST_EXITS.$n" 2>/dev/null || echo 0)"
+if [ "${TINO_TEST_ADVANCE_HEAD:-0}" = 1 ] && [ "$n" = 1 ]; then
+  git -c user.name=Test -c user.email=test@example.invalid \
+    commit --allow-empty -m "installed new updater code" >/dev/null
+fi
+exit "$(cat "$TINO_TEST_EXITS.$n" 2>/dev/null || echo 0)"
 """
 
 
-def _run_handoff(tmp_path, exits: dict[int, int]) -> list[dict]:
+def _run_handoff(tmp_path, exits: dict[int, int], *, advance_head: bool = False) -> list[dict]:
     """Run the real hand-off end to end; return the stage seen at each call."""
     install_root = tmp_path / "hermes-agent"
     (install_root / "venv" / "bin").mkdir(parents=True)
     hermes = install_root / "venv" / "bin" / "hermes"
     hermes.write_text(FAKE_HERMES)
     hermes.chmod(0o755)
+    if advance_head:
+        subprocess.run(["git", "init", "-q", str(install_root)], check=True)
+        subprocess.run(
+            ["git", "-C", str(install_root), "-c", "user.name=Test",
+             "-c", "user.email=test@example.invalid", "commit", "--allow-empty", "-m", "base"],
+            check=True,
+            stdout=subprocess.DEVNULL,
+        )
 
     capture = tmp_path / "seen"
     calls = tmp_path / "calls"
@@ -146,9 +158,11 @@ def _run_handoff(tmp_path, exits: dict[int, int]) -> list[dict]:
     env = {
         **os.environ,
         "TMPDIR": str(tmp_path),
-        "HERMES_TEST_CAPTURE": str(capture),
-        "HERMES_TEST_CALLS": str(calls),
-        "HERMES_TEST_EXITS": str(tmp_path / "exits"),
+        "TINO_HOME": str(tmp_path),
+        "TINO_TEST_CAPTURE": str(capture),
+        "TINO_TEST_CALLS": str(calls),
+        "TINO_TEST_EXITS": str(tmp_path / "exits"),
+        "TINO_TEST_ADVANCE_HEAD": "1" if advance_head else "0",
     }
     # The hand-off daemonizes and the launcher exits immediately; the result
     # file is the orchestrator's own completion signal.
@@ -189,11 +203,18 @@ def test_update_gate_publishes_its_stage_before_running(tmp_path):
 
 @requires_posix_handoff
 def test_retry_gate_publishes_a_distinct_stage(tmp_path):
-    """A failed first attempt doubles the wait -- the second pass must not
-    look like the first one hanging."""
-    stages = _run_handoff(tmp_path, {1: 1, 2: 0})
+    """Retry only after the first pass installs new updater code."""
+    stages = _run_handoff(tmp_path, {1: 1, 2: 0}, advance_head=True)
 
     assert [s["message"] for s in stages] == [
         "Updating code and dependencies",
         "Retrying update",
     ]
+
+
+@requires_posix_handoff
+def test_failed_update_without_new_code_does_not_retry(tmp_path):
+    """An unchanged checkout should not double the wait after a failure."""
+    stages = _run_handoff(tmp_path, {1: 1, 2: 0})
+
+    assert [s["message"] for s in stages] == ["Updating code and dependencies"]

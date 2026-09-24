@@ -1,4 +1,4 @@
-"""HERMES_HOME state checks for hermes doctor: directories, memory files, state.db health, skills hub, memory provider, profiles.
+"""TINO_HOME state checks for hermes doctor: directories, memory files, state.db health, skills hub, memory provider, profiles.
 Split out of ``hermes_cli/doctor.py``, which re-exports every name so ``hermes_cli.doctor.<name>`` keeps resolving (and monkeypatching)."""
 
 from __future__ import annotations
@@ -27,10 +27,10 @@ def _honcho_is_configured_for_doctor() -> bool:
 
 def _doctor_memory_config(hermes_home: Path | None = None) -> dict:
     """Return the effective memory section used by doctor diagnostics."""
-    from hermes_cli.doctor import HERMES_HOME
+    from hermes_cli.doctor import TINO_HOME
     try:
         from hermes_cli.config_effective import load_user_config_effective
-        config_path = (hermes_home if hermes_home is not None else HERMES_HOME) / "config.yaml"
+        config_path = (hermes_home if hermes_home is not None else TINO_HOME) / "config.yaml"
         if not config_path.exists():
             return {}
         section = load_user_config_effective(config_path).get("memory")
@@ -109,9 +109,9 @@ def _memory_store_flags(hermes_home: Path) -> tuple:
 
 @doctor_check()
 def _check_directory_structure(should_fix: bool, f: Finding) -> None:
-    """HERMES_HOME, expected subdirs, SOUL.md, and the enabled built-in memory files."""
-    from hermes_cli.doctor import HERMES_HOME, _DHH
-    hermes_home = HERMES_HOME
+    """TINO_HOME, expected subdirs, SOUL.md, and the enabled built-in memory files."""
+    from hermes_cli.doctor import TINO_HOME, _DHH
+    hermes_home = TINO_HOME
     ensure_dir(f, should_fix, hermes_home, f"{_DHH} directory exists", f"Created {_DHH} directory", f"{_DHH} not found")
     _memory_enabled, _user_profile_enabled = _memory_store_flags(hermes_home)
     memory_on = bool(_memory_enabled or _user_profile_enabled)
@@ -129,11 +129,11 @@ def _check_directory_structure(should_fix: bool, f: Finding) -> None:
         else:  # template comments only (no real content)
             check_info(f"{_DHH}/SOUL.md exists but is empty — edit it to customize personality")
     else:
-        check_warn(f"{_DHH}/SOUL.md not found", "(create it to give Hermes a custom personality)")
+        check_warn(f"{_DHH}/SOUL.md not found", "(create it to give Tino a custom personality)")
         if should_fix:
             soul_path.parent.mkdir(parents=True, exist_ok=True)
-            soul_path.write_text("# Hermes Agent Persona\n\n<!-- Edit this file to customize how Hermes communicates. -->\n\n"
-                                 "You are Hermes, a helpful AI assistant.\n", encoding="utf-8")
+            soul_path.write_text("# Tino Agent Persona\n\n<!-- Edit this file to customize how Tino communicates. -->\n\n"
+                                 "You are Tino, a helpful AI assistant.\n", encoding="utf-8")
             check_ok(f"Created {_DHH}/SOUL.md with basic template")
             f.fixed += 1
     # Only enabled built-in stores: users can disable either legacy file target, and stale migration files
@@ -160,7 +160,7 @@ def _check_scratch_dir(hermes_home: Path, _DHH: str) -> None:
     check_ok(f"{_DHH}/cache/scratch/ is the scratch dir (TMPDIR; {size}, pruned after {SCRATCH_MAX_AGE_HOURS}h)")
     tmpdir = os.environ.get("TMPDIR", "")
     if tmpdir and tmpdir != os.environ.get(SCRATCH_DIR_MARKER_ENV, ""):
-        check_info(f"TMPDIR={tmpdir} is set by you or the OS, so Hermes leaves it alone")
+        check_info(f"TMPDIR={tmpdir} is set by you or the OS, so Tino leaves it alone")
 
 
 def _session_count(state_db_path: Path):
@@ -366,8 +366,8 @@ def _retired_wal_holders(f: Finding, state_db_path: Path, _DHH: str) -> bool:
 @doctor_check()
 def _check_state_db(should_fix: bool, f: Finding) -> None:
     """state.db session count, FTS write health, schema repair, stats snapshot, WAL size."""
-    from hermes_cli.doctor import HERMES_HOME, _DHH
-    state_db_path = HERMES_HOME / "state.db"
+    from hermes_cli.doctor import TINO_HOME, _DHH
+    state_db_path = TINO_HOME / "state.db"
     # A read-only connect on the new generation is itself another opener, so nothing below may run.
     if _retired_wal_holders(f, state_db_path, _DHH):
         return
@@ -404,8 +404,8 @@ def _gh_authenticated() -> bool:
 
 @doctor_check()
 def _check_skills_hub(should_fix: bool, f: Finding) -> None:
-    from hermes_cli.doctor import HERMES_HOME, _DHH
-    hub_dir = HERMES_HOME / "skills" / ".hub"
+    from hermes_cli.doctor import TINO_HOME, _DHH
+    hub_dir = TINO_HOME / "skills" / ".hub"
     if check_bool(hub_dir.exists(), "Skills Hub directory exists", ("Skills Hub directory not initialized", "(run: hermes skills list)")):
         lock_file = hub_dir / "lock.json"
         if lock_file.exists():
@@ -483,8 +483,8 @@ def _memory_provider_generic(name: str) -> None:
 
 @doctor_check()
 def _check_memory_provider(should_fix: bool, f: Finding) -> None:
-    from hermes_cli.doctor import HERMES_HOME
-    name = _doctor_memory_config(HERMES_HOME).get("provider", "")
+    from hermes_cli.doctor import TINO_HOME
+    name = _doctor_memory_config(TINO_HOME).get("provider", "")
     if not name:
         check_ok("Built-in memory active", "(no external provider configured — this is fine)")
         return

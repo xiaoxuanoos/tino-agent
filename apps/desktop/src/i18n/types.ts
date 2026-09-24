@@ -194,13 +194,13 @@ export interface Translations {
       loadingSessions: string
       retryingRemoteBackend: string
       startingDesktopConnection: string
-      startingHermesDesktop: string
+      startingTinoDesktop: string
     }
     errors: {
       backgroundExited: string
       backgroundExitedDuringStartup: string
       backendStopped: string
-      restartHermes: string
+      restartTino: string
       openLogs: string
       desktopBootFailed: string
       gatewayConnectionLost: string
@@ -267,7 +267,7 @@ export interface Translations {
     backendOutOfDateTitle: string
     backendOutOfDateMessage: string
     installMethodUnsupportedTitle: string
-    updateHermes: string
+    updateTino: string
     updateReadyTitle: string
     updateReadyMessage: (count: number) => string
     updateReadyMessageUnknown: string
@@ -294,10 +294,10 @@ export interface Translations {
       openaiRejectedApiKey: string
       openaiTtsNeedsKey: string
       codeSkewRestartRequired: string
-      restartHermesFailed: string
+      restartTinoFailed: string
     }
     actions: {
-      restartHermes: string
+      restartTino: string
       openKeys: string
       openGateways: string
       openMaintenance: string
@@ -756,7 +756,7 @@ export interface Translations {
     uninstallSection: {
       dangerZone: string
       confirmUninstall: string
-      uninstallHermes: string
+      uninstallTino: string
     }
     poolLimits: {
       warmBotBackendsAria: string
@@ -766,6 +766,7 @@ export interface Translations {
     }
     customEndpoints: {
       title: string
+      introDescription: string
       deleteEndpoint: string
       emptyDescription: string
       emptyTitle: string
@@ -1077,9 +1078,9 @@ export interface Translations {
       sshPortDesc: string
       sshKeyTitle: string
       sshKeyDesc: string
-      sshHermesPathTitle: string
-      sshHermesPathDesc: string
-      sshHermesPathPlaceholder: string
+      sshTinoPathTitle: string
+      sshTinoPathDesc: string
+      sshTinoPathPlaceholder: string
       sshTestConnection: string
       sshConnect: string
       sshButtonsHint: string
@@ -1815,7 +1816,7 @@ export interface Translations {
     sharedGatewayRestartDescription: (bots: string) => string
     sharedGatewayRestartConfirm: string
     sharedGatewayRestarted: (count: number) => string
-    updateHermes: string
+    updateTino: string
     reloadWindow: string
     actionRunning: string
     actionDone: string
@@ -3075,7 +3076,7 @@ export interface Translations {
     alreadySignedInBody: string
     // First-launch set-up failure notice: the free tier could not be created at boot.
     // One sentence per backend code (`hermes_cli/anon_auth.py::ANON_*`); the copy never says
-    // the free MODEL is off — what is unavailable is using Hermes without signing in.
+    // the free MODEL is off — what is unavailable is using Tino without signing in.
     setupFailed: {
       gateClosed: string
       paused: string
@@ -3566,8 +3567,8 @@ export interface Translations {
       errorChooseModel: string
       errorCompressConversation: string
       errorCompressFailed: string
-      errorOpenHermesFolder: string
-      errorOpenHermesFolderFailed: string
+      errorOpenTinoFolder: string
+      errorOpenTinoFolderFailed: string
       errorUpdateApiKey: string
       /** One-click recovery for an expired/revoked OAuth grant: re-runs that
        *  provider's sign-in flow (auth layer, authKind 'oauth'). */

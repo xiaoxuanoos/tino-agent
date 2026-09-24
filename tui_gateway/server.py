@@ -47,7 +47,7 @@ from tui_gateway.transport import (FanoutTransport, StdioTransport, Transport, b
 
 logger = logging.getLogger(__name__)
 
-_hermes_home = _HERMES_HOME_AT_IMPORT = get_hermes_home()
+_hermes_home = _TINO_HOME_AT_IMPORT = get_hermes_home()
 load_hermes_dotenv(hermes_home=_hermes_home, project_env=Path(__file__).parent.parent / ".env")
 
 
@@ -101,7 +101,7 @@ _cfg_cache: dict | None = None
 _cfg_sig: tuple | None = None
 _cfg_path = None
 _session_resume_lock = threading.Lock()
-_SLASH_WORKER_TIMEOUT_S = max(5.0, env_float("HERMES_TUI_SLASH_TIMEOUT_S", 45.0))
+_SLASH_WORKER_TIMEOUT_S = max(5.0, env_float("TINO_TUI_SLASH_TIMEOUT_S", 45.0))
 
 def _ws_orphan_setting(env_var: str, cfg_key: str, default: float) -> float:
     """``dashboard.<cfg_key>`` seconds; the env var is an internal override that wins when set."""
@@ -128,13 +128,13 @@ def _resolve_ws_orphan_reap_grace() -> float:
     """Grace before an orphaned WS session is interrupted/reaped (0 = park forever): ws.py parks a
     disconnected session for a quick reattach, but a browser refresh mints a NEW sid and never
     reattaches the old one (leaking its slash worker)."""
-    return _ws_orphan_setting("HERMES_TUI_WS_ORPHAN_REAP_GRACE_S", "ws_orphan_reap_grace_s", 20.0)
+    return _ws_orphan_setting("TINO_TUI_WS_ORPHAN_REAP_GRACE_S", "ws_orphan_reap_grace_s", 20.0)
 
 
 _WS_ORPHAN_REAP_GRACE_S = _resolve_ws_orphan_reap_grace()
 # A detached RUNNING turn is interrupted only once its activity clock (API waits, stream tokens, tool
 # heartbeats) idled this long; 600s = the turn-liveness watchdog so "wedged" means the same. 0 disables.
-_WS_ORPHAN_ACTIVITY_STALE_S = _ws_orphan_setting("HERMES_TUI_WS_ORPHAN_ACTIVITY_STALE_S", "ws_orphan_activity_stale_s", 600.0)
+_WS_ORPHAN_ACTIVITY_STALE_S = _ws_orphan_setting("TINO_TUI_WS_ORPHAN_ACTIVITY_STALE_S", "ws_orphan_activity_stale_s", 600.0)
 _WS_ORPHAN_INTERRUPT_REAP_POLL_S = 1.0
 # Interrupt-then-reap poll budget: a turn that never settles (thread hung in a syscall) would
 # reschedule the 1s poll forever; after this many polls, log loudly and force-reap.
@@ -175,7 +175,7 @@ _LONG_HANDLERS = frozenset({
     "command.dispatch",  # /goal draft invokes the auxiliary model; never block the RPC reader
 })
 
-_rpc_pool_workers = max(2, env_int("HERMES_TUI_RPC_POOL_WORKERS", 8))
+_rpc_pool_workers = max(2, env_int("TINO_TUI_RPC_POOL_WORKERS", 8))
 _pool = concurrent.futures.ThreadPoolExecutor(max_workers=_rpc_pool_workers, thread_name_prefix="tui-rpc")
 atexit.register(lambda: _pool.shutdown(wait=False, cancel_futures=True))
 
@@ -214,7 +214,7 @@ _detached_ws_transport = _DropTransport()
 
 def _prepend_tool_paths(env: dict[str, str]) -> dict[str, str]:
     """Prepend managed bin (first: managed-first policy for the Browser Use CLI), venv bin and
-    ~/.local/bin to PATH so slash_worker children resolve Hermes-managed CLIs under the Desktop's minimal PATH."""
+    ~/.local/bin to PATH so slash_worker children resolve Tino-managed CLIs under the Desktop's minimal PATH."""
     managed_bin = ""
     with contextlib.suppress(Exception):
         managed_bin = str(Path(get_hermes_home()) / "bin")
@@ -235,10 +235,10 @@ class _SlashWorker:
         argv = [sys.executable, "-m", "tui_gateway.slash_worker", "--session-key", session_key] + (["--model", model] if model else [])
         self._closed = False
         from hermes_cli._subprocess_compat import windows_hide_flags
-        # slash_worker runs the Hermes agent → needs provider credentials. Tier-1 secrets
+        # slash_worker runs the Tino agent → needs provider credentials. Tier-1 secrets
         # (gateway/GitHub/infra) are still stripped (#29157). Global-remote / multi-profile sessions: the
         # worker must resolve config/skills/state against the session's profile home, not the gateway's
-        # launch HERMES_HOME (#40677).
+        # launch TINO_HOME (#40677).
         from tools.environments.local import served_profile_child_env
 
         # The worker runs the agent → needs provider credentials; tier-1 secrets (gateway/GitHub/
@@ -254,8 +254,8 @@ class _SlashWorker:
         # start_new_session: otherwise the worker inherits the gateway's pgid and mcp_tool's orphan
         # sweep, racing the spawn, killpg()s the TUI parent itself. errors="replace": bytes invalid
         # in the system locale (GBK Windows) must not raise UnicodeDecodeError in the drain threads.
-        # Prepend the Hermes venv bin dir and the user-local bin dir to PATH so slash_worker child processes
-        # can resolve Hermes-managed CLIs (browser-use, uvx) even when the parent gateway was launched with
+        # Prepend the Tino venv bin dir and the user-local bin dir to PATH so slash_worker child processes
+        # can resolve Tino-managed CLIs (browser-use, uvx) even when the parent gateway was launched with
         # a minimal PATH (e.g. by the Desktop/Dashboard app). See #83845.
         self.proc = subprocess.Popen(
             argv, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
@@ -353,12 +353,12 @@ def _shutdown_sessions() -> None:
 # Session reaping / flushing knobs (session_reaper.py). TTL is the last-resort net for disconnect paths that
 # slip past the WS finally; hours-scale because last_active freezes during a long turn and on passive
 # viewing — running/pending/starting/live-transport are hard exemptions.
-_SESSION_TTL_S = max(0.0, env_float("HERMES_TUI_SESSION_TTL_S", float(6 * 3600)))
+_SESSION_TTL_S = max(0.0, env_float("TINO_TUI_SESSION_TTL_S", float(6 * 3600)))
 _REAPER_SCAN_S = 300.0
 # Flush-on-kill budget + periodic incremental flush (piggybacks the reaper scan): a SIGTERM/SIGKILL
 # mid-update loses at most one flush interval of session state.
-_EXIT_FLUSH_BUDGET_S = max(0.0, env_float("HERMES_TUI_EXIT_FLUSH_BUDGET_S", 5.0))
-_INCREMENTAL_FLUSH_INTERVAL_S = max(0.0, env_float("HERMES_TUI_SESSION_FLUSH_INTERVAL_S", _REAPER_SCAN_S))
+_EXIT_FLUSH_BUDGET_S = max(0.0, env_float("TINO_TUI_EXIT_FLUSH_BUDGET_S", 5.0))
+_INCREMENTAL_FLUSH_INTERVAL_S = max(0.0, env_float("TINO_TUI_SESSION_FLUSH_INTERVAL_S", _REAPER_SCAN_S))
 
 
 def _start_idle_reaper() -> None:
@@ -380,11 +380,11 @@ _start_idle_reaper()
 def _launch_state_db_path() -> Path:
     """Launch profile's ``state.db`` at call time: the patched ``_hermes_home`` when a test changed
     it, else the live process home — resolved through :func:`get_process_hermes_home`, which honours
-    ``HERMES_HOME`` but ignores the context-local override. The desktop multiplex cron ticker sets
+    ``TINO_HOME`` but ignores the context-local override. The desktop multiplex cron ticker sets
     that override per profile at startup, and a first touch inside a foreign window would bind this
     process-wide handle to another profile's ``state.db`` (#102526). Resolving here rather than at
-    import time lets a harness that redirects ``HERMES_HOME`` after import be honoured (#112692)."""
-    home = _hermes_home if _hermes_home != _HERMES_HOME_AT_IMPORT else get_process_hermes_home()
+    import time lets a harness that redirects ``TINO_HOME`` after import be honoured (#112692)."""
+    home = _hermes_home if _hermes_home != _TINO_HOME_AT_IMPORT else get_process_hermes_home()
     return Path(home) / "state.db"
 
 
@@ -506,7 +506,7 @@ def _db_unavailable_error(rid, *, code: int):
 
 
 # ── Per-session profile scoping: the desktop's app-global remote mode points every profile at this
-# backend, so calls carry ``profile`` → open that profile's db and bind its HERMES_HOME (ContextVar
+# backend, so calls carry ``profile`` → open that profile's db and bind its TINO_HOME (ContextVar
 # override) so config/skills/model/persistence resolve to it. Omitted/own profile → launch profile.
 class ProfileUnavailableError(FileNotFoundError):
     """An explicit ``profile`` param names no live profile on this host. Raised out of the method
@@ -544,7 +544,7 @@ _served_profile_homes: set[Path] = set()
 
 
 def _profile_scoped(handler):
-    """Bind ``params['profile']``'s full runtime scope (HERMES_HOME + secrets + terminal policy) around a
+    """Bind ``params['profile']``'s full runtime scope (TINO_HOME + secrets + terminal policy) around a
     handler, so config.yaml ``${VAR}`` refs, provider credential checks and ``.env`` writes resolve to
     THAT profile (app-global remote mode hits the focused profile). Home alone left ``get_secret`` on the
     launch process's ``os.environ``: ``config.get full`` for a secondary shipped the default profile's
@@ -609,7 +609,7 @@ def _profile_configured_cwd(profile_home: Path | None) -> str | None:
 def _launch_configured_cwd() -> str | None:
     """Launch profile's ``terminal.cwd`` from config.yaml: the dashboard's in-memory gateway gets no bridged
     ``TERMINAL_CWD`` env (only the Node PTY child does), so a fresh /chat would otherwise start in ``os.getcwd()``."""
-    # Read the launch file by path. ``_load_cfg`` follows the active HERMES_HOME
+    # Read the launch file by path. ``_load_cfg`` follows the active TINO_HOME
     # override, which may belong to a different profile-scoped RPC.
     return _profile_configured_cwd(Path(_hermes_home))
 
@@ -770,7 +770,7 @@ def _emit_approval_request(sid: str, data: dict | None) -> None:
             if request_id:
                 _approval.withdraw_gateway_approval(session_key, request_id,
                                                     "the attached client cannot answer approval requests "
-                                                    "(update the Hermes app)")
+                                                    "(update the Tino app)")
             return
         choice = str(result.get("choice") or "deny")
         _approval.resolve_gateway_approval(session_key, choice, resolve_all=bool(result.get("all")),
@@ -932,7 +932,7 @@ def _wait_agent_for_prompt(session: dict, rid: str, sid: str) -> dict | None:
 
 
 def _bind_build_profile_scopes(profile_home: "str | None") -> "_TurnScopes | None":
-    """Bind a session profile's HERMES_HOME / secret / terminal scopes for an agent build. ``None`` is the
+    """Bind a session profile's TINO_HOME / secret / terminal scopes for an agent build. ``None`` is the
     launch profile: its own launch-env secret scope (live env while single-profile, frozen once
     multiplexing is active — a hosted-room turn for a default member otherwise died at build with
     ``UnscopedSecretError`` because the launch profile was treated as "no scope"). Fail-open per scope (the build must not die on
@@ -1096,7 +1096,7 @@ def _start_agent_build(sid: str, session: dict) -> None:
                 current["agent_error"] = AGENT_BUILD_ABANDONED
                 return
             tokens = _set_session_context(key, cwd=_session_cwd(current))
-            # Global-remote: bind the session profile's HERMES_HOME and hand the agent that profile's db —
+            # Global-remote: bind the session profile's TINO_HOME and hand the agent that profile's db —
             # DEDICATED and ours until _transfer_db_to_agent in the finally; FAIL CLOSED rather than
             # binding the launch DB and bleeding rows into the wrong state.db.
             scopes = _bind_build_profile_scopes(profile_home)
@@ -1263,7 +1263,7 @@ def _set_session_context(session_key: str, cwd: str | None = None, *, ui_session
         source = _resolve_session_platform()
         profile = _current_profile_name()
         browser_control_principal = browser_control_transport_family = ""
-        # Live conversation id for subprocess HERMES_SESSION_ID: an explicitly empty contextvar is authoritative
+        # Live conversation id for subprocess TINO_SESSION_ID: an explicitly empty contextvar is authoritative
         # (no os.environ fallback), so never leave it "" — agent's durable session_id, then session_key.
         session_id = session_key
         if sess is not None:
@@ -1293,7 +1293,7 @@ def _clear_session_context(tokens: list) -> None:
 
 def _enable_gateway_prompts() -> None:
     """Route approvals through gateway callbacks instead of CLI input()."""
-    os.environ.update(HERMES_GATEWAY_SESSION="1", HERMES_EXEC_ASK="1", HERMES_INTERACTIVE="1")
+    os.environ.update(TINO_GATEWAY_SESSION="1", TINO_EXEC_ASK="1", TINO_INTERACTIVE="1")
 
 
 # ── Blocking prompt factory ──────────────────────────────────────────
@@ -1347,9 +1347,9 @@ _TOUR_PROBE_TIMEOUT_S = 10
 
 _TOUR_BRIDGE_UNAVAILABLE = json.dumps({
     "success": False,
-    "error": ("No Hermes Desktop window answered the tour request. The tour is driven by the desktop app's "
+    "error": ("No Tino Desktop window answered the tour request. The tour is driven by the desktop app's "
               "renderer, which updates separately from this backend, so an app build older than the tour tool "
-              "has nothing listening. Update the Hermes Desktop app and start a new session. Do not retry tour "
+              "has nothing listening. Update the Tino Desktop app and start a new session. Do not retry tour "
               "in this session.")})
 
 
@@ -1391,7 +1391,7 @@ def _clear_pending(sid: str | None = None) -> None:
 
 def _env_model_seed() -> str:
     """The launch-scoped model seed (``hermes --tui -m``, hosted provisioning); "" when unset."""
-    return (os.environ.get("HERMES_MODEL", "") or os.environ.get("HERMES_INFERENCE_MODEL", "")).strip()
+    return (os.environ.get("TINO_MODEL", "") or os.environ.get("TINO_INFERENCE_MODEL", "")).strip()
 
 
 def _resolve_model() -> str:
@@ -1410,10 +1410,10 @@ def _resolve_model() -> str:
 
 
 def _resolve_session_platform() -> str:
-    """``HERMES_DESKTOP=1`` without ``HERMES_DESKTOP_TERMINAL`` → "desktop" (chat panel; the agent then
+    """``TINO_DESKTOP=1`` without ``TINO_DESKTOP_TERMINAL`` → "desktop" (chat panel; the agent then
     suggests TUI-only slash commands), else "tui" (embedded terminal pane or standalone ``hermes --tui``)."""
-    desktop = is_truthy_value(os.environ.get("HERMES_DESKTOP"))
-    return "desktop" if desktop and not is_truthy_value(os.environ.get("HERMES_DESKTOP_TERMINAL")) else "tui"
+    desktop = is_truthy_value(os.environ.get("TINO_DESKTOP"))
+    return "desktop" if desktop and not is_truthy_value(os.environ.get("TINO_DESKTOP_TERMINAL")) else "tui"
 
 
 def _resolve_session_source(explicit: str | None) -> str:
@@ -1427,7 +1427,7 @@ def _resolve_agent_platform(source: str | None) -> str:
 
 
 def _config_model_target() -> tuple[str, str]:
-    """(model, provider) selected by config.yaml — and ONLY config: the HERMES_MODEL launch seed fed into
+    """(model, provider) selected by config.yaml — and ONLY config: the TINO_MODEL launch seed fed into
     the per-turn sync would be replayed as a /model switch and persisted globally, or pin the session so
     dashboard/CLI model changes never reach an open chat. Empty model = "no preference" → no-op sync."""
     cfg_model = _load_cfg().get("model")
@@ -1439,7 +1439,7 @@ def _config_model_target() -> tuple[str, str]:
 
 def _resolve_startup_runtime() -> tuple[str, str | None]:
     model = _resolve_model()
-    if explicit_provider := os.environ.get("HERMES_TUI_PROVIDER", "").strip():
+    if explicit_provider := os.environ.get("TINO_TUI_PROVIDER", "").strip():
         return model, explicit_provider
     if not (explicit_model := _env_model_seed()):
         return model, None
@@ -1449,7 +1449,7 @@ def _resolve_startup_runtime() -> tuple[str, str | None]:
         full_cfg = _load_cfg()
         cfg = full_cfg.get("model") or {}
         current_provider = ((str(cfg.get("provider") or "").strip().lower() if isinstance(cfg, dict) else "")
-                            or os.environ.get("HERMES_INFERENCE_PROVIDER", "").strip().lower() or "auto")
+                            or os.environ.get("TINO_INFERENCE_PROVIDER", "").strip().lower() or "auto")
         # Same owner as HermesCLI/oneshot: ``custom:<name>:<model>`` selects that provider (#73943).
         if route := resolve_startup_model_route(
                 explicit_model, current_provider=current_provider,
@@ -1624,7 +1624,7 @@ def _persist_live_session_system_prompt(session: dict | None) -> None:
     agent, session_key, db = live
     # Re-bind the session's profile runtime scope (the build's finally reset it → root profile's SOUL.md/skills,
     # #50233) and session context (on the RPC thread _SESSION_CWD is unset → the process TERMINAL_CWD would
-    # persist). The full scope, not HERMES_HOME alone: the external memory provider's system_prompt_block()
+    # persist). The full scope, not TINO_HOME alone: the external memory provider's system_prompt_block()
     # reads its credential through get_secret, which fails closed once this process multiplexes (#112927).
     session_tokens = _set_session_context(session_key, cwd=_session_cwd(session))
     try:
@@ -1789,7 +1789,7 @@ _TOOL_PROGRESS_MODES = frozenset({"off", "new", "all", "verbose"})
 
 
 def _load_tool_progress_mode() -> str:
-    env = os.environ.get("HERMES_TUI_TOOL_PROGRESS", "").strip().lower()
+    env = os.environ.get("TINO_TUI_TOOL_PROGRESS", "").strip().lower()
     if env in _TOOL_PROGRESS_MODES:
         return env
     raw = _display_cfg().get("tool_progress", "all")
@@ -1800,9 +1800,9 @@ def _load_tool_progress_mode() -> str:
 
 
 def _gui_surface_toolsets(platform: str) -> set[str]:
-    """Toolsets that exist because of the CLIENT (both off ``_HERMES_CORE_TOOLS``; this is the one gate).
+    """Toolsets that exist because of the CLIENT (both off ``_TINO_CORE_TOOLS``; this is the one gate).
     ``platform`` is the SESSION's source, never a process env var: the desktop may drive a URL/cloud
-    backend where ``HERMES_DESKTOP`` is unset (AGENTS.md surface rule)."""
+    backend where ``TINO_DESKTOP`` is unset (AGENTS.md surface rule)."""
     return {"project", "desktop_ui"} if platform == "desktop" else {"project"}
 
 
@@ -1811,7 +1811,7 @@ def _tui_notice(text: str) -> None:
 
 
 def _resolve_explicit_toolsets(explicit: list[str], validate_toolset) -> list[str] | None | bool:
-    """Resolve a HERMES_TUI_TOOLSETS pin: list, None for "all", False when nothing was valid."""
+    """Resolve a TINO_TUI_TOOLSETS pin: list, None for "all", False when nothing was valid."""
     built_in = [name for name in explicit if validate_toolset(name)]
     unresolved = [name for name in explicit if name not in built_in]
     if unresolved:
@@ -1825,7 +1825,7 @@ def _resolve_explicit_toolsets(explicit: list[str], validate_toolset) -> list[st
         unresolved = [name for name in unresolved if name not in plugin_valid]
     if any(name in {"all", "*"} for name in built_in):
         if ignored := [name for name in explicit if name not in {"all", "*"}]:
-            _tui_notice(f"[tui] HERMES_TUI_TOOLSETS=all enables every toolset; ignoring additional entries: {', '.join(ignored)}")
+            _tui_notice(f"[tui] TINO_TUI_TOOLSETS=all enables every toolset; ignoring additional entries: {', '.join(ignored)}")
         return None
     if not unresolved:
         return built_in
@@ -1845,19 +1845,19 @@ def _resolve_explicit_toolsets(explicit: list[str], validate_toolset) -> list[st
     disabled = [name for name in unresolved if name in mcp_disabled]
     unknown = [name for name in unresolved if name not in mcp_names and name not in mcp_disabled]
     if unknown:
-        _tui_notice(f"[tui] ignoring unknown HERMES_TUI_TOOLSETS entries: {', '.join(unknown)}")
+        _tui_notice(f"[tui] ignoring unknown TINO_TUI_TOOLSETS entries: {', '.join(unknown)}")
     if disabled:
-        _tui_notice("[tui] ignoring disabled MCP servers in HERMES_TUI_TOOLSETS "
+        _tui_notice("[tui] ignoring disabled MCP servers in TINO_TUI_TOOLSETS "
                     f"(set enabled: true in config.yaml to use): {', '.join(disabled)}")
     return (built_in + mcp_valid) or False
 
 
 def _load_enabled_toolsets(platform: str | None = None) -> list[str] | None:
-    """The agent's toolsets for this session (None = all): an explicit HERMES_TUI_TOOLSETS pin; else the
+    """The agent's toolsets for this session (None = all): an explicit TINO_TUI_TOOLSETS pin; else the
     coding posture (coding_context collapses to coding toolset + enabled MCP servers in a code workspace);
     else the configured CLI toolsets. Client-surface toolsets fold in here — only this surface can answer them."""
     session_platform = platform or _resolve_session_platform()
-    explicit = [item.strip() for item in os.environ.get("HERMES_TUI_TOOLSETS", "").split(",") if item.strip()]
+    explicit = [item.strip() for item in os.environ.get("TINO_TUI_TOOLSETS", "").split(",") if item.strip()]
     fallback_notice = None
     if not explicit:
         with contextlib.suppress(Exception):
@@ -1873,7 +1873,7 @@ def _load_enabled_toolsets(platform: str | None = None) -> list[str] | None:
         resolved = _resolve_explicit_toolsets(explicit, validate_toolset)
         if resolved is not False:
             return resolved
-        fallback_notice = "[tui] no valid HERMES_TUI_TOOLSETS entries; using configured CLI toolsets"
+        fallback_notice = "[tui] no valid TINO_TUI_TOOLSETS entries; using configured CLI toolsets"
     try:
         from hermes_cli.config import load_config
         from hermes_cli.tools_config import _get_platform_tools
@@ -1889,7 +1889,7 @@ def _load_enabled_toolsets(platform: str | None = None) -> list[str] | None:
         return sorted(enabled | _gui_surface_toolsets(session_platform)) if enabled else None
     except Exception:
         if fallback_notice is not None:
-            _tui_notice("[tui] no valid HERMES_TUI_TOOLSETS entries and configured CLI toolsets could not be loaded; enabling all toolsets")
+            _tui_notice("[tui] no valid TINO_TUI_TOOLSETS entries and configured CLI toolsets could not be loaded; enabling all toolsets")
         return None
 
 
@@ -1957,7 +1957,7 @@ def _get_usage(agent) -> dict:
         _prompt_total = int(getattr(agent, "session_prompt_tokens", 0) or 0)
         _cache_read = int(getattr(agent, "session_cache_read_tokens", 0) or 0)
         if _prompt_total > 0 and _cache_read > 0:
-            usage["cache_hit_pct"] = max(0, min(100, round(_cache_read / _prompt_total * 100)))
+            usage["cache_hit_pct"] = max(0, min(100, round(_cache_read / _prompt_total * 100, 1)))
     with contextlib.suppress(Exception):  # a status-bar readout must never break usage reporting
         _lhist = list(getattr(agent, "_api_latency_history", []) or [])
         _ohist = list(getattr(agent, "_api_output_history", []) or [])
@@ -1971,8 +1971,8 @@ def _get_usage(agent) -> dict:
     with contextlib.suppress(Exception):
         from tools.async_delegation import active_count as _async_active_count
         usage["active_subagents"] = _async_active_count()
-    # Dev-only live credits-spent readout, gated on HERMES_DEV_CREDITS so the payload stays clean otherwise.
-    if is_truthy_value(os.environ.get("HERMES_DEV_CREDITS")):
+    # Dev-only live credits-spent readout, gated on TINO_DEV_CREDITS so the payload stays clean otherwise.
+    if is_truthy_value(os.environ.get("TINO_DEV_CREDITS")):
         with contextlib.suppress(Exception):
             spent = agent.get_credits_spent_micros()
             if spent is not None:
@@ -2093,7 +2093,7 @@ def _session_info(agent, session: dict | None = None) -> dict:
     model = pending_model or mirror.get("model", getattr(agent, "model", ""))
     # The level the route's entry clamp actually sends (== reasoning_effort when verbatim), so the
     # Desktop can say "ultra sends max on this route" like `/reasoning` does instead of presenting a
-    # Hermes-internal step (#61634) as a wire level the route does not have.
+    # Tino-internal step (#61634) as a wire level the route does not have.
     reasoning_effort_wire = ""
     if reasoning_effort and reasoning_effort != "none":
         reasoning_effort_wire = str(clamp_effort(reasoning_effort, route_supported_efforts(pending_provider or provider, model)) or "")
@@ -2307,7 +2307,7 @@ def _rederive_per_model_route(model: str, runtime: dict) -> None:
 
 
 def _startup_system_prompt(cfg: dict, task_id: str) -> str:
-    """Config ephemeral system prompt + HERMES_TUI_SKILLS preload block. Hard-fails only when EVERY requested
+    """Config ephemeral system prompt + TINO_TUI_SKILLS preload block. Hard-fails only when EVERY requested
     skill is missing (cli.py parity): a typo'd name must not auto-block the Kanban task."""
     from hermes_cli.config import resolve_ephemeral_system_prompt_from_config
     system_prompt = resolve_ephemeral_system_prompt_from_config(cfg)
@@ -2373,7 +2373,7 @@ def _make_agent(
     fallback_notice = runtime.pop("_fallback_notice", None)
     _pr = _load_provider_routing()
     platform = _resolve_agent_platform(platform_override)
-    ignore_rules = is_truthy_value(os.environ.get("HERMES_IGNORE_RULES"))
+    ignore_rules = is_truthy_value(os.environ.get("TINO_IGNORE_RULES"))
     with _sessions_lock:
         session = _sessions.get(sid)
     agent = AIAgent(
@@ -2396,8 +2396,8 @@ def _make_agent(
         # Builds that run before the record exists (branch, eager resume, compute host) pass it explicitly.
         user_id=auth_user_id if auth_user_id is not None else _session_auth_user_id(session),
         session_db=session_db if session_db is not None else _get_db(), ephemeral_system_prompt=system_prompt or None,
-        checkpoints_enabled=is_truthy_value(os.environ.get("HERMES_TUI_CHECKPOINTS")),
-        pass_session_id=is_truthy_value(os.environ.get("HERMES_TUI_PASS_SESSION_ID")),
+        checkpoints_enabled=is_truthy_value(os.environ.get("TINO_TUI_CHECKPOINTS")),
+        pass_session_id=is_truthy_value(os.environ.get("TINO_TUI_PASS_SESSION_ID")),
         skip_context_files=ignore_rules, skip_memory=ignore_rules, fallback_model=_load_fallback_model(),
         **_agent_cbs(sid))
     if context_cwd_is_launch_artifact is None:
@@ -2454,7 +2454,7 @@ def _init_session(
             "explicit_cwd": bool(explicit_cwd), "cols": cols, "slash_worker": None,
             "show_reasoning": _load_show_reasoning(), "source": _resolve_session_source(source),
             "tool_progress_mode": _load_tool_progress_mode(), "edit_snapshots": {}, "tool_started_at": {},
-            # Profile-scoped HERMES_HOME (None = launch); SessionBranch copies the parent's (same state.db).
+            # Profile-scoped TINO_HOME (None = launch); SessionBranch copies the parent's (same state.db).
             "profile_home": profile_home,
             # In-session /model switch, honored on rebuild (/new, resume) — never leaks to siblings via env vars.
             "model_override": None,
@@ -3013,7 +3013,7 @@ _pet_cancel_lock = threading.Lock()
 _pet_cancelled: set[str] = set()
 _PET_REFERENCE_MIME_EXT = {"png": "png", "jpeg": "jpg", "jpg": "jpg", "webp": "webp", "gif": "gif"}
 try:
-    _PET_REFERENCE_MAX_BYTES = max(1, int(os.environ.get("HERMES_PET_REFERENCE_MAX_BYTES") or str(16 * 1024 * 1024)))
+    _PET_REFERENCE_MAX_BYTES = max(1, int(os.environ.get("TINO_PET_REFERENCE_MAX_BYTES") or str(16 * 1024 * 1024)))
 except (TypeError, ValueError):
     _PET_REFERENCE_MAX_BYTES = 16 * 1024 * 1024
 

@@ -108,7 +108,7 @@ def test_loader_skips_hitting_plugin_after_date(tmp_path, monkeypatch):
         def register(ctx):
             raise AssertionError("must not be imported/registered")
     """))
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("TINO_HOME", str(tmp_path))
     mgr = PluginManager(scope_key=str(tmp_path))
     from hermes_cli.plugins_manifest import PluginManifest
     real = PluginManifest(name="oldpaths", version="0.1", description="t", source="user", path=str(plugin))

@@ -314,7 +314,7 @@ def test_scan_time_is_not_treated_as_session_activity(tmp_path):
     ``discovered_repos.last_seen`` records when the disk scan last saw the
     directory. Folding it into ``last_active`` stamped every scanned checkout
     with the scan time — i.e. "just now" — so repos the user has never opened
-    in Hermes outranked the ones they actually work in.
+    in Tino outranked the ones they actually work in.
     """
     worked_in = tmp_path / "worked-in"
     worked_in.mkdir()
@@ -885,6 +885,6 @@ def test_projects_without_a_profile_stay_on_the_launch_home(monkeypatch, tmp_pat
 
     assert _cached_repo_labels(launch_home) == ["only"]
     assert not (coder_home / "projects.db").exists()
-    assert not (Path(os.environ["HERMES_HOME"]) / "projects.db").exists()
+    assert not (Path(os.environ["TINO_HOME"]) / "projects.db").exists()
 
 

@@ -23,8 +23,8 @@ _NO_SOCKETS_SUFFIX = " — no sockets found; in-flight request may keep running 
 
 def _routermint_headers() -> dict:
     """User-Agent RouterMint needs to avoid Cloudflare 1010 blocks."""
-    from hermes_cli import __version__ as _HERMES_VERSION
-    return {"User-Agent": f"HermesAgent/{_HERMES_VERSION}"}
+    from hermes_cli import __version__ as _TINO_VERSION
+    return {"User-Agent": f"HermesAgent/{_TINO_VERSION}"}
 
 
 def _qwen_portal_headers() -> dict:
@@ -604,7 +604,7 @@ class ClientLifecycleMixin:
             return False
         try:
             from hermes_cli.auth import resolve_nous_runtime_credentials
-            timeout = env_float("HERMES_NOUS_TIMEOUT_SECONDS", 15)
+            timeout = env_float("TINO_NOUS_TIMEOUT_SECONDS", 15)
             # Pass the bearer that just 401'd so a refresh already done by a sibling process is
             # adopted instead of rotating the grant again.
             creds = resolve_nous_runtime_credentials(

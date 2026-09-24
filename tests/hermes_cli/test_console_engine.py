@@ -471,7 +471,7 @@ def test_repl_runs_non_interactive_lines_without_prompts(_isolate_hermes_home):
     )
 
     assert code == 0
-    assert "Hermes Console" in stdout.getvalue()
+    assert "Tino Console" in stdout.getvalue()
     assert "hermes>" not in stdout.getvalue()
     assert stderr.getvalue() == ""
 
@@ -595,7 +595,7 @@ def test_config_set_on_unparseable_yaml_reports_error_not_crash(tmp_path, monkey
     config_path = tmp_path / "config.yaml"
     original = "model:\n  default: keep\nbroken: [unterminated\n"
     config_path.write_text(original, encoding="utf-8")
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("TINO_HOME", str(tmp_path))
 
     result = HermesConsoleEngine().execute(
         "config set model.default gpt-4o", confirmed=True

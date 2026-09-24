@@ -56,7 +56,7 @@ def _serialized_replacement(method):
 
 @contextmanager
 def _plugin_home_scope(home: Path):
-    """Bind discovery and loading to the manager's immutable Hermes home."""
+    """Bind discovery and loading to the manager's immutable Tino home."""
     token = set_hermes_home_override(home)
     try:
         yield
@@ -439,7 +439,7 @@ class PluginLoaderMixin:
             ns_pkg.__package__ = _NS_PARENT
             sys.modules[_NS_PARENT] = ns_pkg
         module_name = module_name or self._directory_module_name(manifest)
-        # Evict stale entries for this slug (same slug cached from another Hermes home, or an earlier force
+        # Evict stale entries for this slug (same slug cached from another Tino home, or an earlier force
         # reload). Replacing only sys.modules[module_name] is not enough: the plugin's relative imports are
         # cached as "module_name.sub" and resolve from sys.modules first, so a stale submodule would keep
         # serving the previous load's code/state.

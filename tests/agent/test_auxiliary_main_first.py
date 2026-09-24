@@ -114,7 +114,7 @@ class TestResolveAutoMainFirst:
                 }
             )
         )
-        monkeypatch.setenv("HERMES_HOME", str(home))
+        monkeypatch.setenv("TINO_HOME", str(home))
 
         with patch(
             "agent.auxiliary_client.resolve_provider_client"

@@ -380,7 +380,7 @@ _SLACK_RESERVED_COMMANDS = frozenset({
 # canonical command tips past the cap, demote a rarer one-off lookup (version, whoami, diff, ...)
 # rather than a recurring interactive surface (context, loop, save, approvals). Keep TIGHT — the
 # parity test reads this set. Aliases are never pinned ahead of canonicals.
-_SLACK_VIA_HERMES_ONLY = frozenset({
+_SLACK_VIA_TINO_ONLY = frozenset({
     "topup", "moa", "debug", "egress", "init", "version", "diff", "update", "heartbeat",
     "refine", "review", "pause", "whoami", "platform", "insights", "login"})
 
@@ -394,7 +394,7 @@ def slack_native_slashes() -> list[tuple[str, str, str]]:
     """(slash_name, description, usage_hint) triples for Slack: every gateway-available command
     (canonical names first so they win slots at the cap, then aliases, then plugins) becomes a
     standalone slash, deduped and clamped to the 50-command cap; Slack built-ins and
-    _SLACK_VIA_HERMES_ONLY are skipped. ``/hermes`` is always first for anything dropped."""
+    _SLACK_VIA_TINO_ONLY are skipped. ``/hermes`` is always first for anything dropped."""
     available = _gateway_available_commands()
     wanted = [(cmd.name, cmd.description, cmd.args_hint or "") for cmd in available]
     wanted += [(alias, f"Alias for /{cmd.name} — {cmd.description}", cmd.args_hint or "")
@@ -402,12 +402,12 @@ def slack_native_slashes() -> list[tuple[str, str, str]]:
     wanted += [(name, desc, hint or "") for name, desc, hint in _iter_plugin_command_entries()]
 
     entries: list[tuple[str, str, str]] = [
-        ("hermes", "Talk to Hermes or run a subcommand", "[subcommand] [args]")]
+        ("hermes", "Talk to Tino or run a subcommand", "[subcommand] [args]")]
     seen = {"hermes"}
     for name, desc, hint in wanted:
         slack_name = _sanitize_slack_name(name)
         if (not slack_name or slack_name in seen or slack_name in _SLACK_RESERVED_COMMANDS
-                or slack_name in _SLACK_VIA_HERMES_ONLY
+                or slack_name in _SLACK_VIA_TINO_ONLY
                 or len(entries) >= _SLACK_MAX_SLASH_COMMANDS):
             continue
         # Slack description cap is 2000 chars; keep it short.

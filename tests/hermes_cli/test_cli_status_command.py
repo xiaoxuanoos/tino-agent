@@ -82,7 +82,7 @@ def test_show_session_status_prints_gateway_style_summary():
         cli_obj._show_session_status()
 
     printed = "\n".join(str(call.args[0]) for call in cli_obj.console.print.call_args_list)
-    assert "Hermes CLI Status" in printed
+    assert "Tino CLI Status" in printed
     assert "Session ID: session-123" in printed
     assert "Path: ~/.hermes" in printed
     assert "Title: My titled session" in printed
@@ -123,7 +123,7 @@ def test_profile_command_reports_custom_root_profile(monkeypatch, tmp_path, caps
     cli_obj = _make_cli()
     profile_home = tmp_path / "profiles" / "coder"
 
-    monkeypatch.setenv("HERMES_HOME", str(profile_home))
+    monkeypatch.setenv("TINO_HOME", str(profile_home))
     monkeypatch.setattr(Path, "home", lambda: tmp_path / "unrelated-home")
 
     cli_obj._handle_profile_command()

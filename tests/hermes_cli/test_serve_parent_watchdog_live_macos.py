@@ -2,7 +2,7 @@
 
 The unit tests in ``test_serve_parent_watchdog.py`` pin ``_is_serve_orphaned``
 as a pure function. The bug itself lived one layer up: a daemon thread that
-calls ``os._exit(0)`` ~5ms after ``HERMES_BACKEND_READY``, which no in-process
+calls ``os._exit(0)`` ~5ms after ``TINO_BACKEND_READY``, which no in-process
 test can observe. This file runs the REAL ``start_server`` in a subprocess, on
 the host ``ps``, with the marker the Desktop would hand it rendered in a
 different timezone than the backend's own probe.
@@ -77,15 +77,15 @@ def test_live_backend_survives_timezone_drifted_parent_marker(tmp_path):
         env = dict(os.environ)
         env.update(
             TZ=backend_tz,
-            HERMES_HOME=str(home),
-            HERMES_SERVE_HEADLESS="1",
+            TINO_HOME=str(home),
+            TINO_SERVE_HEADLESS="1",
             PYTHONUNBUFFERED="1",
-            HERMES_PARENT_PID=str(parent.pid),
-            HERMES_PARENT_START_MARKER=drifted_marker,
-            HERMES_PARENT_NONCE="nonce-95693",
-            HERMES_SERVE_WATCHDOG_POLL_S="0.5",
+            TINO_PARENT_PID=str(parent.pid),
+            TINO_PARENT_START_MARKER=drifted_marker,
+            TINO_PARENT_NONCE="nonce-95693",
+            TINO_SERVE_WATCHDOG_POLL_S="0.5",
         )
-        env.pop("HERMES_DESKTOP", None)
+        env.pop("TINO_DESKTOP", None)
         code = (
             "from hermes_cli.web_server import start_server\n"
             "start_server(host='127.0.0.1', port=0, open_browser=False, headless=True)\n"
@@ -99,7 +99,7 @@ def test_live_backend_survives_timezone_drifted_parent_marker(tmp_path):
             text=True,
         )
 
-        assert _read_until(serve, "HERMES_BACKEND_READY"), "backend never announced READY"
+        assert _read_until(serve, "TINO_BACKEND_READY"), "backend never announced READY"
 
         # Before the fix the watchdog fired on its very first poll. Several
         # polls later the backend must still be here.

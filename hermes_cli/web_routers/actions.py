@@ -1,4 +1,4 @@
-"""Gateway restart/drain, Hermes update and background-action status dashboard routes.
+"""Gateway restart/drain, Tino update and background-action status dashboard routes.
 
 Extracted from ``hermes_cli.web_server``; helpers/state that tests monkeypatch on
 ``web_server`` stay there and are late-bound (cycle-safe).
@@ -52,7 +52,7 @@ _ACTION_LOG_TAIL_MAX_CHUNK_BYTES = 64 * 1024
 
 _UPDATE_ACTION_COMPLETED_RE = re.compile(r"^=== hermes-update completed ([0-9a-f]{32}) ===$")
 
-_MANAGED_EXTERNALLY_MESSAGE = "Hermes updates are managed outside this dashboard in containerized environments."
+_MANAGED_EXTERNALLY_MESSAGE = "Tino updates are managed outside this dashboard in containerized environments."
 
 # Per-kind dashboard error codes the UI keys on, by admission-refusal code.
 _UPDATE_REFUSAL_ERROR_CODES = {
@@ -244,19 +244,19 @@ async def update_hermes():
 
     action_id = secrets.token_hex(16)
     with http_failure("Failed to spawn hermes update", 500, "Failed to start update"):
-        proc = _spawn_hermes_action(["update"], "hermes-update", env_overrides={"HERMES_ACTION_ID": action_id})
+        proc = _spawn_hermes_action(["update"], "hermes-update", env_overrides={"TINO_ACTION_ID": action_id})
     return {"ok": True, "pid": proc.pid, "name": "hermes-update", "action_id": action_id}
 
 
 _NON_APPLYABLE_MESSAGES = {
     "docker": format_docker_update_message,
-    "apt": lambda: "Hermes is managed by Termux APT; run `pkg upgrade hermes-agent`.",
+    "apt": lambda: "Tino is managed by Termux APT; run `pkg upgrade hermes-agent`.",
 }
 
 
 @router.get("/api/hermes/update/check")
 async def check_hermes_update(force: bool = False):
-    """Report whether a Hermes update is available, without applying it.
+    """Report whether a Tino update is available, without applying it.
 
     Returns install_method ('apt'|'git'|'docker'|'nix'|'nixos'|'unknown'),
     current_version, behind (commits behind, 0 = up to date, -1 = unknown count,

@@ -44,7 +44,7 @@ def _launch_cwd_for_session(source: str) -> Optional[str]:
 
 
 # Sources that label the human conversation an interactive UI transport hosts. A finite ``hermes chat -q`` /
-# one-shot child spawned from such a session inherits HERMES_SESSION_SOURCE (the terminal tool bridges the
+# one-shot child spawned from such a session inherits TINO_SESSION_SOURCE (the terminal tool bridges the
 # session env into child processes) but is NOT that conversation: labelling it ``tui``/``desktop`` lists it
 # in the TUI/WebUI pickers as a resumable chat and lets ``hermes -c`` in the TUI continue it (#112550).
 # Automation sources (kanban, tool, cron, a2a, ...) are inherited on purpose.
@@ -61,9 +61,9 @@ def _session_source_for_agent(platform: Optional[str]) -> str:
         from gateway.session_context import get_session_env
     except Exception:
         get_session_env = os.environ.get
-    source = str(get_session_env("HERMES_SESSION_SOURCE", "") or "").strip()
-    single_query = get_session_env("HERMES_SINGLE_QUERY_SESSION", "") == "1"
-    explicit = get_session_env("HERMES_SESSION_SOURCE_EXPLICIT", "") == "1"
+    source = str(get_session_env("TINO_SESSION_SOURCE", "") or "").strip()
+    single_query = get_session_env("TINO_SINGLE_QUERY_SESSION", "") == "1"
+    explicit = get_session_env("TINO_SESSION_SOURCE_EXPLICIT", "") == "1"
     if single_query and not explicit and source in _UI_TRANSPORT_SOURCES:
         source = ""
     if single_query and not source and (platform or "cli") == "cli":
@@ -553,13 +553,13 @@ class AIAgent(
 
     def _resolved_api_call_timeout(self) -> float:
         """Per-call request timeout: per-model ``timeout_seconds`` > provider ``request_timeout_seconds`` >
-        ``HERMES_API_TIMEOUT`` > 1800s."""
+        ``TINO_API_TIMEOUT`` > 1800s."""
         cfg = get_provider_request_timeout(self.provider, self.model)
-        return cfg if cfg is not None else env_float("HERMES_API_TIMEOUT", 1800.0)
+        return cfg if cfg is not None else env_float("TINO_API_TIMEOUT", 1800.0)
 
     def _resolved_api_call_stale_timeout_base(self) -> tuple[float, bool]:
         """Base non-stream stale timeout: per-model ``stale_timeout_seconds`` > provider-wide >
-        ``HERMES_API_CALL_STALE_TIMEOUT`` > reasoning floor > 90s.
+        ``TINO_API_CALL_STALE_TIMEOUT`` > reasoning floor > 90s.
 
         Returns ``(seconds, uses_implicit_default)``; the implicit flag lets callers auto-disable the detector
         for local endpoints only when the user configured nothing.
@@ -567,7 +567,7 @@ class AIAgent(
         cfg = get_provider_stale_timeout(self.provider, self.model)
         if cfg is not None:
             return cfg, False
-        env_timeout = os.getenv("HERMES_API_CALL_STALE_TIMEOUT")
+        env_timeout = os.getenv("TINO_API_CALL_STALE_TIMEOUT")
         if env_timeout is not None:
             return float(env_timeout), False
         # Reasoning-model floor (cloud gateways idle-kill mid-think); not "implicit" so the local-endpoint
@@ -607,7 +607,7 @@ class AIAgent(
         """True when the user explicitly configured the stale timeout (config or env var); implicit values
         (reasoning floors, the 90s default) yield to the run-budget cap, explicit ones never do."""
         return (get_provider_stale_timeout(self.provider, self.model) is not None
-                or os.getenv("HERMES_API_CALL_STALE_TIMEOUT") is not None)
+                or os.getenv("TINO_API_CALL_STALE_TIMEOUT") is not None)
 
     def _codex_silent_hang_hint(self, model: Optional[str] = None) -> Optional[str]:
         """Actionable hint when the request matches a known Codex silent-reject shape (currently the ``gpt-5.5``

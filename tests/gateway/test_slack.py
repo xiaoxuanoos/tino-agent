@@ -1219,12 +1219,12 @@ class TestStandaloneSendUserDmResolution:
             result = await _slack_mod._standalone_send(
                 config,
                 "C123",
-                "[Hermes](https://example.com/hermes)",
+                "[Tino](https://example.com/hermes)",
             )
 
         assert result["success"] is True
         payload = session.post.call_args.kwargs["json"]
-        assert payload["text"] == "<https://example.com/hermes|Hermes>"
+        assert payload["text"] == "<https://example.com/hermes|Tino>"
         assert payload["unfurl_links"] is False
         assert payload["unfurl_media"] is False
 
@@ -5105,7 +5105,7 @@ class TestSlackUserAgent:
 
     Slack platform partners (analytics, abuse-detection, etc.) attribute
     outbound API traffic by ``User-Agent``. The Slack adapter sets
-    ``user_agent_prefix=_HERMES_SLACK_USER_AGENT_PREFIX`` on every
+    ``user_agent_prefix=_TINO_SLACK_USER_AGENT_PREFIX`` on every
     ``AsyncWebClient`` it builds and threads the primary client into
     ``AsyncApp(client=...)`` so the prefix sticks on the app-owned client too.
     Pin both behaviors at the actual call sites — a future refactor that
@@ -5115,7 +5115,7 @@ class TestSlackUserAgent:
     def test_hermes_slack_user_agent_prefix_format(self):
         """Module constant matches the HermesAgent/<version> convention used
         elsewhere in the codebase for platform-partner attribution."""
-        assert _slack_mod._HERMES_SLACK_USER_AGENT_PREFIX.startswith("HermesAgent/")
+        assert _slack_mod._TINO_SLACK_USER_AGENT_PREFIX.startswith("HermesAgent/")
 
 
 class TestNativeTaskCardProgress:

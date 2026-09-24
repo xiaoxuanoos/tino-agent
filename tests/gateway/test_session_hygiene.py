@@ -513,7 +513,7 @@ async def test_session_hygiene_timeout_continues_to_agent_and_sets_cooldown(monk
     timeout must fence its eventual commit, continue to the live agent, and
     clean up the temporary agent only after the worker actually returns.
     """
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("TINO_HOME", str(tmp_path))
     fake_dotenv = types.ModuleType("dotenv")
     fake_dotenv.load_dotenv = lambda *args, **kwargs: None
     monkeypatch.setitem(sys.modules, "dotenv", fake_dotenv)
@@ -1027,7 +1027,7 @@ async def test_session_hygiene_forces_in_place_compaction_with_bound_session_db(
     monkeypatch.setitem(sys.modules, "dotenv", fake_dotenv)
 
     stored_system_prompt = (
-        "You are Hermes.\n\n"
+        "You are Tino.\n\n"
         "<memory_provider_context>\n"
         "Pinboard provider instructions\n"
         "</memory_provider_context>"

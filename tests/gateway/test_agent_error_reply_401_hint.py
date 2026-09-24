@@ -33,7 +33,7 @@ def test_gateway_401_reply_names_the_provider_and_the_profile(monkeypatch, tmp_p
     profile_home = tmp_path / ".hermes" / "profiles" / "codex"
     profile_home.mkdir(parents=True)
     monkeypatch.setenv("HOME", str(tmp_path))
-    monkeypatch.setenv("HERMES_HOME", str(profile_home))
+    monkeypatch.setenv("TINO_HOME", str(profile_home))
 
     known = _reply_for_401("openai-codex")
     assert "/login" in known

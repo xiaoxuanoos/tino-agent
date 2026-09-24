@@ -3,8 +3,8 @@
  *
  * The reported bug: configuring a remote gateway persisted the dashboard
  * session token as PLAINTEXT into `connection.json` under the app's userData
- * dir (macOS `~/Library/Application Support/Hermes/connection.json`, Windows
- * `AppData\Roaming\Hermes\connection.json`). Anything that can read the file
+ * dir (macOS `~/Library/Application Support/Tino/connection.json`, Windows
+ * `AppData\Roaming\Tino\connection.json`). Anything that can read the file
  * — a backup, a sync client, another local process, a support bundle — got a
  * live gateway credential.
  *
@@ -14,7 +14,7 @@
  *   1. ABSENT FROM DISK. After the app has been configured with a remote
  *      gateway token, the token's plaintext value must not appear anywhere in
  *      `connection.json`, in any sibling file the app writes under userData,
- *      or in HERMES_HOME (logs included).
+ *      or in TINO_HOME (logs included).
  *   2. STILL FUNCTIONAL. After a restart, the app must still be able to USE
  *      that credential — it decrypts the stored blob and puts the exact
  *      original token on the wire.
@@ -26,7 +26,7 @@
  * satisfied by a "fix" that drops the token on the floor; (2) alone is
  * satisfied by the bug itself. So (2) is verified through the app's own
  * connection test against a fake gateway that records the
- * `X-Hermes-Session-Token` header it receives — a dropped or mangled token
+ * `X-Tino-Session-Token` header it receives — a dropped or mangled token
  * cannot produce that header.
  *
  * (3) is orthogonal to (1) and invisible to it: safeStorage keeps the token
@@ -72,7 +72,7 @@
  * `d3d177283` exists only on `upstream/bb/gui-mainmerge-tmp`,
  * `brooklyn/gui-installer-prereqs`, and the `desktop-pr20059-installers`
  * pre-release tag. Mainline NEVER shipped a code path that wrote a plaintext
- * gateway token: `51c68d4ab` ("Add Hermes desktop app (#20059)"), the commit
+ * gateway token: `51c68d4ab` ("Add Tino desktop app (#20059)"), the commit
  * that brought the desktop app to mainline, already contained the strict
  * throw ("Secure token storage is unavailable, …") in `hardening.cjs`.
  *
@@ -150,13 +150,13 @@ const STABLE_APP_NAME = 'HermesE2EAtRestStorage'
 
 interface FakeGateway {
   url: string
-  /** Every `X-Hermes-Session-Token` value the app has sent us. */
+  /** Every `X-Tino-Session-Token` value the app has sent us. */
   sessionTokens: string[]
   close: () => Promise<void>
 }
 
 /**
- * A minimal stand-in for a remote Hermes gateway. It serves the public
+ * A minimal stand-in for a remote Tino gateway. It serves the public
  * `/api/status` probe (which the desktop connection test hits first, with the
  * session token in a header) and refuses the WebSocket upgrade immediately so
  * the second leg of the connection test fails fast instead of burning the
@@ -169,7 +169,7 @@ async function startFakeGateway(): Promise<FakeGateway> {
   const sessionTokens: string[] = []
 
   const server = http.createServer((req, res) => {
-    const token = req.headers['x-hermes-session-token']
+    const token = req.headers['x-tino-session-token']
 
     if (typeof token === 'string' && token) {
       sessionTokens.push(token)
@@ -370,8 +370,8 @@ function expectOwnerOnlyMode(filePath: string, why: string): void {
  */
 async function launchAgainst(sandbox: Sandbox): Promise<{ app: ElectronApplication; page: Page }> {
   const env = buildAppEnv(sandbox, {
-    HERMES_DESKTOP_APP_NAME: STABLE_APP_NAME,
-    HERMES_DESKTOP_BOOT_FAKE_ERROR: 'E2E at-rest storage spec: local backend intentionally not started',
+    TINO_DESKTOP_APP_NAME: STABLE_APP_NAME,
+    TINO_DESKTOP_BOOT_FAKE_ERROR: 'E2E at-rest storage spec: local backend intentionally not started',
   })
 
   const { app, page } = await launchDesktop(env)
@@ -410,7 +410,7 @@ interface SafeStorageCapability {
  * the `basic_text` backend, which encrypts with a hardcoded password — the
  * bytes on disk are not the plaintext, but they are not meaningfully
  * protected either. We record it rather than assert on it, because which
- * posture Hermes should take there (refuse to save vs. accept basic_text) is
+ * posture Tino should take there (refuse to save vs. accept basic_text) is
  * a product decision, not something this test should silently ratify.
  */
 async function readSafeStorageCapability(app: ElectronApplication): Promise<SafeStorageCapability> {
@@ -606,14 +606,14 @@ test.describe('remote gateway session token at rest', () => {
     ).toEqual([])
 
     // …and not in any sibling file the app writes alongside it, nor in
-    // HERMES_HOME (desktop.log lives there).
+    // TINO_HOME (desktop.log lives there).
     expect(
       scanTreeForSecret(userDataDir, needles),
       'the gateway session token leaked into a userData file',
     ).toEqual([])
     expect(
       scanTreeForSecret(sandbox.hermesHome, needles),
-      'the gateway session token leaked into a HERMES_HOME file (logs included)',
+      'the gateway session token leaked into a TINO_HOME file (logs included)',
     ).toEqual([])
 
     if (!capability.available) {

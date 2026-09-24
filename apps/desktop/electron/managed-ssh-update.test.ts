@@ -273,7 +273,7 @@ test('POSIX managed launcher is detached, correlation-scoped, and never publishe
   assert.match(command, /setsid/)
   assert.match(command, /update --yes/)
   assert.doesNotMatch(command, /update --yes --gateway/)
-  assert.match(command, new RegExp(`HERMES_UPDATE_CORRELATION_ID=.*${CORRELATION}`))
+  assert.match(command, new RegExp(`TINO_UPDATE_CORRELATION_ID=.*${CORRELATION}`))
   assert.match(command, /\[ "\$rc" -ne 75 \]/)
   assert.match(command, new RegExp(`\\.update_exit_code\\.${CORRELATION}`))
   assert.match(command, new RegExp(`\\.update_launch_intent\\.${CORRELATION}`))
@@ -288,7 +288,7 @@ test('POSIX managed launcher executes the updater command and atomically publish
       {
         ssh: { exec: async () => '' },
         platform: 'Linux',
-        hermesPath: '/bin/true',
+        hermesPath: process.platform === 'darwin' ? '/usr/bin/true' : '/bin/true',
         hermesHome: home
       },
       CORRELATION
@@ -307,7 +307,8 @@ test('POSIX managed launcher executes the updater command and atomically publish
     }
 
     assert.match(stdout, /MANAGED_UPDATE_STARTED/)
-    assert.equal(status, '0')
+    const updaterLog = await readFile(path.join(home, `logs/desktop-update-${CORRELATION}.log`), 'utf8').catch(() => '')
+    assert.equal(status, '0', updaterLog)
   } finally {
     await rm(home, { force: true, recursive: true })
   }
@@ -318,9 +319,9 @@ test('Windows managed launcher starts a hidden child and leaves exit 75 to the e
     {
       ssh: { exec: async () => '' },
       platform: 'Windows',
-      hermesPath: 'C:\\Hermes\\hermes.exe',
+      hermesPath: 'C:\\Tino\\hermes.exe',
       hermesHome: 'C:\\Users\\alice\\.hermes',
-      pythonPath: 'C:\\Hermes\\python.exe'
+      pythonPath: 'C:\\Tino\\python.exe'
     },
     CORRELATION
   )
@@ -335,9 +336,9 @@ test('Windows managed launcher starts a hidden child and leaves exit 75 to the e
 
   assert.match(wrapper, /update --yes/)
   assert.doesNotMatch(wrapper, /update --yes --gateway/)
-  assert.match(wrapper, /HERMES_UPDATE_WINDOWS_DETACHED/)
-  assert.match(wrapper, /HERMES_UPDATE_TAURI_READY_PATH/)
-  assert.match(wrapper, /HERMES_UPDATE_TAURI_OUTCOME_PATH/)
+  assert.match(wrapper, /TINO_UPDATE_WINDOWS_DETACHED/)
+  assert.match(wrapper, /TINO_UPDATE_TAURI_READY_PATH/)
+  assert.match(wrapper, /TINO_UPDATE_TAURI_OUTCOME_PATH/)
   assert.match(wrapper, /\$rc -ne 75/)
   assert.match(wrapper, /\$handoffAccepted=/)
   assert.match(wrapper, new RegExp(`update_launch_intent\\.${CORRELATION}`))
@@ -453,9 +454,9 @@ test('Windows coordinator handoff is pending until its marker clears and correla
 
   const target = {
     platform: 'Windows' as const,
-    hermesPath: 'C:\\Hermes\\hermes.exe',
+    hermesPath: 'C:\\Tino\\hermes.exe',
     hermesHome: 'C:\\Users\\alice\\.hermes',
-    pythonPath: 'C:\\Hermes\\python.exe',
+    pythonPath: 'C:\\Tino\\python.exe',
     ssh: {
       exec: async () => {
         const reply = replies[Math.min(calls, replies.length - 1)]

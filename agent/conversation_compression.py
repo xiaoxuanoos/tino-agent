@@ -1553,7 +1553,7 @@ def _rebind_session_context(session_id: str) -> None:
         from gateway.session_context import set_current_session_id
         set_current_session_id(session_id)
     except Exception:
-        os.environ["HERMES_SESSION_ID"] = session_id
+        os.environ["TINO_SESSION_ID"] = session_id
     with contextlib.suppress(Exception):
         from hermes_logging import set_session_context
         set_session_context(session_id)
@@ -1955,7 +1955,7 @@ def _lower_threshold_to_aux_context(
             f"  To make this permanent, use a larger compression model in config.yaml:\n       auxiliary:\n"
             f"         compression:\n           model: <model-with-{old_threshold:,}+-context>\n"
             f"  (Lowering compression.threshold cannot help here — with {_main_label}'s {main_ctx:,}-token window, "
-            f"Hermes's small-context floor and output reservation would recompute the trigger to "
+            f"Tino's small-context floor and output reservation would recompute the trigger to "
             f"{recomputed_threshold:,} tokens, still above the compression model's {aux_context:,}.)"
         )
     _emit_feasibility_notice(agent, msg)
@@ -2011,7 +2011,7 @@ def check_compression_model_feasibility(agent: Any) -> None:
                 )
             else:
                 msg = (
-                    "⚠ No auxiliary LLM provider configured: Hermes has no helper model for summarising "
+                    "⚠ No auxiliary LLM provider configured: Tino has no helper model for summarising "
                     "long chats, so older messages will be cut without a summary. Run `hermes setup` to add one."
                 )
             _emit_feasibility_notice(agent, msg)
@@ -2043,7 +2043,7 @@ def check_compression_model_feasibility(agent: Any) -> None:
             raise ValueError(
                 f"Auxiliary compression model {aux_model} has a context "
                 f"window of {aux_context:,} tokens, which is below the "
-                f"minimum {MINIMUM_CONTEXT_LENGTH:,} required by Hermes "
+                f"minimum {MINIMUM_CONTEXT_LENGTH:,} required by Tino "
                 f"Agent.  Choose a compression model with at least "
                 f"{MINIMUM_CONTEXT_LENGTH // 1000}K context (set "
                 f"auxiliary.compression.model in config.yaml), or set "
@@ -3230,7 +3230,7 @@ def _publish_rotated_compaction(
         agent._flush_messages_to_session_db(messages, conversation_history=persisted_history)
     # Publish closure + child + handoff in one transaction so no reader sees an
     # empty child. Child stays on the parent's profile ("default" persists as NULL);
-    # publish also COALESCEs from the parent row for threads lacking HERMES_HOME.
+    # publish also COALESCEs from the parent row for threads lacking TINO_HOME.
     _profile_for_child = None
     with contextlib.suppress(Exception):
         from hermes_cli.profiles import get_active_profile_name
@@ -3295,7 +3295,7 @@ def _warn_summary_or_aux_fallback(agent: Any) -> None:
                 _aux_fail_model, _aux_fail_err or "unknown error",
             )
             agent._emit_warning(
-                f"ℹ Configured compression model '{_aux_fail_model}' failed, so Hermes summarised "
+                f"ℹ Configured compression model '{_aux_fail_model}' failed, so Tino summarised "
                 "with your main model instead. Check auxiliary.compression.model in your config."
             )
 
@@ -3858,7 +3858,7 @@ def compress_context(
     attempt = _begin_compression_attempt(agent, force=force, defer_notification=defer_context_engine_notification)
 
     # Codex owns the real thread; route compaction to its own compact (config
-    # compression.codex_app_server_auto). Memory handoff is Hermes-only: no native
+    # compression.codex_app_server_auto). Memory handoff is Tino-only: no native
     # summary prompt to inject into. `is True`: MagicMock attributes are truthy.
     checkpoint_required = getattr(agent, "compression_checkpoint_required", False) is True
     if getattr(agent, "api_mode", None) == "codex_app_server":
@@ -4059,7 +4059,7 @@ def _compress_context_via_codex_app_server(
 ) -> Tuple[list, str]:
     """Route compaction to Codex app-server for Codex-owned threads.
     Rewriting the local transcript would not shrink the Codex thread, so Codex compacts its own thread and
-    Hermes' transcript is left unchanged."""
+    Tino's transcript is left unchanged."""
     _sid = getattr(agent, "session_id", None) or "none"
     _tokens = f"{approx_tokens:,}" if approx_tokens else "unknown"
     auto_mode = str(getattr(agent, "codex_app_server_auto_compaction", "native") or "native").lower()

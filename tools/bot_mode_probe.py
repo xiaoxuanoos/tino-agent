@@ -38,7 +38,7 @@ _cached: dict[str, str] = {}
 
 
 def _default_home() -> str:
-    """Ambient process HERMES_HOME (env, else the platform default) as a string."""
+    """Ambient process TINO_HOME (env, else the platform default) as a string."""
     from hermes_constants import get_process_hermes_home
     return str(get_process_hermes_home())
 
@@ -65,8 +65,8 @@ def _profile_name(home: Path) -> str:
 
 
 def _handle(name: str) -> str:
-    # The mention middleware aliases the default profile as @hermes.
-    return "hermes" if name == "default" else name
+    # The mention middleware aliases the default profile as @tino.
+    return "tino" if name == "default" else name
 
 
 def _roster(root: Path) -> list[tuple[str, Path]]:
@@ -173,8 +173,8 @@ def _display_name(name: str, profile_dir: Path) -> str:
     return next((n for n in _friendly_names(profile_dir) if n), None) or _handle(name)
 
 
-# Tokens the Desktop mention parser reserves; a bot titled "Hermes" never hijacks @hermes.
-_RESERVED_ALIASES = frozenset({"all", "everyone", "user", "default", "hermes"})
+# Tokens the Desktop mention parser reserves; a bot titled "Tino" never hijacks @hermes.
+_RESERVED_ALIASES = frozenset({"all", "everyone", "user", "default", "tino"})
 
 
 def alias_forms(value: str) -> set[str]:
@@ -269,7 +269,7 @@ def _build_section(home: Path) -> str:
 
     return (
         f"{_PROTOCOL_HEADING}\n"
-        "This install runs Bot Mode: each Hermes profile is an agent teammate with "
+        "This install runs Bot Mode: each Tino profile is an agent teammate with "
         'one canonical "Bot Chat" conversation, and you have the `message_agent` '
         "tool to DM any of them. It is FIRE-AND-FORGET: it delivers your message "
         "with your attribution prefixed automatically and returns an acknowledgement "
@@ -300,7 +300,7 @@ def _build_section(home: Path) -> str:
 
 def get_bot_mode_protocol_section(home: str | os.PathLike | None = None, *, force_refresh: bool = False) -> str:
     """Cached probe entry point — one filesystem pass per (process, home). ``home`` should be
-    the AGENT'S OWN resolved home (session-db derived), not ambient HERMES_HOME — build threads
+    the AGENT'S OWN resolved home (session-db derived), not ambient TINO_HOME — build threads
     can lose the ContextVar override and the env var would then name the wrong profile."""
     resolved = str(_resolve_home(home))
     with _lock:

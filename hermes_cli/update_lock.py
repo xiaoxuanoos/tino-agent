@@ -1,4 +1,4 @@
-"""Cross-process mutual exclusion for in-flight Hermes updates.
+"""Cross-process mutual exclusion for in-flight Tino updates.
 
 The marker file the Tauri updater writes (``UpdateMarkerGuard`` in
 ``apps/bootstrap-installer/src-tauri/src/update.rs``) and the Electron desktop reads
@@ -28,19 +28,19 @@ MARKER_NAME = ".hermes-update-in-progress"
 # spawning `hermes update` as a child stage; the parent holds the marker for its whole run,
 # so without this the child would refuse its own parent's lock. Keep in sync with
 # update_child_env in apps/bootstrap-installer/src-tauri/src/update.rs.
-HANDOFF_PID_ENV = "HERMES_UPDATE_HANDOFF_PID"
+HANDOFF_PID_ENV = "TINO_UPDATE_HANDOFF_PID"
 
 # Exit code meaning "another updater/instance owns this install right now" — the same
 # contract as the Windows shim / venv-holder guards in _cmd_update_impl, matched by the
-# Tauri updater (UPDATE_EXIT_CONCURRENT in update.rs) to show "Hermes is still running".
+# Tauri updater (UPDATE_EXIT_CONCURRENT in update.rs) to show "Tino is still running".
 UPDATE_EXIT_CONCURRENT = 2
 
 
 def update_marker_path() -> Path:
     """Path of the shared update marker.
 
-    Uses the *process* Hermes home (never the context-local profile override): the Rust
-    updater resolves ``$HERMES_HOME`` or the platform default and the desktop pins that same
+    Uses the *process* Tino home (never the context-local profile override): the Rust
+    updater resolves ``$TINO_HOME`` or the platform default and the desktop pins that same
     value into the updater's env, so a profile-scoped path would be one the other owners never look at.
     """
     from hermes_constants import get_process_hermes_home
@@ -134,7 +134,7 @@ def describe_holder(holder: UpdateHolder) -> str:
     minutes, seconds = divmod(int(max(holder.age_seconds, 0)), 60)
     elapsed = f"{minutes}m {seconds}s" if minutes else f"{seconds}s"
     return (
-        f"✗ Another Hermes update is already running (started {elapsed} ago, "
+        f"✗ Another Tino update is already running (started {elapsed} ago, "
         f"process {holder.pid}).\n"
         "\n"
         "  Running two at once would corrupt the install. Wait for it to finish\n"

@@ -12,7 +12,7 @@ import pytest
 import hermes_cli.gateway as gateway
 
 
-_BREAKAWAY_MARKER = "_HERMES_GATEWAY_BREAKAWAY"
+_BREAKAWAY_MARKER = "_TINO_GATEWAY_BREAKAWAY"
 
 
 def _install_fake_gateway_run(monkeypatch, start_gateway):
@@ -30,10 +30,10 @@ def _install_fake_gateway_run(monkeypatch, start_gateway):
     # respawns. That helper writes to ``Path.home() / ".config/systemd/user
     # /hermes-gateway.service"`` and runs ``systemctl --user daemon-reload``
     # — both target the *real* user environment because the conftest only
-    # sandboxes ``HERMES_HOME``, not ``HOME``. Tests that drive
+    # sandboxes ``TINO_HOME``, not ``HOME``. Tests that drive
     # ``run_gateway()`` end-to-end with a fake ``start_gateway`` MUST stub
     # the refresh call too, or every run rewrites the developer's installed
-    # unit (baking in the test's pytest-tmp ``HERMES_HOME`` value, which
+    # unit (baking in the test's pytest-tmp ``TINO_HOME`` value, which
     # systemd then uses on the next boot — silently breaking the gateway
     # for the developer).
     monkeypatch.setattr(gateway, "supports_systemd_services", lambda: False)
@@ -66,7 +66,7 @@ def _run_native_windows_gateway_start_diag(
         import hermes_cli.gateway as gateway_cli
 
         async def start_gateway(*, replace, verbosity):
-            assert "_HERMES_GATEWAY_BREAKAWAY" not in os.environ
+            assert "_TINO_GATEWAY_BREAKAWAY" not in os.environ
             return True
 
         fake_run = types.ModuleType("gateway.run")
@@ -81,7 +81,7 @@ def _run_native_windows_gateway_start_diag(
         gateway_cli.supports_systemd_services = lambda: False
         gateway_cli.run_gateway(quiet=True)
 
-        diag_path = pathlib.Path(os.environ["HERMES_HOME"]) / "logs" / "gateway-exit-diag.log"
+        diag_path = pathlib.Path(os.environ["TINO_HOME"]) / "logs" / "gateway-exit-diag.log"
         rows = [json.loads(line) for line in diag_path.read_text(encoding="utf-8").splitlines()]
         start = next(row for row in rows if row["tag"] == "gateway.start")
         payload = {
@@ -94,10 +94,10 @@ def _run_native_windows_gateway_start_diag(
     env: dict[str, str] = dict(os.environ)
     env.update(
         {
-            "HERMES_HOME": str(tmp_path),
-            "HERMES_GATEWAY_DETACHED": "1",
-            "HERMES_GATEWAY_EXIT_DIAG": "1",
-            "HERMES_GATEWAY_MAX_STARTS": "0",
+            "TINO_HOME": str(tmp_path),
+            "TINO_GATEWAY_DETACHED": "1",
+            "TINO_GATEWAY_EXIT_DIAG": "1",
+            "TINO_GATEWAY_MAX_STARTS": "0",
             "PYTHONIOENCODING": "utf-8",
         }
     )
@@ -177,7 +177,7 @@ def test_gateway_run_subprocess_preserves_daemon_exit_codes(
 
         import hermes_cli.gateway as gateway_cli
 
-        outcome = os.environ["HERMES_TEST_GATEWAY_OUTCOME"]
+        outcome = os.environ["TINO_TEST_GATEWAY_OUTCOME"]
 
         async def start_gateway(*, replace, verbosity):
             if outcome == "failure":
@@ -199,9 +199,9 @@ def test_gateway_run_subprocess_preserves_daemon_exit_codes(
     )
     env = {
         **os.environ,
-        "HERMES_HOME": str(tmp_path),
-        "HERMES_GATEWAY_EXIT_DIAG": "0",
-        "HERMES_TEST_GATEWAY_OUTCOME": outcome,
+        "TINO_HOME": str(tmp_path),
+        "TINO_GATEWAY_EXIT_DIAG": "0",
+        "TINO_TEST_GATEWAY_OUTCOME": outcome,
         "INVOCATION_ID": "systemd-test",
     }
 
@@ -243,7 +243,7 @@ def test_gateway_run_subprocess_preserves_daemon_exit_codes(
 def _clear_supervisor_markers(monkeypatch):
     """Make ``_running_under_gateway_supervisor()`` report a plain shell."""
     monkeypatch.delenv("INVOCATION_ID", raising=False)
-    monkeypatch.delenv("HERMES_S6_SUPERVISED_CHILD", raising=False)
+    monkeypatch.delenv("TINO_S6_SUPERVISED_CHILD", raising=False)
     # Interactive macOS shells inherit XPC_SERVICE_NAME="0"; launchd jobs get
     # the real label. Default to the shell sentinel so the guard can fire.
     monkeypatch.setenv("XPC_SERVICE_NAME", "0")
@@ -366,13 +366,13 @@ def test_systemd_install_checks_linger_status(monkeypatch, tmp_path, capsys):
 
     monkeypatch.setattr(gateway, "get_systemd_unit_path", lambda system=False: unit_path)
     # Synthetic unit with a non-temp home: the real generator bakes the
-    # hermetic test HERMES_HOME (a tmp dir), which the temp-home write
+    # hermetic test TINO_HOME (a tmp dir), which the temp-home write
     # guard correctly refuses.
     monkeypatch.setattr(
         gateway,
         "generate_systemd_unit",
         lambda system=False, run_as_user=None: (
-            '[Service]\nEnvironment="HERMES_HOME=/home/alice/.hermes"\n'
+            '[Service]\nEnvironment="TINO_HOME=/home/alice/.hermes"\n'
         ),
     )
 
@@ -725,7 +725,7 @@ class TestReapUnsupervisedGatewayOrphansMacOS:
 
     Regression guard: without the ``is_macos()`` exclusion of
     ``_get_service_pids()``, the reaper would SIGTERM the launchd-supervised
-    gateway every time Hermes Desktop opens (``hermes serve`` calls
+    gateway every time Tino Desktop opens (``hermes serve`` calls
     ``_reap_unsupervised_gateway_orphans`` during startup).
     """
 
@@ -802,7 +802,7 @@ class TestReapUnsupervisedGatewayOrphansWindows:
 
     Regression guard: without the Windows exemption of the recorded healthy
     gateway PID (and its parent chain), the reaper would SIGTERM/SIGKILL a
-    Scheduled-Task-supervised gateway every time Hermes Desktop opens
+    Scheduled-Task-supervised gateway every time Tino Desktop opens
     (``hermes serve`` calls ``_reap_unsupervised_gateway_orphans`` during
     startup). The Scheduled-Task bootstrap's argv matches the gateway scan,
     so it is reaped as an "orphan" — and when the bootstrap dies, the
@@ -1326,7 +1326,7 @@ def test_find_windows_gateway_services_rejects_transitional_ancestor(monkeypatch
 def test_find_windows_gateway_services_ignores_task_scheduler_ancestor(monkeypatch):
     """gateway <- cmd.exe <- svchost.exe(Schedule) <- services.exe: the Task Scheduler host is not the
     gateway's supervisor, so a task-launched gateway is a plain process (#97208); the same tree under a
-    Hermes-owned service (by binary path) stays SCM-supervised."""
+    Tino-owned service (by binary path) stays SCM-supervised."""
     import psutil
     import hermes_cli.gateway_windows as gateway_windows
 
@@ -1365,8 +1365,8 @@ def test_find_windows_gateway_services_ignores_task_scheduler_ancestor(monkeypat
     owned = run(FakeService("gw", r'"C:\hermes\hermes-agent\venv\Scripts\hermes.exe" gateway run'))
     assert [(s.name, s.service_pid, s.gateway_pid) for s in owned] == [("gw", 2360, 18480)]
 
-    # QueryServiceConfig denied to this user (hardened third-party service): not Hermes's, and never a
-    # reason to abort the whole enumeration; a Hermes-NAMED service is settled without asking binpath.
+    # QueryServiceConfig denied to this user (hardened third-party service): not Tino's, and never a
+    # reason to abort the whole enumeration; a Tino-NAMED service is settled without asking binpath.
     class DeniedConfigService(FakeService):
         def binpath(self):
             raise psutil.AccessDenied(2360, self._name)

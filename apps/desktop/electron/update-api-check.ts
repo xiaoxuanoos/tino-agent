@@ -28,6 +28,19 @@ export interface CachedUpdateCheck {
   status: Record<string, unknown> & { error?: string }
 }
 
+/** Do not let an automatic update park local edits in a stash and hide the UI. */
+export function sourceCheckoutIsClean(status: { code: number; stdout: string }): boolean {
+  return status.code === 0 && status.stdout.trim() === ''
+}
+
+/** A removed branch may track main only when it has no unique local work. */
+export function canHealMissingBranch(
+  status: { code: number; stdout: string },
+  mergedIntoMain: { code: number }
+): boolean {
+  return sourceCheckoutIsClean(status) && mergedIntoMain.code === 0
+}
+
 /** `owner/repo` for any GitHub remote form; null for non-GitHub origins. */
 export function githubRepoSlug(originUrl: string): string | null {
   const canonical = canonicalGitHubRemote(originUrl)
@@ -140,7 +153,7 @@ export interface UpdateCheckFailure {
 /**
  * One line a user can act on (or paste into a bug report) instead of the
  * generic "couldn't reach the update server": which host, which failure.
- * #105855 was a run of GitHub outages that read as a Hermes bug because the
+ * #105855 was a run of GitHub outages that read as a Tino bug because the
  * UI hid the cause.
  *
  * A 403 with `x-ratelimit-remaining: 0` is the anonymous per-IP budget spent

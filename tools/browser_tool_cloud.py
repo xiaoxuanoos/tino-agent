@@ -21,7 +21,7 @@ from tools import browser_tool_cdp as _cdp
 def _memo(_bt, resolved_attr: str, cache_attr: str, compute: Callable[[], object]):
     """Process-lifetime cache on ``_bt``: the resolved flag is set BEFORE computing, then the final value is stored.
 
-    Under a routed profile (HERMES_HOME override, multiplexed gateway) the slot is NOT consulted: every
+    Under a routed profile (TINO_HOME override, multiplexed gateway) the slot is NOT consulted: every
     ``_memo`` here caches a ``browser.*`` config read, and one process-wide slot would hand the launch
     profile's engine/headed/private-URL policy to every other profile (same rule as ``_allow_private_urls``).
     """
@@ -43,7 +43,7 @@ def _ensure_browser_plugins_loaded() -> None:
 
 
 def _get_cloud_provider() -> Optional[CloudBrowserProvider]:
-    """Return the provider cached for the active Hermes profile."""
+    """Return the provider cached for the active Tino profile."""
     _bt = _origin()
     scope = hermes_home_key()
     with _bt._cloud_provider_cache_lock:

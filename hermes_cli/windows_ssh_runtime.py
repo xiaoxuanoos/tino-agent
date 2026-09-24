@@ -51,7 +51,7 @@ def _nonce(value: str) -> str:
 def _root() -> Path:
     # The helper uploads the token before the child applies `--profile`; read_token() runs after
     # profile activation. Anchor both to the machine root so a named profile (or custom
-    # HERMES_HOME) cannot move the reader away from the helper's token.
+    # TINO_HOME) cannot move the reader away from the helper's token.
     return get_default_hermes_root() / "desktop-ssh"
 
 
@@ -376,7 +376,7 @@ def spawn_backend(payload: dict[str, Any]) -> dict[str, Any]:
     spawn_nonce = _nonce(str(payload["spawnNonce"]))
     configured_path = str(payload["hermesPath"])
     if not os.path.isabs(configured_path):
-        raise ValueError("Hermes path must be absolute")
+        raise ValueError("Tino path must be absolute")
     hermes_path = os.path.abspath(configured_path)
     token_path = str(_token_path(ownership_id, spawn_nonce))
     profile = str(payload.get("profile") or "")
@@ -385,7 +385,7 @@ def spawn_backend(payload: dict[str, Any]) -> dict[str, Any]:
     venv_dir = os.path.dirname(hermes_path)
     python_entry = os.path.join(venv_dir, "python.exe")
     if not os.path.isfile(python_entry):
-        raise ValueError("Hermes Python runtime was not found")
+        raise ValueError("Tino Python runtime was not found")
     base_python, sys_path = _resolve_direct_interpreter(python_entry)
     # Seed sys.path IN-PROCESS via -c rather than PYTHONPATH, which every subprocess the backend
     # spawns (terminal tool, user scripts) would inherit, shadowing their imports.
@@ -421,7 +421,7 @@ def spawn_backend(payload: dict[str, Any]) -> dict[str, Any]:
 def inspect_hermes(hermes_path: str) -> dict[str, Any]:
     path = os.path.abspath(hermes_path)
     if not os.path.isabs(hermes_path) or not os.path.isfile(path):
-        raise ValueError("Hermes path is not an executable file")
+        raise ValueError("Tino path is not an executable file")
     version = subprocess.run([path, "--version"], capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=20)
     help_result = subprocess.run([path, "serve", "--help"], capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=20)
     help_text = help_result.stdout + help_result.stderr

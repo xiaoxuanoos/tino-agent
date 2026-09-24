@@ -557,7 +557,7 @@ class GatewayConfig:
     # verbatim. Every reader tests truthiness, so an unresolved ``None`` never multiplexes by accident.
     multiplex_profiles: Optional[bool] = None
     # Public HTTPS endpoint for scoped RoomLink calls (an API key alone must never advertise a
-    # route); HERMES_ROOM_LINK_URL overrides.
+    # route); TINO_ROOM_LINK_URL overrides.
     room_link_url: Optional[str] = None
     systemd_watchdog_seconds: int = 0  # opt-in; zero keeps Type=simple and disables sd_notify
     # In-process loop liveness watchdog: after consecutive missed probes it dumps all-thread stacks

@@ -96,7 +96,7 @@ def _validate_source(source: SecretSource) -> Optional[str]:
         return f"Ignoring secret source with invalid name {name!r}"
     if source.api_version != SECRET_SOURCE_API_VERSION:
         return (f"Ignoring secret source '{name}': built against secret-source API "
-                f"v{source.api_version}, this Hermes speaks v{SECRET_SOURCE_API_VERSION}")
+                f"v{source.api_version}, this Tino speaks v{SECRET_SOURCE_API_VERSION}")
     if source.shape not in ("mapped", "bulk"):
         return f"Ignoring secret source '{name}': shape must be 'mapped' or 'bulk', got {source.shape!r}"
     return None
@@ -290,7 +290,7 @@ def _active_profile_name(home_path: Optional[Path]) -> str:
         resolved = Path(home_path)
         if resolved.parent.name == "profiles" and resolved.name:
             return resolved.name
-    for env_name in ("HERMES_PROFILE_NAME", "HERMES_PROFILE"):
+    for env_name in ("TINO_PROFILE_NAME", "TINO_PROFILE"):
         value = os.environ.get(env_name, "").strip()
         if value and value != "default":
             return value

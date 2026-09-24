@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Prove a macOS user who installed OLD via the published desktop installer
-# (Hermes-Setup.dmg from the website) can reach HEAD.
+# (Tino-Setup.dmg from the website) can reach HEAD.
 #
 # The macOS sibling of tests/install/windows-e2e.ps1's desktop-installer
 # arm, sharing the staging trick: every git process is pointed at a local
@@ -42,7 +42,7 @@ export TS_BASE=$SECONDS
 PHASE="all"
 UPDATE_METHOD=""
 INSTALL_REF=""
-DMG_URL="https://hermes-assets.nousresearch.com/Hermes-Setup.dmg"
+DMG_URL="https://hermes-assets.nousresearch.com/Tino-Setup.dmg"
 PLAYWRIGHT_VERSION="1.58.2"
 while [ "$#" -gt 0 ]; do
   case "$1" in
@@ -73,8 +73,8 @@ REPO_URL_SSH="git@github.com:NousResearch/hermes-agent.git"
 REPO_URL_HTTPS="https://github.com/NousResearch/hermes-agent.git"
 ASSETS="$REPO_ROOT/tests/install/e2e-assets"
 
-WORK_ROOT="${HERMES_E2E_WORKROOT:-${RUNNER_TEMP:-${TMPDIR:-/tmp}}/hermes-macos-desktop-e2e}"
-LOG_DIR="${HERMES_E2E_LOG_DIR:-$WORK_ROOT/logs}"
+WORK_ROOT="${TINO_E2E_WORKROOT:-${RUNNER_TEMP:-${TMPDIR:-/tmp}}/hermes-macos-desktop-e2e}"
+LOG_DIR="${TINO_E2E_LOG_DIR:-$WORK_ROOT/logs}"
 SERVE_REPO="$WORK_ROOT/serve.git"
 STATE="$WORK_ROOT/shas.env"
 export HOME_SANDBOX="$WORK_ROOT/home"
@@ -156,8 +156,8 @@ EOF
   # -------
   export HOME="$HOME_SANDBOX"
   export PATH="$HOME/.local/bin:$PATH"
-  export HERMES_HOME="$HOME/.hermes"
-  export INSTALL_DIR="$HERMES_HOME/hermes-agent"
+  export TINO_HOME="$HOME/.hermes"
+  export INSTALL_DIR="$TINO_HOME/hermes-agent"
 }
 
 phase_stage() {
@@ -184,8 +184,8 @@ phase_stage() {
   git -C "$SERVE_REPO" config uploadpack.allowAnySHA1InWant true
 
   arm_redirect
-  mkdir -p "$HERMES_HOME"
-  touch "$HERMES_HOME/.skip_upstream_prompt"
+  mkdir -p "$TINO_HOME"
+  touch "$TINO_HOME/.skip_upstream_prompt"
 
   printf 'OLD_SHA=%s\nOLD_REF=%s\nHEAD_SHA=%s\n' "$old_sha" "$old_ref" "$head_sha" > "$STATE"
   ok "serve.git main = $old_sha ($old_ref), update target $head_sha"
@@ -196,9 +196,9 @@ find_installed_app() {
   # (the checkout's release dir), plus /Applications for a copied bundle.
   local cand
   for cand in \
-    "$INSTALL_DIR/apps/desktop/release/mac-arm64/Hermes.app" \
-    "$INSTALL_DIR/apps/desktop/release/mac/Hermes.app" \
-    "/Applications/Hermes.app"; do
+    "$INSTALL_DIR/apps/desktop/release/mac-arm64/Tino.app" \
+    "$INSTALL_DIR/apps/desktop/release/mac/Tino.app" \
+    "/Applications/Tino.app"; do
     [ -d "$cand" ] && { printf '%s' "$cand"; return 0; }
   done
   return 1
@@ -208,9 +208,9 @@ phase_install() {
   # shellcheck disable=SC1090
   . "$STATE"
   arm_redirect
-  step "installing OLD ($OLD_REF) via the published Hermes-Setup.dmg"
+  step "installing OLD ($OLD_REF) via the published Tino-Setup.dmg"
 
-  local dmg="$WORK_ROOT/Hermes-Setup.dmg"
+  local dmg="$WORK_ROOT/Tino-Setup.dmg"
   [ -f "$dmg" ] || curl -fsSL -o "$dmg" "$DMG_URL"
   [ "$(stat -f%z "$dmg")" -gt 1000000 ] || fail "dmg download too small: $(stat -f%z "$dmg") bytes"
   # curl'd files carry no quarantine attr, but belt and braces on a runner.
@@ -232,14 +232,14 @@ phase_install() {
   # attach never works, and run bare it waits forever on its setup-choice
   # screen. Launch it in the background with our env (direct exec, not
   # `open`: launchd inherits NONE of the redirect env) and drive the
-  # "Install Hermes" button with native input.
+  # "Install Tino" button with native input.
   local rc=0
   bash "$ASSETS/drive-dmg-install.sh" \
     --app-bin "$app_bin" \
     --install-dir "$INSTALL_DIR" \
     --proof-dir "$LOG_DIR" 2>&1 \
     | ts_prefix > "$LOG_DIR/bootstrap-install.log" || rc=$?
-  log_group "Hermes-Setup (dmg bootstrap) transcript" "$LOG_DIR/bootstrap-install.log"
+  log_group "Tino-Setup (dmg bootstrap) transcript" "$LOG_DIR/bootstrap-install.log"
   hdiutil detach "$mount" >/dev/null 2>&1 || true
   [ "$rc" -eq 0 ] || fail "dmg bootstrap exited $rc; transcript above"
 
@@ -252,7 +252,7 @@ phase_install() {
   [ -x "$hermes" ] || fail "no hermes console script at $hermes"
   "$hermes" --version 2>&1 | ts_prefix > "$LOG_DIR/version-old.log" || fail "hermes --version failed after install"
   ok "hermes --version works: $(head -c 120 "$LOG_DIR/version-old.log" | tr -d '\n')"
-  find_installed_app >/dev/null || fail "no installed Hermes.app after the dmg bootstrap"
+  find_installed_app >/dev/null || fail "no installed Tino.app after the dmg bootstrap"
   ok "installed app: $(find_installed_app)"
 }
 
@@ -310,7 +310,7 @@ run_playwright_update() {
   local rc=0
   (cd "$pw_dir" && node launch-from-spec.mjs \
     --spec "$spec" \
-    --result "$HERMES_HOME/.hermes-update-result.json" \
+    --result "$TINO_HOME/.hermes-update-result.json" \
     --expect-sha "$HEAD_SHA" \
     --repo-dir "$INSTALL_DIR" 2>&1 \
     | ts_prefix > "$LOG_DIR/app-update.log") || rc=$?
@@ -357,11 +357,11 @@ phase_update() {
       # The desktop stage is this leg's claim: the rebuilt app must exist.
       head_app=""
       for cand in \
-        "$INSTALL_DIR/apps/desktop/release/mac-arm64/Hermes.app" \
-        "$INSTALL_DIR/apps/desktop/release/mac/Hermes.app"; do
+        "$INSTALL_DIR/apps/desktop/release/mac-arm64/Tino.app" \
+        "$INSTALL_DIR/apps/desktop/release/mac/Tino.app"; do
         [ -d "$cand" ] && { head_app="$cand"; break; }
       done
-      [ -n "$head_app" ] || fail "no built Hermes.app under the checkout after the +desktop update"
+      [ -n "$head_app" ] || fail "no built Tino.app under the checkout after the +desktop update"
       ok "rebuilt app present: $head_app"
       ;;
     open-app-update)
@@ -391,7 +391,7 @@ PYEOF
       local rc=0
       (cd "$INSTALL_DIR" && \
         PYTHONPATH="$ASSETS/launch-capture${PYTHONPATH:+:$PYTHONPATH}" \
-        HERMES_E2E_CAPTURE_LAUNCH="$spec" \
+        TINO_E2E_CAPTURE_LAUNCH="$spec" \
         "$hermes" desktop < /dev/null 2>&1 | ts_prefix > "$LOG_DIR/desktop-launch-capture.log") || rc=$?
       log_group "hermes desktop (launch capture) transcript" "$LOG_DIR/desktop-launch-capture.log"
       [ "$rc" -eq 0 ] || fail "hermes desktop exited $rc during launch capture"
@@ -415,10 +415,10 @@ PYEOF
   local ildest="$LOG_DIR/install-logs"
   mkdir -p "$ildest"
   cp -R "$HOME_SANDBOX/.hermes/logs" "$ildest/hermes-logs" 2>/dev/null || true
-  local ud="$HOME_SANDBOX/Library/Application Support/Hermes"
+  local ud="$HOME_SANDBOX/Library/Application Support/Tino"
   [ -d "$ud" ] && cp -R "$ud" "$ildest/desktop-userdata" 2>/dev/null || true
-  cp "$HERMES_HOME/.hermes-update-result.json" "$ildest" 2>/dev/null || true
-  ls -la "$HERMES_HOME" > "$ildest/hermes-home-ls.txt" 2>/dev/null || true
+  cp "$TINO_HOME/.hermes-update-result.json" "$ildest" 2>/dev/null || true
+  ls -la "$TINO_HOME" > "$ildest/hermes-home-ls.txt" 2>/dev/null || true
   ls -la "$INSTALL_DIR/venv/bin" > "$ildest/venv-bin-ls.txt" 2>/dev/null || true
   ls -la "$INSTALL_DIR/venv" > "$ildest/venv-ls.txt" 2>/dev/null || true
   ok "collected install-side logs to $ildest"

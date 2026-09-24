@@ -37,7 +37,7 @@ def _consume_detached_handler_exception(task: "asyncio.Task") -> None:
 
 
 # Audio exts for native audio delivery; Telegram's narrower sets stay separate (.m2a is audio to
-# Hermes but not to sendAudio).
+# Tino but not to sendAudio).
 _AUDIO_MIME_TYPES = {
     ".ogg": "audio/ogg", ".opus": "audio/opus", ".mp3": "audio/mpeg", ".m2a": "audio/mpeg",
     ".wav": "audio/wav", ".m4a": "audio/m4a", ".flac": "audio/flac"}
@@ -198,7 +198,7 @@ def build_auto_tts_output_path(platform) -> str:
     """Unique temp output path for gateway auto-TTS: ``.ogg`` for ``OPUS_VOICE_PLATFORMS``
     (the tool's ``_repair_ogg_container`` then guarantees real Opus bytes), else ``.mp3``.
     Platform-awareness lives HERE because ``_clear_session_env`` wipes the TTS tool's
-    ``HERMES_SESSION_PLATFORM`` contextvar before the post-handler auto-TTS block runs.
+    ``TINO_SESSION_PLATFORM`` contextvar before the post-handler auto-TTS block runs.
 
     Platforms whose native voice bubbles require Ogg/Opus (``tools.tts_tool.OPUS_VOICE_PLATFORMS`` — the
     single source of truth) get an explicit ``.ogg`` path; the tool's central container repair
@@ -299,7 +299,7 @@ def resolve_proxy_url(
     process env another profile's ``TELEGRAM_PROXY``/``DISCORD_PROXY``/etc. may hold; the YAML
     value is the same profile's, so a secondary keeps its configured route without any env
     bridge (#108440). The generic ``HTTPS_PROXY``/``HTTP_PROXY``/``ALL_PROXY`` fallback stays a raw
-    process-env read — those are OS/system-level network settings, not a per-profile Hermes concept."""
+    process-env read — those are OS/system-level network settings, not a per-profile Tino concept."""
     from gateway.platforms._shared import get_scoped_secret as _get_scoped_proxy_var
     value = (_get_scoped_proxy_var(platform_env_var, "") or "").strip() if platform_env_var else ""
     if not value:
@@ -708,22 +708,22 @@ _CACHE_DIR_IMPORT_DEFAULTS = {
 
 # Launch-time homes: fine for the static ALLOW roots below (per-profile cache roots are
 # enumerated at check time), never for the credential DENY side — see _credential_home_roots.
-_HERMES_HOME = get_hermes_home()
-_HERMES_ROOT = get_default_hermes_root()
-MEDIA_DELIVERY_ALLOW_DIRS_ENV = "HERMES_MEDIA_ALLOW_DIRS"
-MEDIA_DELIVERY_TRUST_RECENT_ENV = "HERMES_MEDIA_TRUST_RECENT_FILES"
-MEDIA_DELIVERY_TRUST_RECENT_SECONDS_ENV = "HERMES_MEDIA_TRUST_RECENT_SECONDS"
+_TINO_HOME = get_hermes_home()
+_TINO_ROOT = get_default_hermes_root()
+MEDIA_DELIVERY_ALLOW_DIRS_ENV = "TINO_MEDIA_ALLOW_DIRS"
+MEDIA_DELIVERY_TRUST_RECENT_ENV = "TINO_MEDIA_TRUST_RECENT_FILES"
+MEDIA_DELIVERY_TRUST_RECENT_SECONDS_ENV = "TINO_MEDIA_TRUST_RECENT_SECONDS"
 # Strict mode = allowlist+recency validation; off by default (the denylist still blocks
 # credential / system paths). Set true on public-facing gateways.
-MEDIA_DELIVERY_STRICT_ENV = "HERMES_MEDIA_DELIVERY_STRICT"
+MEDIA_DELIVERY_STRICT_ENV = "TINO_MEDIA_DELIVERY_STRICT"
 # Canonical cache subdirs of deliverable artifacts; also enumerates per-profile cache roots.
 _MEDIA_DELIVERY_CACHE_SUBDIRS = ("images", "audio", "videos", "documents", "screenshots")
 MEDIA_DELIVERY_SAFE_ROOTS = (
     IMAGE_CACHE_DIR, AUDIO_CACHE_DIR, VIDEO_CACHE_DIR, DOCUMENT_CACHE_DIR, SCREENSHOT_CACHE_DIR,
-    *(_HERMES_HOME / d for d in (
+    *(_TINO_HOME / d for d in (
         "image_cache", "audio_cache", "video_cache", "document_cache", "browser_screenshots")),
     # Canonical cache layout, alongside the legacy *_cache dirs (installs may have both).
-    *(_HERMES_HOME / "cache" / d for d in _MEDIA_DELIVERY_CACHE_SUBDIRS))
+    *(_TINO_HOME / "cache" / d for d in _MEDIA_DELIVERY_CACHE_SUBDIRS))
 
 # Recency window (s) for trusting fresh files: artifacts land seconds before delivery,
 # pre-existing host files (/etc/passwd, ~/.ssh/id_rsa) are days/months old.
@@ -744,7 +744,7 @@ def _sqlite_files(name: str) -> tuple[str, ...]:
     return (name, f"{name}-wal", f"{name}-shm", f"{name}-journal")
 
 
-# Credential stores at the HERMES_HOME root, denied per-file so skills/, logs/ and agent-written
+# Credential stores at the TINO_HOME root, denied per-file so skills/, logs/ and agent-written
 # files stay deliverable (cache subdirs are allowlisted BEFORE this). A superset of the
 # agent/file_safety.py read+write denies so exfil never trails the read guard. google_token.json's mtime bumps every turn (defeats the
 # recency window); pairing/ and mcp-tokens/ (live OAuth tokens) are denied as whole trees.
@@ -761,13 +761,13 @@ _ROOT_CREDENTIAL_PATHS = (
 
 def _profile_cache_roots() -> List[Path]:
     """Per-profile cache roots ``<root>/profiles/<name>/cache/{images,...}`` (the static safe
-    roots cover only the active HERMES_HOME). Enumerated at check time so profiles created after
-    startup count and are allowlisted BEFORE the ``/root`` denylist (HERMES_HOME symlinked).
+    roots cover only the active TINO_HOME). Enumerated at check time so profiles created after
+    startup count and are allowlisted BEFORE the ``/root`` denylist (TINO_HOME symlinked).
 
-    ``HERMES_HOME=/opt/data``) while the model emits a profile-scoped path silently fails delivery.
+    ``TINO_HOME=/opt/data``) while the model emits a profile-scoped path silently fails delivery.
     Enumerated dynamically at check time so profiles created after startup are covered, and so the resolved
     profile path is allowlisted *before* the ``/root`` system denylist is consulted (which otherwise wins
-    when HERMES_HOME is symlinked under a denied prefix and $HOME is not that prefix). See issue #31733.
+    when TINO_HOME is symlinked under a denied prefix and $HOME is not that prefix). See issue #31733.
     """
     return [p / "cache" / subdir for p in _profile_dirs() for subdir in _MEDIA_DELIVERY_CACHE_SUBDIRS]
 
@@ -775,23 +775,23 @@ def _profile_cache_roots() -> List[Path]:
 def _profile_dirs() -> List[Path]:
     """Every ``<root>/profiles/<name>`` directory, read at check time."""
     try:
-        return [p for p in (_HERMES_ROOT / "profiles").iterdir() if p.is_dir()]
+        return [p for p in (_TINO_ROOT / "profiles").iterdir() if p.is_dir()]
     except OSError:
         return []
 
 
 def _credential_home_roots() -> List[Path]:
-    """Every Hermes home whose credential stores the denylist must cover: the ACTIVE home
-    (the per-turn HERMES_HOME override under ``gateway.multiplex_profiles``), the shared root
+    """Every Tino home whose credential stores the denylist must cover: the ACTIVE home
+    (the per-turn TINO_HOME override under ``gateway.multiplex_profiles``), the shared root
     and every ``<root>/profiles/*``. Enumerated at check time like ``_profile_cache_roots`` on
     the allow side — a denylist frozen at import covers only the launch profile, so a
     ``MEDIA:<root>/profiles/<other>/.env`` emitted in any profile's turn would upload it."""
-    return list(dict.fromkeys((get_hermes_home(), _HERMES_ROOT, *_profile_dirs())))
+    return list(dict.fromkeys((get_hermes_home(), _TINO_ROOT, *_profile_dirs())))
 
 
 def _kanban_root() -> Path:
     """Kanban is root-shared across profiles by design (``kanban_db.kanban_home``)."""
-    return Path(os.environ.get("HERMES_KANBAN_HOME", "").strip() or _HERMES_ROOT).expanduser()
+    return Path(os.environ.get("TINO_KANBAN_HOME", "").strip() or _TINO_ROOT).expanduser()
 
 
 def _kanban_board_dirs() -> List[Path]:
@@ -804,7 +804,7 @@ def _kanban_board_dirs() -> List[Path]:
 
 def _kanban_attachment_roots() -> List[Path]:
     """Return durable Kanban attachment roots without importing kanban_db."""
-    override = os.environ.get("HERMES_KANBAN_ATTACHMENTS_ROOT", "").strip()
+    override = os.environ.get("TINO_KANBAN_ATTACHMENTS_ROOT", "").strip()
     if override:
         return [Path(override).expanduser()]
     roots = [_kanban_root() / "kanban" / "attachments"]
@@ -1004,7 +1004,7 @@ def _default_docker_workspace_host_roots(session_key: str = "") -> List[Path]:
 
 
 def _cache_dir_container_mounts() -> List[Tuple[Path, Path]]:
-    """(host, container) pairs for the auto-mounted Hermes cache dirs (``/root/.hermes/...`` in
+    """(host, container) pairs for the auto-mounted Tino cache dirs (``/root/.hermes/...`` in
     MEDIA tags); longer prefixes than the ``/root`` home mount, so longest-prefix match wins."""
     if not _docker_env_active():
         return []
@@ -1073,8 +1073,8 @@ def _translate_docker_container_media_path(candidate: Path, session_key: str = "
 def validate_media_delivery_path(path: str, session_key: str = "") -> Optional[str]:
     """Safe absolute file path for native media delivery, else None. Default: any existing
     regular file outside the credential / system denylist (symmetric with inbound). Strict
-    (``HERMES_MEDIA_DELIVERY_STRICT=1``, public bots where prompt injection must not exfiltrate
-    host secrets): MUST be under a Hermes cache, an operator root (``HERMES_MEDIA_ALLOW_DIRS``),
+    (``TINO_MEDIA_DELIVERY_STRICT=1``, public bots where prompt injection must not exfiltrate
+    host secrets): MUST be under a Tino cache, an operator root (``TINO_MEDIA_ALLOW_DIRS``),
     or freshly produced within the recency window. Symlinks are resolved before any check."""
     candidate = _normalize_media_tag_path(path)
     if not candidate:
@@ -1097,7 +1097,7 @@ def validate_media_delivery_path(path: str, session_key: str = "") -> Optional[s
         resolved_root = _resolve_path(root, expand=True)
         if resolved_root is not None and _path_is_within(resolved, resolved_root):
             return str(resolved)
-    # Non-strict (default): anything not denylisted (/etc, /proc, ~/.ssh, Hermes-root secrets).
+    # Non-strict (default): anything not denylisted (/etc, /proc, ~/.ssh, Tino-root secrets).
     from gateway.media_policy import media_delivery_strict
     if not media_delivery_strict():
         return None if _path_under_denied_prefix(resolved) else str(resolved)
@@ -1831,12 +1831,12 @@ class BasePlatformAdapter(ABC):
             store.pop(str(chat_id), None)
 
     # Can wake a fresh turn AFTER a turn ends (detached-subagent completions); False for stateless
-    # adapters (API server). Propagated to ``HERMES_SESSION_ASYNC_DELIVERY`` so tools never promise
+    # adapters (API server). Propagated to ``TINO_SESSION_ASYNC_DELIVERY`` so tools never promise
     # a delivery they can't keep.
     supports_async_delivery: bool = True
     # ``send()`` chunks natively via ``truncate_message()`` -> the router skips its truncation.
     splits_long_messages: bool = False
-    # Prefix users can always TYPE for Hermes commands ("!" where the client eats a leading "/").
+    # Prefix users can always TYPE for Tino commands ("!" where the client eats a leading "/").
     typed_command_prefix: str = "/"
     # ``in_channel`` continuable-cron surface: job delivered FLAT, plain replies continue it via
     # the whole-channel bucket ``(platform, chat_id, None)``; needs a flat-reply outbound gate too
@@ -1891,9 +1891,9 @@ class BasePlatformAdapter(ABC):
         # Legacy env knob; the runner syncs the busy_input_mode value after construction.
         # Default "interrupt" so a pre-sync read never silently queues.
         self._busy_text_mode: str = (
-            os.environ.get("HERMES_GATEWAY_BUSY_TEXT_MODE", "interrupt").strip().lower() or "interrupt")
-        self._busy_text_debounce_seconds: float = _float_env("HERMES_GATEWAY_BUSY_TEXT_DEBOUNCE_SECONDS", 0.35)
-        self._busy_text_hard_cap_seconds: float = _float_env("HERMES_GATEWAY_BUSY_TEXT_HARD_CAP_SECONDS", 1.0)
+            os.environ.get("TINO_GATEWAY_BUSY_TEXT_MODE", "interrupt").strip().lower() or "interrupt")
+        self._busy_text_debounce_seconds: float = _float_env("TINO_GATEWAY_BUSY_TEXT_DEBOUNCE_SECONDS", 0.35)
+        self._busy_text_hard_cap_seconds: float = _float_env("TINO_GATEWAY_BUSY_TEXT_HARD_CAP_SECONDS", 1.0)
         self._text_debounce: dict[str, TextDebounceState] = {}
         # handle_message() tasks; shutdown cancels them so a replaced gateway stops working.
         self._background_tasks: set[asyncio.Task] = set()
@@ -2142,7 +2142,7 @@ class BasePlatformAdapter(ABC):
                 raise
 
     def _acquire_platform_lock(self, scope: str, identity: str, resource_desc: str) -> bool:
-        """Acquire a scoped lock for this adapter; True on success. A live cross-HERMES_HOME
+        """Acquire a scoped lock for this adapter; True on success. A live cross-TINO_HOME
         holder is replaced only when the runner armed this adapter for its initial
         ``--replace`` connect (the status module validates ownership and terminates)."""
         from gateway.status import (
@@ -3994,21 +3994,21 @@ class BasePlatformAdapter(ABC):
 
     @staticmethod
     def _get_human_delay() -> float:
-        """Random human-like pacing delay (s) from HERMES_HUMAN_DELAY_MODE: "off" (default) |
-        "natural" 800-2500ms | "custom" via HERMES_HUMAN_DELAY_MIN_MS /
-        HERMES_HUMAN_DELAY_MAX_MS."""
-        mode = os.getenv("HERMES_HUMAN_DELAY_MODE", "off").lower()
+        """Random human-like pacing delay (s) from TINO_HUMAN_DELAY_MODE: "off" (default) |
+        "natural" 800-2500ms | "custom" via TINO_HUMAN_DELAY_MIN_MS /
+        TINO_HUMAN_DELAY_MAX_MS."""
+        mode = os.getenv("TINO_HUMAN_DELAY_MODE", "off").lower()
         if mode == "off":
             return 0.0
         lo, hi = 800, 2500
         if mode != "natural":  # custom mode tolerates malformed env vars
-            lo = _or_default(lambda: int(os.getenv("HERMES_HUMAN_DELAY_MIN_MS", str(lo))), lo)
-            hi = _or_default(lambda: int(os.getenv("HERMES_HUMAN_DELAY_MAX_MS", str(hi))), hi)
+            lo = _or_default(lambda: int(os.getenv("TINO_HUMAN_DELAY_MIN_MS", str(lo))), lo)
+            hi = _or_default(lambda: int(os.getenv("TINO_HUMAN_DELAY_MAX_MS", str(hi))), hi)
         return random.uniform(lo / 1000.0, hi / 1000.0)
 
     async def _synthesize_auto_tts(self, text_content: str) -> Tuple[List[str], Optional[str]]:
         """Synthesize auto-TTS audio -> ``(existing_paths, requested_path)``; empty/None on failure
-        (logged, never raised). Path built platform-aware HERE: HERMES_SESSION_PLATFORM is cleared
+        (logged, never raised). Path built platform-aware HERE: TINO_SESSION_PLATFORM is cleared
         post-handler."""
         paths: List[str] = []
         requested_path = None
@@ -4547,7 +4547,7 @@ class BasePlatformAdapter(ABC):
         role_authorized: bool = False, auto_thread_created: bool = False,
         auto_thread_initial_name: Optional[str] = None) -> SessionSource:
         """Build a SessionSource; with ``gateway.profile_routes`` configured the matching
-        profile is stamped on ``source.profile`` for per-profile HERMES_HOME isolation."""
+        profile is stamped on ``source.profile`` for per-profile TINO_HOME isolation."""
         def _opt(value) -> Optional[str]:
             return str(value) if value else None
         fields = dict(

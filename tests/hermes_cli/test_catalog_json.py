@@ -92,6 +92,15 @@ def test_refresh_failure_keeps_current_catalog(monkeypatch):
     assert [e.id for e in cat.CATALOG] == ids_before
 
 
+def test_tino_catalog_does_not_refresh_from_upstream(monkeypatch):
+    monkeypatch.setenv("TINO_AGENT_BRANDED", "1")
+    monkeypatch.setattr(urllib.request, "urlopen", lambda *a, **k: pytest.fail("upstream catalog requested"))
+    ids_before = [e.id for e in cat.CATALOG]
+    cat.refresh_catalog_soon()
+    assert cat.refresh_catalog(force=True) is False
+    assert [e.id for e in cat.CATALOG] == ids_before
+
+
 def test_refresh_rejects_wrong_schema(monkeypatch):
     doc = _doc_from(lambda m: m)
     doc["schema_version"] = 2

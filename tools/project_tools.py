@@ -2,7 +2,7 @@
 """Project tools — the agent's INTENTIONAL handle on first-class Projects (per-profile
 ``projects.db``, the desktop sidebar's named workspaces). Creating/switching is an explicit
 tool call, never a side effect of ``cd``. GUI-only: the `project` toolset stays off
-``_HERMES_CORE_TOOLS``; the desktop/TUI gateway folds it in and wires
+``_TINO_CORE_TOOLS``; the desktop/TUI gateway folds it in and wires
 ``set_project_workspace_callback`` so the live session's cwd and sidebar follow."""
 
 import json

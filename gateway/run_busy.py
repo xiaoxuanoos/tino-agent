@@ -646,7 +646,7 @@ class GatewayBusySessionMixin:
         # Some mobile chat setups want silent steering — keep the behavior, drop the bubble.
         from gateway.run import _load_gateway_config, _platform_config_key
         from gateway.display_config import resolve_display_setting
-        steer_ack_env = os.environ.get("HERMES_GATEWAY_BUSY_STEER_ACK_ENABLED")
+        steer_ack_env = os.environ.get("TINO_GATEWAY_BUSY_STEER_ACK_ENABLED")
         if steer_ack_env is not None:
             steer_ack_enabled = steer_ack_env.strip().lower() in {"1", "true", "yes", "on"}
         else:
@@ -818,7 +818,7 @@ class GatewayBusySessionMixin:
 
         # Disabled ack: still process input. Checked before debounce so an undelivered ack never
         # stamps the "last ack" timestamp.
-        if os.environ.get("HERMES_GATEWAY_BUSY_ACK_ENABLED", "true").lower() != "true":
+        if os.environ.get("TINO_GATEWAY_BUSY_ACK_ENABLED", "true").lower() != "true":
             logger.debug("Busy ack suppressed for session %s", session_key)
             return True  # input still processed, just no ack sent
 
@@ -936,11 +936,11 @@ class GatewayBusySessionMixin:
         if args.lower() in {"off", "resume", "stop", "disengage"}:
             if estop.disengage():
                 return "▶️ Resumed — new work is accepted again."
-            return "Hermes wasn't paused."
+            return "Tino wasn't paused."
         state = estop.get_state()
         if state is not None and not args:
             suffix = f" (reason: {state.get('reason')})" if state.get("reason") else ""
-            return f"⏸️ Hermes is already paused{suffix}. Use `/pause off` to resume."
+            return f"⏸️ Tino is already paused{suffix}. Use `/pause off` to resume."
         estop.engage(reason=args or None)
         suffix = f" (reason: {args})" if args else ""
         return (

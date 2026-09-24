@@ -29,8 +29,8 @@ def test_media_delivery_denies_encrypted_bitwarden_cache(tmp_path, monkeypatch):
 
     hermes_home = tmp_path / ".hermes"
     hermes_home.mkdir()
-    monkeypatch.setattr(base, "_HERMES_HOME", hermes_home)
-    monkeypatch.setattr(base, "_HERMES_ROOT", hermes_home)
+    monkeypatch.setattr(base, "_TINO_HOME", hermes_home)
+    monkeypatch.setattr(base, "_TINO_ROOT", hermes_home)
     path = hermes_home / "cache" / "bws_cache.enc.json"
     path.parent.mkdir()
     path.write_text("encrypted-secret-cache")
@@ -406,7 +406,7 @@ class TestExtensionlessMediaDelivery:
             "gateway.platforms.base.MEDIA_DELIVERY_SAFE_ROOTS",
             (str(root),),
         )
-        monkeypatch.delenv("HERMES_MEDIA_DELIVERY_STRICT", raising=False)
+        monkeypatch.delenv("TINO_MEDIA_DELIVERY_STRICT", raising=False)
 
     def test_extensionless_media_extracted_when_file_validates(self, tmp_path, monkeypatch):
         root = tmp_path / "output"
@@ -437,7 +437,7 @@ class TestUniversalMediaEgress:
             "gateway.platforms.base.MEDIA_DELIVERY_SAFE_ROOTS",
             (str(root),),
         )
-        monkeypatch.delenv("HERMES_MEDIA_DELIVERY_STRICT", raising=False)
+        monkeypatch.delenv("TINO_MEDIA_DELIVERY_STRICT", raising=False)
 
     @pytest.mark.parametrize("name", [
         "script.py", "server.log", "notes.weirdext", "app.ts", "run.sh",
@@ -480,11 +480,11 @@ class TestMediaDeliveryPathValidation:
         # recency window + denylist). Force strict on so they keep
         # exercising the legacy path even though the public default
         # flipped to off in 2026-05.
-        monkeypatch.setenv("HERMES_MEDIA_DELIVERY_STRICT", "1")
+        monkeypatch.setenv("TINO_MEDIA_DELIVERY_STRICT", "1")
         # Disable recency-based trust by default so the original allowlist
         # tests continue to exercise the strict-allowlist path. Tests that
         # specifically cover recency trust re-enable it themselves.
-        monkeypatch.setenv("HERMES_MEDIA_TRUST_RECENT_FILES", "0")
+        monkeypatch.setenv("TINO_MEDIA_TRUST_RECENT_FILES", "0")
 
 
     def test_rejects_symlink_escape_from_safe_root(self, tmp_path, monkeypatch):
@@ -523,8 +523,8 @@ class TestMediaDeliveryPathValidation:
     ):
         """Strict mode trusts durable attachments without trusting scratch."""
         self._patch_roots(monkeypatch)
-        monkeypatch.setenv("HERMES_KANBAN_HOME", str(tmp_path / "hermes"))
-        monkeypatch.setenv("HERMES_MEDIA_TRUST_RECENT_FILES", "0")
+        monkeypatch.setenv("TINO_KANBAN_HOME", str(tmp_path / "hermes"))
+        monkeypatch.setenv("TINO_MEDIA_TRUST_RECENT_FILES", "0")
         board_root = tmp_path / "hermes" / "kanban" / "boards" / "research"
         board_root.mkdir(parents=True)
         (board_root / "kanban.db").touch()
@@ -550,9 +550,9 @@ class TestMediaDeliveryPathValidation:
         ~/.ssh, ~/.aws, etc.
         """
         self._patch_roots(monkeypatch)
-        monkeypatch.delenv("HERMES_MEDIA_ALLOW_DIRS", raising=False)
-        monkeypatch.setenv("HERMES_MEDIA_TRUST_RECENT_FILES", "1")
-        monkeypatch.setenv("HERMES_MEDIA_TRUST_RECENT_SECONDS", "600")
+        monkeypatch.delenv("TINO_MEDIA_ALLOW_DIRS", raising=False)
+        monkeypatch.setenv("TINO_MEDIA_TRUST_RECENT_FILES", "1")
+        monkeypatch.setenv("TINO_MEDIA_TRUST_RECENT_SECONDS", "600")
 
         # Simulate $HOME so ~/.ssh resolves into our tmp dir.
         fake_home = tmp_path / "home"
@@ -584,8 +584,8 @@ class TestMediaDeliveryDefaultMode:
         )
         # Pin strict OFF — the public default. Tests that exercise the
         # strict path live in TestMediaDeliveryPathValidation.
-        monkeypatch.delenv("HERMES_MEDIA_DELIVERY_STRICT", raising=False)
-        monkeypatch.delenv("HERMES_MEDIA_ALLOW_DIRS", raising=False)
+        monkeypatch.delenv("TINO_MEDIA_DELIVERY_STRICT", raising=False)
+        monkeypatch.delenv("TINO_MEDIA_ALLOW_DIRS", raising=False)
 
     def test_accepts_stale_file_outside_allowlist(self, tmp_path, monkeypatch):
         """The motivating case — agent says ``MEDIA:/home/user/notes.md``
@@ -625,11 +625,11 @@ class TestMediaDeliveryDefaultMode:
         secret.write_text('{"access_token": "live-bearer-abc123"}')
         monkeypatch.setenv("HOME", str(fake_home))
         monkeypatch.setattr(
-            "gateway.platforms.base._HERMES_HOME",
+            "gateway.platforms.base._TINO_HOME",
             hermes_dir,
         )
         monkeypatch.setattr(
-            "gateway.platforms.base._HERMES_ROOT",
+            "gateway.platforms.base._TINO_ROOT",
             hermes_dir,
         )
 
@@ -637,7 +637,7 @@ class TestMediaDeliveryDefaultMode:
 
 
     def test_denylist_blocks_google_token_default_mode(self, tmp_path, monkeypatch):
-        """Integration credentials at the HERMES_HOME root (google_token.json)
+        """Integration credentials at the TINO_HOME root (google_token.json)
         must never be deliverable, even though they aren't the historically
         enumerated .env/auth.json/config.yaml files. Regression for a
         refreshed google_token.json being auto-attached to a Slack reply
@@ -651,8 +651,8 @@ class TestMediaDeliveryDefaultMode:
         token = hermes_dir / "google_token.json"
         token.write_text('{"access_token": "***", "refresh_token": "***"}')
         monkeypatch.setenv("HOME", str(fake_home))
-        monkeypatch.setattr("gateway.platforms.base._HERMES_HOME", hermes_dir)
-        monkeypatch.setattr("gateway.platforms.base._HERMES_ROOT", hermes_dir)
+        monkeypatch.setattr("gateway.platforms.base._TINO_HOME", hermes_dir)
+        monkeypatch.setattr("gateway.platforms.base._TINO_ROOT", hermes_dir)
 
         assert BasePlatformAdapter.validate_media_delivery_path(str(token)) is None
 
@@ -664,8 +664,8 @@ class TestMediaDeliveryDefaultMode:
         accidentally re-introducing the rejected whole-tree deny.
         """
         self._patch_roots(monkeypatch)  # strict mode on
-        monkeypatch.setenv("HERMES_MEDIA_TRUST_RECENT_FILES", "1")
-        monkeypatch.setenv("HERMES_MEDIA_TRUST_RECENT_SECONDS", "600")
+        monkeypatch.setenv("TINO_MEDIA_TRUST_RECENT_FILES", "1")
+        monkeypatch.setenv("TINO_MEDIA_TRUST_RECENT_SECONDS", "600")
 
         fake_home = tmp_path / "home"
         hermes_dir = fake_home / ".hermes"
@@ -673,8 +673,8 @@ class TestMediaDeliveryDefaultMode:
         artifact = hermes_dir / "adhoc_report.pdf"
         artifact.write_bytes(b"%PDF-1.4")  # fresh mtime
         monkeypatch.setenv("HOME", str(fake_home))
-        monkeypatch.setattr("gateway.platforms.base._HERMES_HOME", hermes_dir)
-        monkeypatch.setattr("gateway.platforms.base._HERMES_ROOT", hermes_dir)
+        monkeypatch.setattr("gateway.platforms.base._TINO_HOME", hermes_dir)
+        monkeypatch.setattr("gateway.platforms.base._TINO_ROOT", hermes_dir)
 
         assert BasePlatformAdapter.validate_media_delivery_path(str(artifact)) == str(artifact.resolve())
 
@@ -690,8 +690,8 @@ class TestMediaDeliveryDefaultMode:
         hermes_dir = fake_home / ".hermes"
         hermes_dir.mkdir(parents=True)
         monkeypatch.setenv("HOME", str(fake_home))
-        monkeypatch.setattr("gateway.platforms.base._HERMES_HOME", hermes_dir)
-        monkeypatch.setattr("gateway.platforms.base._HERMES_ROOT", hermes_dir)
+        monkeypatch.setattr("gateway.platforms.base._TINO_HOME", hermes_dir)
+        monkeypatch.setattr("gateway.platforms.base._TINO_ROOT", hermes_dir)
         board = hermes_dir / "kanban" / "boards" / "team-a"
         (board / "attachments").mkdir(parents=True)
 
@@ -709,7 +709,7 @@ class TestMediaDeliveryDefaultMode:
     def test_denylist_covers_every_profile_home_not_just_the_launch_home(self, tmp_path, monkeypatch):
         """Multiplex: one process serves every ``<root>/profiles/*``. The credential denylist must
         cover each profile's ``.env`` / ``auth.json`` / ``state.db`` / transcripts whether the emitting
-        turn is the launch (default) profile's or the secondary's own (HERMES_HOME override), while
+        turn is the launch (default) profile's or the secondary's own (TINO_HOME override), while
         the profile's cache artifacts and plain agent-written files stay deliverable."""
         from hermes_constants import reset_hermes_home_override, set_hermes_home_override
 
@@ -718,8 +718,8 @@ class TestMediaDeliveryDefaultMode:
         hermes_root = fake_home / ".hermes"
         profile_b = hermes_root / "profiles" / "beta"
         monkeypatch.setenv("HOME", str(fake_home))
-        monkeypatch.setattr("gateway.platforms.base._HERMES_HOME", hermes_root)
-        monkeypatch.setattr("gateway.platforms.base._HERMES_ROOT", hermes_root)
+        monkeypatch.setattr("gateway.platforms.base._TINO_HOME", hermes_root)
+        monkeypatch.setattr("gateway.platforms.base._TINO_ROOT", hermes_root)
 
         denied = [".env", "auth.json", "state.db", "state.db-wal", "config.yaml",
                   "sessions/20260101_abc.json", "mcp-tokens/server.json"]
@@ -738,13 +738,13 @@ class TestMediaDeliveryDefaultMode:
                 reset_hermes_home_override(token)
 
     def test_strict_mode_envvar_restores_legacy_behavior(self, tmp_path, monkeypatch):
-        """Setting HERMES_MEDIA_DELIVERY_STRICT=1 reactivates the older
+        """Setting TINO_MEDIA_DELIVERY_STRICT=1 reactivates the older
         allowlist+recency logic. A stale file outside the allowlist is
         rejected.
         """
         self._patch_roots(monkeypatch)
-        monkeypatch.setenv("HERMES_MEDIA_DELIVERY_STRICT", "1")
-        monkeypatch.setenv("HERMES_MEDIA_TRUST_RECENT_FILES", "0")
+        monkeypatch.setenv("TINO_MEDIA_DELIVERY_STRICT", "1")
+        monkeypatch.setenv("TINO_MEDIA_TRUST_RECENT_FILES", "0")
 
         stale = tmp_path / "old.pdf"
         stale.write_bytes(b"%PDF-1.4")
@@ -781,7 +781,7 @@ class TestMediaDeliveryDefaultMode:
 
 
     def test_profile_scoped_cache_delivers_under_symlinked_root(self, tmp_path, monkeypatch):
-        """Reopened #31733: a profile gateway whose HERMES_HOME is symlinked
+        """Reopened #31733: a profile gateway whose TINO_HOME is symlinked
         under a denied prefix (e.g. /opt/data -> /root/.hermes) emits
         profile-scoped paths (``<root>/profiles/<name>/cache/images/x.png``)
         that resolve under ``/root``. ``$HOME`` is NOT that prefix, so the
@@ -808,7 +808,7 @@ class TestMediaDeliveryDefaultMode:
             (str(denied_root),),
         )
         monkeypatch.setattr(
-            "gateway.platforms.base._HERMES_ROOT", hermes_root
+            "gateway.platforms.base._TINO_ROOT", hermes_root
         )
 
         assert (
@@ -945,7 +945,7 @@ class TestDockerContainerMediaPathTranslation:
         cache.mkdir(parents=True)
         media = cache / "generated.png"
         media.write_bytes(b"\x89PNG\r\n\x1a\n")
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        monkeypatch.setenv("TINO_HOME", str(hermes_home))
         monkeypatch.setenv("TERMINAL_ENV", "docker")
         monkeypatch.delenv("TERMINAL_DOCKER_VOLUMES", raising=False)
 
@@ -965,7 +965,7 @@ class TestDockerContainerMediaPathTranslation:
         (secret / "auth.json").write_text('{"token": "SECRET"}')
         hermes_home = tmp_path / ".hermes"
         hermes_home.mkdir()
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        monkeypatch.setenv("TINO_HOME", str(hermes_home))
         monkeypatch.setenv("TERMINAL_ENV", "docker")
         monkeypatch.setenv("TERMINAL_CONTAINER_PERSISTENT", "true")
         monkeypatch.setenv("TERMINAL_SANDBOX_DIR", str(sandbox))
@@ -1164,9 +1164,9 @@ class TestGetHumanDelay:
 
     def test_natural_mode_ignores_malformed_custom_env_vars(self):
         env = {
-            "HERMES_HUMAN_DELAY_MODE": "natural",
-            "HERMES_HUMAN_DELAY_MIN_MS": "oops",
-            "HERMES_HUMAN_DELAY_MAX_MS": "still-bad",
+            "TINO_HUMAN_DELAY_MODE": "natural",
+            "TINO_HUMAN_DELAY_MIN_MS": "oops",
+            "TINO_HUMAN_DELAY_MAX_MS": "still-bad",
         }
         with patch.dict(os.environ, env):
             delay = BasePlatformAdapter._get_human_delay()
@@ -1175,9 +1175,9 @@ class TestGetHumanDelay:
 
     def test_custom_mode_tolerates_malformed_env_vars(self):
         env = {
-            "HERMES_HUMAN_DELAY_MODE": "custom",
-            "HERMES_HUMAN_DELAY_MIN_MS": "oops",
-            "HERMES_HUMAN_DELAY_MAX_MS": "still-bad",
+            "TINO_HUMAN_DELAY_MODE": "custom",
+            "TINO_HUMAN_DELAY_MIN_MS": "oops",
+            "TINO_HUMAN_DELAY_MAX_MS": "still-bad",
         }
         with patch.dict(os.environ, env):
             # falls back to the custom-mode defaults instead of crashing
@@ -1275,8 +1275,8 @@ class TestMediaDeliveryDiagnosability:
     def test_rejected_path_appears_in_log(self, tmp_path, caplog):
         outside = tmp_path / "outside.ogg"
         outside.write_bytes(b"OggS")
-        with patch.dict(os.environ, {"HERMES_MEDIA_DELIVERY_STRICT": "1",
-                                     "HERMES_MEDIA_TRUST_RECENT_FILES": "0"}), \
+        with patch.dict(os.environ, {"TINO_MEDIA_DELIVERY_STRICT": "1",
+                                     "TINO_MEDIA_TRUST_RECENT_FILES": "0"}), \
                 patch("gateway.platforms.base.MEDIA_DELIVERY_SAFE_ROOTS", ()):
             with caplog.at_level("WARNING"):
                 out = BasePlatformAdapter.filter_media_delivery_paths([(str(outside), False)])
@@ -1295,7 +1295,7 @@ class TestMediaDeliveryDiagnosability:
         """One crafted ~\\x00 path must not drop every other attachment."""
         good = tmp_path / "good.png"
         good.write_bytes(b"\x89PNG")
-        monkeypatch.setenv("HERMES_MEDIA_DELIVERY_STRICT", "0")
+        monkeypatch.setenv("TINO_MEDIA_DELIVERY_STRICT", "0")
         out = BasePlatformAdapter.filter_media_delivery_paths([
             ("~\x00evil.png", False),
             (str(good), False),
@@ -1313,7 +1313,7 @@ class _CapturingAdapter(BasePlatformAdapter):
 
     The four media-send fallbacks (send_voice, send_video, send_document,
     send_image_file) historically forwarded their *_path argument into the
-    chat text. That argument is a host filesystem path inside the Hermes
+    chat text. That argument is a host filesystem path inside the Tino
     cache, so any subclass that fell back to super() — like the Telegram
     adapter on a rejected video — would leak the host's directory layout
     into the user's chat.

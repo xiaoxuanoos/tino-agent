@@ -74,7 +74,7 @@ def _phase(desktop_dir):
 
 update_cmd._desktop_app_present = _phase
 
-Path(os.environ["HERMES_TEST_READY"]).touch()
+Path(os.environ["TINO_TEST_READY"]).touch()
 try:
     cli_main.cmd_update(SimpleNamespace(post_swap=None, yes=True, gateway=False))
 except Stop:
@@ -100,7 +100,7 @@ def test_update_child_outwaits_shim_parent_then_owns_the_lock_and_the_resume_tok
     marker = hermes_home / update_lock.MARKER_NAME
     marker.write_text(f"{parent.pid}\n{int(time.time())}\n", encoding="utf-8")
     env = {
-        **os.environ, "HERMES_HOME": str(hermes_home), "HERMES_TEST_READY": str(ready),
+        **os.environ, "TINO_HOME": str(hermes_home), "TINO_TEST_READY": str(ready),
         update_lock.HANDOFF_PID_ENV: str(parent.pid),
         update_handoff.SHIM_PARENT_PID_ENV: str(parent.pid),
         update_handoff.GATEWAY_RESUME_ENV: json.dumps(token),

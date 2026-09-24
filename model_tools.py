@@ -51,7 +51,7 @@ def _is_delegated_child_context() -> bool:
 
 
 def _is_dispatcher_owned_worker() -> bool:
-    """False when HERMES_KANBAN_* is present but this execution does not own it
+    """False when TINO_KANBAN_* is present but this execution does not own it
     (delegate_task child, or a cron job fired in-process from a worker)."""
     try:
         from agent.delegation_context import is_dispatcher_owned_worker_context
@@ -273,7 +273,7 @@ def _tool_defs_cache_key(
     return (
         registry.current_scope_key(), frozenset(enabled_toolsets) if enabled_toolsets is not None else None,
         frozenset(disabled_toolsets) if disabled_toolsets else None, registry._generation, cfg_fp,
-        bool(os.environ.get("HERMES_KANBAN_TASK")), bool(skip_tool_search_assembly),
+        bool(os.environ.get("TINO_KANBAN_TASK")), bool(skip_tool_search_assembly),
         _is_delegated_child_context(), _is_dispatcher_owned_worker(), profile_scope,
     )
 
@@ -318,7 +318,7 @@ def _select_tool_names(enabled_toolsets: Optional[List[str]], disabled_toolsets:
         enabled = list(enabled_toolsets)
         # Dispatcher-spawned kanban workers always get the lifecycle handoff
         # tools, even when the assignee profile restricts its chat toolsets.
-        if (os.environ.get("HERMES_KANBAN_TASK") and not _is_delegated_child_context()
+        if (os.environ.get("TINO_KANBAN_TASK") and not _is_delegated_child_context()
                 and _is_dispatcher_owned_worker() and "kanban" not in enabled):
             enabled.append("kanban")
         _apply_toolset_selection(tools, enabled, quiet_mode, disable=False)

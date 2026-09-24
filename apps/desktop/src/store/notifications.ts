@@ -100,8 +100,8 @@ const MAINTENANCE_ROUTE = '/command-center?section=maintenance'
 
 /** One-click recoveries reused by several rules. */
 export const RECOVERY_ACTIONS = {
-  restartHermes: (): NotificationAction => ({
-    label: translateNow('notifications.actions.restartHermes'),
+  restartTino: (): NotificationAction => ({
+    label: translateNow('notifications.actions.restartTino'),
     onClick: requestBackendRestart
   }),
   openKeys: (envKey: string): NotificationAction => ({
@@ -172,7 +172,7 @@ const ERROR_SUMMARIES: ErrorSummaryRule[] = [
   {
     test: msg => /method not allowed/i.test(msg),
     summarize: () => translateNow('notifications.errors.methodNotAllowed'),
-    action: () => RECOVERY_ACTIONS.restartHermes()
+    action: () => RECOVERY_ACTIONS.restartTino()
   },
   {
     test: msg => /microphone permission/i.test(msg),
@@ -181,7 +181,7 @@ const ERROR_SUMMARIES: ErrorSummaryRule[] = [
   {
     test: msg => /Restart required:/i.test(msg),
     summarize: () => translateNow('notifications.errors.codeSkewRestartRequired'),
-    action: () => RECOVERY_ACTIONS.restartHermes()
+    action: () => RECOVERY_ACTIONS.restartTino()
   }
 ]
 

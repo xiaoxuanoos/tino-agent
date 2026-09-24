@@ -62,12 +62,12 @@ function appendUniquePathEntries(entries, { delimiter = path.delimiter } = {}) {
 }
 
 /**
- * Hermes-managed Node.js directories, in preferred lookup order.
+ * Tino-managed Node.js directories, in preferred lookup order.
  *
  * There are two on-disk layouts. `scripts/install.ps1` unpacks portable Node
  * straight into `%LOCALAPPDATA%\hermes\node` (node.exe at the root, no `bin\`);
  * `scripts/install.sh` and the node-bootstrap helper use the POSIX
- * `$HERMES_HOME/node/bin`. Emit BOTH on every platform so mixed and migrated
+ * `$TINO_HOME/node/bin`. Emit BOTH on every platform so mixed and migrated
  * installs resolve, leading with the layout native to the current platform.
  *
  * This is the single source of truth for the ordering rule on the Node side —
@@ -113,7 +113,7 @@ function normalizeHermesHomeRoot(
   }
 
   // fish (and any shell when the value is quoted) hands a literal `~` through; path.resolve()
-  // would pin it under cwd and the Python backend inherits that absolute path via HERMES_HOME.
+  // would pin it under cwd and the Python backend inherits that absolute path via TINO_HOME.
   let raw = String(hermesHome)
 
   if (raw === '~' || raw.startsWith('~/') || (pathModule === path.win32 && raw.startsWith('~\\'))) {
@@ -161,6 +161,20 @@ function buildDesktopBackendEnv({
   }
 }
 
+/** A Tino launch must not inherit another project's provider credentials.
+ * Credentials saved in this profile's .env/auth store are still loaded by
+ * Tino after the backend starts. This is opt-in for the isolated launcher,
+ * leaving upstream development launches unchanged. */
+function stripInheritedProviderCredentials(env: NodeJS.ProcessEnv) {
+  const provider = /^(?:DASHSCOPE|ALIBABA|OPENAI|ANTHROPIC|DEEPSEEK|GEMINI|GOOGLE|XAI|OPENROUTER|FIREWORKS|MISTRAL|GROQ|TOGETHER|COHERE|CEREBRAS|MINIMAX|MOONSHOT|SILICONFLOW|ZAI|KIMI|NVIDIA|HF)_(?:API_KEY|TOKEN|BASE_URL)$/
+
+  for (const key of Object.keys(env)) {
+    if (provider.test(key)) {
+      delete env[key]
+    }
+  }
+}
+
 export {
   appendUniquePathEntries,
   buildDesktopBackendEnv,
@@ -169,5 +183,6 @@ export {
   hermesManagedNodePathEntries,
   normalizeHermesHomeRoot,
   pathEnvKey,
-  POSIX_SANE_PATH_ENTRIES
+  POSIX_SANE_PATH_ENTRIES,
+  stripInheritedProviderCredentials
 }

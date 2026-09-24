@@ -154,7 +154,7 @@ export function mediaGatewayStreamUrl(path: string): string {
       .filter(Boolean)
       .join('&')
 
-    return `hermes-media://remote/${file}${scope ? `?${scope}` : ''}`
+    return `tino-media://remote/${file}${scope ? `?${scope}` : ''}`
   }
 
   return mediaExternalUrl(path)
@@ -164,7 +164,7 @@ export function mediaGatewayStreamUrl(path: string): string {
 // file with Range support. Used for audio/video so playback bypasses the data
 // URL size cap and supports seeking. `path` may be a plain path or `file://…`.
 export function mediaStreamUrl(path: string): string {
-  return `hermes-media://stream/${encodeURIComponent(filePathFromMediaPath(path))}`
+  return `tino-media://stream/${encodeURIComponent(filePathFromMediaPath(path))}`
 }
 
 export function mediaPathFromMarkdownHref(href?: string): string | null {

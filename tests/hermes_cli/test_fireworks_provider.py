@@ -71,10 +71,10 @@ class TestFireworksConfigRegistry:
 
 class TestFireworksOverlay:
     def test_overlay_exists(self):
-        from hermes_cli.providers import HERMES_OVERLAYS
+        from hermes_cli.providers import TINO_OVERLAYS
 
-        assert "fireworks" in HERMES_OVERLAYS
-        overlay = HERMES_OVERLAYS["fireworks"]
+        assert "fireworks" in TINO_OVERLAYS
+        overlay = TINO_OVERLAYS["fireworks"]
         assert overlay.transport == "openai_chat"
         assert overlay.base_url_override == "https://api.fireworks.ai/inference/v1"
         assert not overlay.base_url_env_var
@@ -106,7 +106,7 @@ class TestFireworksDoctor:
         project = tmp_path / "project"
         project.mkdir()
 
-        monkeypatch.setattr(doctor_mod, "HERMES_HOME", home)
+        monkeypatch.setattr(doctor_mod, "TINO_HOME", home)
         monkeypatch.setattr(doctor_mod, "PROJECT_ROOT", project)
         monkeypatch.setattr(doctor_mod, "_DHH", str(home))
         monkeypatch.setenv("FIREWORKS_API_KEY", "fw_test")
@@ -161,7 +161,7 @@ class TestFireworksAuxiliary:
         assert client is not None
         headers = kwargs.get("default_headers", {})
         assert headers["HTTP-Referer"] == "https://hermes-agent.nousresearch.com"
-        assert headers["X-Title"] == "Hermes Agent"
+        assert headers["X-Title"] == "Tino Agent"
         assert kwargs["base_url"] == "https://api.fireworks.ai/inference/v1"
 
     def test_client_sends_hermes_user_agent(self, monkeypatch):

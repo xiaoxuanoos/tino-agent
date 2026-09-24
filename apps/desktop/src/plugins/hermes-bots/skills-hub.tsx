@@ -12,13 +12,13 @@ import { useEffect, useRef, useState } from 'react'
 import { useBots } from './i18n'
 
 // ── skills hub section: the REAL hub page (docs) embedded as a picker ──────
-// https://hermes-agent.nousresearch.com/docs/skills?embed=picker hides the
+// website/docs/skills?embed=picker hides the
 // docs chrome and adds "+ Add to this Agent" per card, posting
 // {type: 'hermes-skill-pick', ...} to us (hermes-agent#86243). We validate
 // the origin, install via skills.manage, and bubble onInstalled so the
 // checklist above gains the row. Search-box fallback kept for offline use.
 
-const HUB_ORIGIN = 'https://hermes-agent.nousresearch.com'
+const HUB_ORIGIN = ''  // fork: embedded hub removed
 const HUB_PICKER_URL = HUB_ORIGIN + '/docs/skills?embed=picker'
 /** One `skills.manage action=search` hit. */
 interface HubSkillResult {
@@ -156,53 +156,8 @@ export function HubSkillsSection({ forProfile, onInstalled }: HubSkillsSectionPr
     <div className="grid gap-1.5 border-t border-(--ui-stroke-secondary) pt-2">
       <div className="flex items-baseline justify-between gap-2">
         <div className="text-[0.7rem] font-medium text-(--ui-text-secondary)">Skills Hub</div>
-        <Button
-          className="text-[0.65rem] text-(--ui-text-quaternary) hover:text-(--ui-text-secondary)"
-          onClick={() => setBrowseHub(v => !v)}
-          size="inline"
-          variant="text"
-        >
-          {browseHub ? 'hide the hub browser' : 'browse the full hub ▾'}
-        </Button>
       </div>
-      {browseHub ? (
-        <div className="grid gap-1">
-          {/* Resizable viewport: native CSS resize handle (bottom-right */
-          /* corner) lets the user drag it larger/smaller. The iframe */
-          /* inside is rendered oversized and scaled DOWN (133% × 0.75) */
-          /* so the hub page starts zoomed out — we can't style the */
-          /* cross-origin page itself, but scaling the frame is ours. */}
-          <div
-            className="relative w-full max-w-full resize overflow-hidden border border-(--ui-stroke-secondary)"
-            style={{
-              height: 560,
-              minHeight: 240,
-              minWidth: 320,
-              borderRadius: 8
-            }}
-          >
-            <iframe
-              ref={frameRef}
-              sandbox="allow-scripts allow-same-origin"
-              src={HUB_PICKER_URL}
-              style={{
-                width: '133.34%',
-                height: '133.34%',
-                border: 'none',
-                background: 'transparent',
-                transform: 'scale(0.75)',
-                transformOrigin: 'top left'
-              }}
-              title={b.tools.skillsHub}
-            />
-          </div>
-          <div className="px-1 text-[0.65rem] leading-4 text-(--ui-text-quaternary)">
-            {installing
-              ? `Installing "${installing}"…`
-              : 'Hit "+ Add to this Agent" on any skill — it installs and appears in the list above. Drag the corner to resize.'}
-          </div>
-        </div>
-      ) : null}
+      {null}
       <div className="flex gap-1.5">
         <Input
           className="h-7 flex-1 text-xs"

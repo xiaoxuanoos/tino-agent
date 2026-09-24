@@ -339,7 +339,7 @@ class TestBuildSkillsSystemPrompt:
 
 
     def test_deduplicates_skills(self, monkeypatch, tmp_path):
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("TINO_HOME", str(tmp_path))
         cat_dir = tmp_path / "skills" / "tools"
         for subdir in ["search", "search"]:
             d = cat_dir / subdir
@@ -353,7 +353,7 @@ class TestBuildSkillsSystemPrompt:
     def test_compact_categories_demote_nested_and_miss_cache_separately(
         self, monkeypatch, tmp_path
     ):
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("TINO_HOME", str(tmp_path))
         d = tmp_path / "skills" / "social-media" / "twitter" / "thread-writer"
         d.mkdir(parents=True)
         (d / "SKILL.md").write_text(
@@ -374,7 +374,7 @@ class TestBuildSkillsSystemPrompt:
 
     def test_excludes_disabled_skills(self, monkeypatch, tmp_path):
         """Skills in the user's disabled list should not appear in the system prompt."""
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("TINO_HOME", str(tmp_path))
         skills_dir = tmp_path / "skills" / "tools"
         skills_dir.mkdir(parents=True)
 
@@ -402,7 +402,7 @@ class TestBuildSkillsSystemPrompt:
         assert "old-tool" not in result
 
     def test_rebuilds_prompt_when_disabled_skills_change(self, monkeypatch, tmp_path):
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("TINO_HOME", str(tmp_path))
         skill_dir = tmp_path / "skills" / "tools" / "cached-skill"
         skill_dir.mkdir(parents=True)
         (skill_dir / "SKILL.md").write_text(
@@ -434,7 +434,7 @@ class TestBuildContextFilesPrompt:
         with patch("pathlib.Path.home", return_value=fake_home):
             result = build_context_files_prompt(cwd=str(tmp_path))
         assert "Project Context" in result
-        assert "Hermes Agent" in result
+        assert "Tino Agent" in result
 
     def test_loads_agents_md(self, tmp_path):
         (tmp_path / "AGENTS.md").write_text("Use Ruff for linting.")
@@ -524,10 +524,10 @@ class TestBuildContextFilesPrompt:
         assert "Project Context" in result
 
     def test_hermes_md_still_wins_over_agents_override(self, tmp_path):
-        (tmp_path / ".hermes.md").write_text("Hermes-first context.")
+        (tmp_path / ".hermes.md").write_text("Tino-first context.")
         (tmp_path / "AGENTS.override.md").write_text("Override context.")
         result = build_context_files_prompt(cwd=str(tmp_path))
-        assert "Hermes-first context" in result
+        assert "Tino-first context" in result
         assert "Override context" not in result
 
     def test_skips_agents_md_in_install_tree_on_fallback(self, monkeypatch, tmp_path):
@@ -550,7 +550,7 @@ class TestBuildContextFilesPrompt:
 
 
     def test_empty_soul_md_adds_nothing(self, tmp_path, monkeypatch):
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path / "hermes_home"))
+        monkeypatch.setenv("TINO_HOME", str(tmp_path / "hermes_home"))
         hermes_home = tmp_path / "hermes_home"
         hermes_home.mkdir()
         (hermes_home / "SOUL.md").write_text("\n\n", encoding="utf-8")
@@ -1026,11 +1026,11 @@ class TestEnvironmentHints:
         assert calls == ["cleanup"]
 
     def test_environment_hint_from_env_var_is_appended(self, monkeypatch):
-        """HERMES_ENVIRONMENT_HINT lets an embedder describe the runtime env."""
+        """TINO_ENVIRONMENT_HINT lets an embedder describe the runtime env."""
         import agent.prompt_builder as _pb
         monkeypatch.setattr(_pb, "is_wsl", lambda: False)
         monkeypatch.delenv("TERMINAL_ENV", raising=False)
-        monkeypatch.setenv("HERMES_ENVIRONMENT_HINT", "Running inside an OpenShell sandbox.")
+        monkeypatch.setenv("TINO_ENVIRONMENT_HINT", "Running inside an OpenShell sandbox.")
         _pb._BACKEND_PROBE_CACHE.clear()
         result = _pb.build_environment_hints()
         assert "Running inside an OpenShell sandbox." in result
@@ -1088,7 +1088,7 @@ class TestBuildSkillsSystemPromptConditional:
 
 
     def test_requires_skill_hidden_when_toolset_missing(self, monkeypatch, tmp_path):
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("TINO_HOME", str(tmp_path))
         skill_dir = tmp_path / "skills" / "iot" / "openhue"
         skill_dir.mkdir(parents=True)
         (skill_dir / "SKILL.md").write_text(
@@ -1104,7 +1104,7 @@ class TestBuildSkillsSystemPromptConditional:
 
     def test_no_args_shows_all_skills(self, monkeypatch, tmp_path):
         """Backward compat: calling with no args shows everything."""
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("TINO_HOME", str(tmp_path))
         skill_dir = tmp_path / "skills" / "search" / "duckduckgo"
         skill_dir.mkdir(parents=True)
         (skill_dir / "SKILL.md").write_text(
@@ -1236,7 +1236,7 @@ class TestParallelToolCallGuidance:
 class TestContextFileReadTimeout:
     def test_slow_hermes_md_is_skipped_and_agents_md_still_loads(self, tmp_path, monkeypatch, caplog):
         (tmp_path / ".git").mkdir()
-        (tmp_path / ".hermes.md").write_text("Hermes project rules.")
+        (tmp_path / ".hermes.md").write_text("Tino project rules.")
         (tmp_path / "AGENTS.md").write_text("Agent fallback rules.")
         # Patch the module object build_context_files_prompt actually closes
         # over: an earlier test re-imports agent.prompt_builder, so the
@@ -1260,7 +1260,7 @@ class TestContextFileReadTimeout:
 
         assert elapsed < 0.4, f"context load blocked for {elapsed:.2f}s"
         assert "Agent fallback rules" in result
-        assert "Hermes project rules" not in result
+        assert "Tino project rules" not in result
         assert "timed out" in caplog.text.lower()
 
     def test_read_errors_still_propagate_to_caller(self, tmp_path):

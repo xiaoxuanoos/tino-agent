@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 # custom provider headers routinely carry credentials under arbitrary names.
 _CROSS_ORIGIN_SAFE_HEADERS = frozenset({"accept", "user-agent"})
 _DEFAULT_PORTS = {"http": 80, "https": 443}
-_CA_BUNDLE_ENV_VARS = ("HERMES_CA_BUNDLE", "SSL_CERT_FILE", "REQUESTS_CA_BUNDLE", "CURL_CA_BUNDLE")
+_CA_BUNDLE_ENV_VARS = ("TINO_CA_BUNDLE", "SSL_CERT_FILE", "REQUESTS_CA_BUNDLE", "CURL_CA_BUNDLE")
 
 
 def url_origin(url: str) -> tuple[str, str, int | None]:
@@ -83,7 +83,7 @@ class _CrossOriginRequestSanitizer(urllib.request.BaseHandler):
 
 
 def _resolved_https_context() -> ssl.SSLContext | None:
-    """Return the explicit CA context for Hermes-owned urllib openers."""
+    """Return the explicit CA context for Tino-owned urllib openers."""
     ca_bundle = next((value for name in _CA_BUNDLE_ENV_VARS if (value := os.getenv(name, "").strip())), "")
     if ca_bundle:
         ca_path = Path(ca_bundle).expanduser()
@@ -115,7 +115,7 @@ def _secure_opener_from_installed_policy(original_url: str, *, ssl_context=None)
     """Clone the installed opener's handlers, replacing redirect policy only.
 
     ``ssl_context`` rebinds the cloned HTTPS handler so per-provider TLS settings
-    (``ssl_ca_cert``/``ssl_verify``) apply; with None a Hermes-owned opener gets the explicit CA
+    (``ssl_ca_cert``/``ssl_verify``) apply; with None a Tino-owned opener gets the explicit CA
     default from ``_resolved_https_context`` and an application-installed opener keeps its TLS.
     """
     installed = getattr(urllib.request, "_opener", None)

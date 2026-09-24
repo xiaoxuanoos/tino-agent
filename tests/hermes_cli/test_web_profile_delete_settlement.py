@@ -20,11 +20,11 @@ from fastapi.testclient import TestClient  # noqa: E402
 
 @pytest.fixture()
 def profile_env(tmp_path, monkeypatch):
-    """Path.home() and HERMES_HOME both point into the temp dir (profile ops are HOME-anchored)."""
+    """Path.home() and TINO_HOME both point into the temp dir (profile ops are HOME-anchored)."""
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
     home = tmp_path / ".hermes"
     home.mkdir(exist_ok=True)
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("TINO_HOME", str(home))
     return tmp_path
 
 

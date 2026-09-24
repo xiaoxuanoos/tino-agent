@@ -159,10 +159,10 @@ def _resolve_budget_fallback(
     # A kanban worker must record a terminal outcome whether or not a fallback path
     # was eligible, so the dispatcher learns the worker could not complete. Only the
     # dispatcher-owned worker owns the task: an in-process delegate_task child or cron run
-    # inherits ``HERMES_KANBAN_TASK`` via os.environ but exhausting ITS budget must not
+    # inherits ``TINO_KANBAN_TASK`` via os.environ but exhausting ITS budget must not
     # close the parent's run and release its claim (#112817).
     _kanban_task = (
-        os.environ.get("HERMES_KANBAN_TASK")
+        os.environ.get("TINO_KANBAN_TASK")
         if budget_exhausted and is_dispatcher_owned_worker_context() else None
     )
     # If running as a kanban worker, signal the dispatcher that the worker could not complete (rather than
@@ -573,7 +573,7 @@ def finalize_turn(
         "pre_transform_response": _pre_transform_response,
         "response_previewed": getattr(agent, "_response_was_previewed", False),
         "model": agent.model,
-        # requested_model / served_model: proxy-reported deployment or Hermes' own fallback route.
+        # requested_model / served_model: proxy-reported deployment or Tino' own fallback route.
         **result_model_fields(agent),
         "provider": agent.provider,
         "base_url": agent.base_url,

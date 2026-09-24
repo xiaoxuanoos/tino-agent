@@ -56,7 +56,7 @@ class TestFormatExecApproval:
         ad = _bare(_DefaultAdapter)
         text = ad._format_exec_approval("rm -rf /", "scary")
         assert text == (
-            "⚠️ Hermes wants to run a command that needs your OK\n\n"
+            "⚠️ Tino wants to run a command that needs your OK\n\n"
             "```\nrm -rf /\n```\n"
             "Why it was flagged: scary\n\n"
             "If you don't answer within 5 minutes it will NOT run."

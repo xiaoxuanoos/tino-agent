@@ -82,7 +82,7 @@ def launch_secret_scope(launch_home: "str | Path") -> Dict[str, str]:
 @contextlib.contextmanager
 def launch_profile_runtime_scope(launch_home: "str | Path") -> Iterator[None]:
     """Bind the launch profile's own runtime scope for one body: ``launch_secret_scope`` plus its
-    terminal policy over the frozen launch ``TERMINAL_*`` overlay. No HERMES_HOME override — the
+    terminal policy over the frozen launch ``TERMINAL_*`` overlay. No TINO_HOME override — the
     launch home IS the process home. For hosts whose launch-profile bodies are not RPC sessions
     (the standalone messaging gateway after a hosted room activated multiplexing, #112878)."""
     from agent.secret_scope import reset_secret_scope, set_secret_scope

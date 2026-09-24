@@ -310,7 +310,7 @@ def test_benched_credential_prints_cooldown_instead_of_wizard(monkeypatch, capsy
     shell.requested_provider = "nous"
 
     def _raise(**kwargs):
-        raise AuthError("Hermes is not logged into Nous Portal.", provider="nous",
+        raise AuthError("Tino is not logged into Nous Portal.", provider="nous",
                         code="nous_auth_missing", relogin_required=True)
 
     monkeypatch.setattr("hermes_cli.runtime_provider.resolve_runtime_provider", _raise)
@@ -338,13 +338,13 @@ def test_auth_json_only_login_explains_instead_of_wizard(monkeypatch, capsys, tm
 
     import hermes_cli.runtime_provider as rp
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("TINO_HOME", str(tmp_path))
     (tmp_path / "config.yaml").write_text("model:\n  default: some-model\n", encoding="utf-8")
     for key in [k for k in os.environ if k.endswith("_API_KEY")]:
         monkeypatch.delenv(key, raising=False)
 
     def _nous_fail():
-        raise AuthError("Hermes is not logged into Nous Portal.", provider="nous",
+        raise AuthError("Tino is not logged into Nous Portal.", provider="nous",
                         code="nous_auth_missing", relogin_required=True)
 
     monkeypatch.setattr(rp, "resolve_provider", lambda *a, **kw: "nous")
@@ -367,7 +367,7 @@ def test_auth_json_only_login_explains_instead_of_wizard(monkeypatch, capsys, tm
     offered = []
     monkeypatch.setattr(shell, "_offer_first_run_setup", lambda: offered.append(True) or True)
     monkeypatch.setattr("hermes_cli.runtime_provider.resolve_runtime_provider", lambda **kw: (_ for _ in ()).throw(
-        AuthError("Hermes is not connected to any AI provider yet.", code="no_provider_configured")))
+        AuthError("Tino is not connected to any AI provider yet.", code="no_provider_configured")))
     shell._maybe_offer_first_run_setup()
     assert offered == [True]
     assert "not logged into" not in capsys.readouterr().out

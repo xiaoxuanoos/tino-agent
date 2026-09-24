@@ -199,7 +199,7 @@ class TestOneShotCliRunIsSynchronous:
         from tools.cronjob_tools import _try_dispatch_background_run
 
         declare_stateless_channel()
-        monkeypatch.setenv("HERMES_SESSION_KEY", "inherited-gateway-session")
+        monkeypatch.setenv("TINO_SESSION_KEY", "inherited-gateway-session")
 
         result = _try_dispatch_background_run(
             {"id": "job-x", "name": "job-x"}, session_id="sess-1"

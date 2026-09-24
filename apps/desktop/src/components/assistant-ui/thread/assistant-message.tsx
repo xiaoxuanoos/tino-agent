@@ -770,7 +770,7 @@ const ErrorRecoveryActions: FC = () => {
   const model = useStore($currentModel)
   const connection = useStore($connection)
 
-  // Open Logs reveals the LOCAL Electron profile's HERMES_HOME/logs. On a
+  // Open Logs reveals the LOCAL Electron profile's TINO_HOME/logs. On a
   // remote/cloud connection the failed turn's gateway+agent logs live on the
   // remote box — the local folder only holds Desktop-side transport logs, so
   // the label says "Open Desktop logs" there instead of implying it opens the
@@ -805,7 +805,7 @@ const ErrorRecoveryActions: FC = () => {
   }, [])
 
   // Reveal a local folder through Electron; `logsRoot` is the profile's
-  // HERMES_HOME/logs, and its parent is the Hermes data folder itself (what
+  // TINO_HOME/logs, and its parent is the Tino data folder itself (what
   // the user needs to see to free space after a disk-full failure).
   const openLocalDir = useCallback(async (resolve: (logsRoot: string) => string, failedMessage: string) => {
     try {
@@ -833,8 +833,8 @@ const ErrorRecoveryActions: FC = () => {
   )
 
   const openHermesFolder = useCallback(
-    () => openLocalDir(root => root.replace(/[\\/]+logs[\\/]*$/, ''), copy.errorOpenHermesFolderFailed),
-    [copy.errorOpenHermesFolderFailed, openLocalDir]
+    () => openLocalDir(root => root.replace(/[\\/]+logs[\\/]*$/, ''), copy.errorOpenTinoFolderFailed),
+    [copy.errorOpenTinoFolderFailed, openLocalDir]
   )
 
   const diagnosticsText = useCallback(
@@ -897,7 +897,7 @@ const ErrorRecoveryActions: FC = () => {
       )}
       {plan.openHermesFolder && localFolders && (
         <button className="aui-error-action" onClick={() => void openHermesFolder()} type="button">
-          {copy.errorOpenHermesFolder}
+          {copy.errorOpenTinoFolder}
         </button>
       )}
       {plan.retry && (

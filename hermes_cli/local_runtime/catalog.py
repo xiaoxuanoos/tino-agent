@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 import threading
 import time
 import urllib.request
@@ -288,6 +289,12 @@ def refresh_catalog(force: bool = False) -> bool:
     after the TTL. Returns True when a fetched document replaced the catalog."""
     global CATALOG, _last_refresh_attempt
 
+    # Tino owns its curated catalog. An upstream background refresh must not
+    # replace the downloadable models shown in the settings UI with builds
+    # that cannot run on this device or meet the agent's context floor.
+    if os.environ.get("TINO_AGENT_BRANDED") == "1":
+        return False
+
     now = time.monotonic()
     with _refresh_lock:
         if not force and now - _last_refresh_attempt < _REFRESH_TTL_S:
@@ -302,13 +309,19 @@ def refresh_catalog(force: bool = False) -> bool:
         return False
     if fetched != CATALOG:
         logger.info("catalog refreshed from repo (%d models)", len(fetched))
-    CATALOG = fetched
+    # Keep Tino's packaged low-memory entries when the upstream Tino
+    # background catalog changes. The vendor feed must not silently remove
+    # models that the user's local setup and download buttons depend on.
+    local = tuple(e for e in _packaged_catalog() if e.id.startswith("qwen3.5-"))
+    CATALOG = local + tuple(e for e in fetched if e.id not in {m.id for m in local})
     return True
 
 
 def refresh_catalog_soon() -> None:
     """TTL-gated background refresh; returns immediately. The current request serves the catalog
     it already has — the refresh lands for the next one."""
+    if os.environ.get("TINO_AGENT_BRANDED") == "1":
+        return
     if time.monotonic() - _last_refresh_attempt < _REFRESH_TTL_S:
         return
     threading.Thread(target=refresh_catalog, daemon=True, name="catalog-refresh").start()

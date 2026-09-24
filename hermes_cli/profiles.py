@@ -1,4 +1,4 @@
-"""Profile management for multiple isolated Hermes instances."""
+"""Profile management for multiple isolated Tino instances."""
 
 import contextlib
 import json
@@ -73,7 +73,7 @@ NO_BUNDLED_SKILLS_MARKER = ".no-bundled-skills"
 
 # Header seeded into a profile's empty .env so it owns a credentials file from day one.
 _PLACEHOLDER_ENV = (
-    "# Per-profile secrets for this Hermes profile.\n"
+    "# Per-profile secrets for this Tino profile.\n"
     "# API keys and tokens set here override the shell environment.\n"
     "# Behavioral settings belong in config.yaml, not here.\n"
 )
@@ -123,9 +123,9 @@ def _clone_all_copytree_ignore(source_dir: Path):
     return _ignore
 
 
-# Allow-list for ``export_profile("default")``: when HERMES_HOME equals the cwd
+# Allow-list for ``export_profile("default")``: when TINO_HOME equals the cwd
 # (Docker/custom deployments) the default home holds arbitrary user files that must NOT
-# be bundled. Only known Hermes profile artifacts at the root survive; sensitive runtime
+# be bundled. Only known Tino profile artifacts at the root survive; sensitive runtime
 # infrastructure (``state.db``, ``logs/``, ``auth.*``, other profiles) is deliberately
 # absent so the export stays a portable, credential-free snapshot. Add new artifacts here
 # when introduced in ``hermes_constants``.
@@ -145,8 +145,8 @@ _DEFAULT_EXPORT_INCLUDE_ROOT = frozenset({
 # Names that cannot be used as profile aliases
 _RESERVED_NAMES = frozenset({"hermes", "default", "test", "tmp", "root", "sudo"})
 
-# Hermes subcommands that cannot be used as profile names/aliases
-_HERMES_SUBCOMMANDS = frozenset({
+# Tino subcommands that cannot be used as profile names/aliases
+_TINO_SUBCOMMANDS = frozenset({
     "chat", "model", "gateway", "setup", "whatsapp", "login", "logout",
     "status", "cron", "doctor", "dump", "config", "pairing", "skills", "tools",
     "mcp", "sessions", "insights", "version", "update", "uninstall", "profile", "plugins", "honcho", "acp",
@@ -156,13 +156,13 @@ _HERMES_SUBCOMMANDS = frozenset({
 # Path helpers
 
 def _get_profiles_root() -> Path:
-    """Named-profiles root, anchored to the hermes root (NOT the current HERMES_HOME, which
+    """Named-profiles root, anchored to the hermes root (NOT the current TINO_HOME, which
     may itself be a profile) so ``coder profile list`` sees all profiles."""
     return _get_default_hermes_home() / "profiles"
 
 
 def _get_default_hermes_home() -> Path:
-    """Default (pre-profile) HERMES_HOME: ``~/.hermes``, or HERMES_HOME itself in
+    """Default (pre-profile) TINO_HOME: ``~/.hermes``, or TINO_HOME itself in
     Docker/custom deployments (e.g. ``/opt/data``)."""
     from hermes_constants import get_default_hermes_root
     return get_default_hermes_root()
@@ -182,7 +182,7 @@ def _wrapper_path(alias: str) -> Path:
 
 
 def _is_our_wrapper(path: Path) -> bool:
-    """True when *path* reads as a Hermes-generated wrapper (contains ``hermes -p``)."""
+    """True when *path* reads as a Tino-generated wrapper (contains ``hermes -p``)."""
     try:
         return "hermes -p" in path.read_text(encoding="utf-8")
     except Exception:
@@ -259,7 +259,7 @@ def validate_profile_name(name: str) -> None:
     if name in _RESERVED_NAMES:
         raise ValueError(
             f"Profile name {name!r} is reserved — it collides with either "
-            f"the Hermes installation itself or a common system binary.  "
+            f"the Tino installation itself or a common system binary.  "
             f"Pick a different name."
         )
 
@@ -288,7 +288,7 @@ def _existing_profile_dir(name: str) -> Tuple[str, Path]:
 
 
 def get_profile_dir(name: str) -> Path:
-    """Resolve a profile name to its HERMES_HOME directory."""
+    """Resolve a profile name to its TINO_HOME directory."""
     canon = normalize_profile_name(name)
     if canon == "default":
         return _get_default_hermes_home()
@@ -372,7 +372,7 @@ def check_alias_collision(name: str) -> Optional[str]:
         return str(exc)
     if canon in _RESERVED_NAMES:
         return f"'{canon}' is a reserved name"
-    if canon in _HERMES_SUBCOMMANDS:
+    if canon in _TINO_SUBCOMMANDS:
         return f"'{canon}' conflicts with a hermes subcommand"
     try:
         result = subprocess.run(
@@ -621,7 +621,7 @@ def _seed_model_config(profile_dir: Path) -> None:
 
 
 def _check_gateway_running(profile_dir: Path) -> bool:
-    """Gateway liveness for a profile dir, never mutating HERMES_HOME.
+    """Gateway liveness for a profile dir, never mutating TINO_HOME.
 
     Primary signal is ``gateway.pid`` verified against the runtime lock (fails closed when
     the lock isn't held by *this* reader: dashboard as a separate s6 service, launch-service
@@ -727,7 +727,7 @@ def _cached_skill_count(profile_dir: Path) -> int:
 
 
 # profile.yaml — per-profile metadata (description, role, etc.)
-# Deliberately tiny and separate from ``config.yaml`` (user-facing Hermes config, ~5000
+# Deliberately tiny and separate from ``config.yaml`` (user-facing Tino config, ~5000
 # lines of defaults): this is metadata ABOUT the profile. Missing file -> empty defaults,
 # never an error; the kanban decomposer falls back to the profile name.
 
@@ -1167,7 +1167,7 @@ def _live_default_multiplexer() -> bool:
 
 
 def seed_profile_skills(profile_dir: Path, quiet: bool = False) -> Optional[dict]:
-    """Seed bundled skills into a profile via subprocess (sync_skills() caches HERMES_HOME at
+    """Seed bundled skills into a profile via subprocess (sync_skills() caches TINO_HOME at
     module level). Returns the sync result dict, or None on failure. ``--no-skills`` profiles
     still run the sync: ``sync_skills()`` detects the marker and seeds only essentials."""
     project_root = Path(__file__).parent.parent.resolve()
@@ -1176,7 +1176,7 @@ def seed_profile_skills(profile_dir: Path, quiet: bool = False) -> Optional[dict
             [sys.executable, "-c",
              "import json; from tools.skills_sync import sync_skills; "
              "r = sync_skills(quiet=True); print(json.dumps(r))"],
-            env={**os.environ, "HERMES_HOME": str(profile_dir)},
+            env={**os.environ, "TINO_HOME": str(profile_dir)},
             cwd=str(project_root),
             capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=60,
         )
@@ -1228,7 +1228,7 @@ def backfill_profile_envs(quiet: bool = False) -> List[str]:
 
 
 _BACKEND_TOKENS = frozenset({"serve", "dashboard", "gateway"})
-_HERMES_ARGV_MARKERS = ("hermes_cli.main", "hermes-gateway", "tui_gateway")
+_TINO_ARGV_MARKERS = ("hermes_cli.main", "hermes-gateway", "tui_gateway")
 # python / python3 / python3.12 / pythonw(.exe): the interpreter basenames a
 # `#!/…/python3` console-script shim is exec'd through when something (e.g. Electron's
 # `findOnPath('hermes')`) spawns the shim by handing the interpreter its path — then the
@@ -1237,19 +1237,19 @@ _PYTHON_INTERPRETER_RE = re.compile(r"^python[\d.]*w?(\.exe)?$")
 # Console-script entry points this project ships (pyproject.toml [project.scripts]).
 # argv[1] is matched against exact names, not ``startswith("hermes")``: with a bare
 # interpreter argv[0], argv[1] can be ANY user script ("hermes-notes.py").
-_HERMES_CONSOLE_SCRIPT_NAMES = frozenset({"hermes", "hermes-agent", "hermes-acp"})
+_TINO_CONSOLE_SCRIPT_NAMES = frozenset({"hermes", "hermes-agent", "hermes-acp"})
 
 
 def _is_hermes_argv(argv: list) -> bool:
-    """True for a Hermes process: entrypoint marker in argv, executable named ``hermes*``,
+    """True for a Tino process: entrypoint marker in argv, executable named ``hermes*``,
     or a python interpreter directly exec'ing a known ``hermes`` console-script shim."""
     joined = " ".join(argv)
     exe_name = os.path.basename(argv[0]).lower()
-    if any(marker in joined for marker in _HERMES_ARGV_MARKERS) or exe_name.startswith("hermes"):
+    if any(marker in joined for marker in _TINO_ARGV_MARKERS) or exe_name.startswith("hermes"):
         return True
     if len(argv) >= 2 and _PYTHON_INTERPRETER_RE.match(exe_name):
         script_name = os.path.basename(str(argv[1])).lower()
-        return script_name.rsplit(".", 1)[0] in _HERMES_CONSOLE_SCRIPT_NAMES
+        return script_name.rsplit(".", 1)[0] in _TINO_CONSOLE_SCRIPT_NAMES
     return False
 
 
@@ -1263,7 +1263,7 @@ def _argv_profile_selectors(argv: list):
 
 
 def _profile_bound_backend_pids(canon: str, profile_dir: Path) -> list[int]:
-    """PIDs of running Hermes *backends* bound to this profile (``gateway.pid`` only tracks
+    """PIDs of running Tino *backends* bound to this profile (``gateway.pid`` only tracks
     the messaging gateway). Tightly scoped: current-user processes, backend subcommands only
     (never an interactive ``chat``/``tui``), never this process or its ancestors. Empty when
     ``psutil`` can't inspect anything."""
@@ -1303,11 +1303,11 @@ def _profile_bound_backend_pids(canon: str, profile_dir: Path) -> list[int]:
             if not ({tok.lower() for tok in argv} & _BACKEND_TOKENS):
                 continue
 
-            # Bound to THIS profile by selector flag, or by HERMES_HOME pointing at its dir.
+            # Bound to THIS profile by selector flag, or by TINO_HOME pointing at its dir.
             bound = any(normalize_profile_name(sel) == canon for sel in _argv_profile_selectors(argv))
             if not bound:
                 with contextlib.suppress(Exception):  # environ() can raise AccessDenied even same-user
-                    env_home = (proc.environ() or {}).get("HERMES_HOME", "")
+                    env_home = (proc.environ() or {}).get("TINO_HOME", "")
                     bound = bool(env_home) and Path(env_home).resolve() == resolved_dir
             if bound:
                 pids.append(pid)
@@ -1549,7 +1549,7 @@ def _maybe_register_gateway_service(profile_name: str) -> None:
     """Register a profile's gateway with s6 inside the container. Best-effort: profile
     creation must not fail over a supervision-tree hiccup; `gateway start` re-registers.
 
-    Port selection: each supervised profile gateway loads its own ``HERMES_HOME`` and binds the port
+    Port selection: each supervised profile gateway loads its own ``TINO_HOME`` and binds the port
     resolved by ``gateway/config.py`` from that profile's environment — ``API_SERVER_PORT`` (or
     ``platforms.api_server.extra.port`` in the profile's ``config.yaml``), defaulting to 8642. There is no
     ``[gateway] port`` key and no Python-side allocator (PR #30136 review item I5 retired the
@@ -1582,10 +1582,10 @@ def _cleanup_gateway_service(name: str, profile_dir: Path) -> None:
     """Disable and remove systemd/launchd service for a profile."""
     import platform as _platform
 
-    # HERMES_HOME is set temporarily so _profile_suffix resolves the service name.
-    old_home = os.environ.get("HERMES_HOME")
+    # TINO_HOME is set temporarily so _profile_suffix resolves the service name.
+    old_home = os.environ.get("TINO_HOME")
     try:
-        os.environ["HERMES_HOME"] = str(profile_dir)
+        os.environ["TINO_HOME"] = str(profile_dir)
         from hermes_cli.gateway import get_service_name, get_launchd_plist_path
 
         def _run(*cmd: str) -> None:
@@ -1610,9 +1610,9 @@ def _cleanup_gateway_service(name: str, profile_dir: Path) -> None:
     except Exception as e:
         print(f"⚠ Service cleanup: {e}")
     finally:
-        os.environ.pop("HERMES_HOME", None)
+        os.environ.pop("TINO_HOME", None)
         if old_home is not None:
-            os.environ["HERMES_HOME"] = old_home
+            os.environ["TINO_HOME"] = old_home
 
 
 def _stop_gateway_process(profile_dir: Path) -> None:
@@ -1630,7 +1630,7 @@ def _stop_gateway_process(profile_dir: Path) -> None:
         from gateway.status import get_process_start_time, recorded_gateway_home_conflicts, terminate_pid
         if recorded_gateway_home_conflicts(data, expected_home=profile_dir):
             print(
-                f"✗ Refusing to stop PID {pid}: its recorded HERMES_HOME "
+                f"✗ Refusing to stop PID {pid}: its recorded TINO_HOME "
                 f"belongs to a different profile than {profile_dir} "
                 "(stale/poisoned PID record, #89315)."
             )
@@ -1654,7 +1654,7 @@ def _stop_gateway_process(profile_dir: Path) -> None:
 # Active profile (sticky default)
 
 def get_active_profile(root: Path | None = None) -> str:
-    """Read the sticky active profile name (of *root*, default: this process's Hermes root)."""
+    """Read the sticky active profile name (of *root*, default: this process's Tino root)."""
     path = root / "active_profile" if root is not None else _get_active_profile_path()
     try:
         return path.read_text(encoding="utf-8").strip() or "default"
@@ -1686,7 +1686,7 @@ def _retarget_active_profile(old: str, new: str, message: str) -> None:
 
 
 def get_active_profile_name() -> str:
-    """Profile name inferred from HERMES_HOME: ``"default"`` when unset or ``~/.hermes``, the
+    """Profile name inferred from TINO_HOME: ``"default"`` when unset or ``~/.hermes``, the
     name under ``~/.hermes/profiles/<name>``, ``"custom"`` for any other path."""
     from hermes_constants import get_hermes_home
     resolved = get_hermes_home().resolve()
@@ -1706,7 +1706,7 @@ def get_active_profile_name() -> str:
 
 def _inside_git_checkout(path: Path) -> bool:
     """True when *path* lies inside a Git checkout. Walks the path's OWN resolved ancestry
-    (not cwd) so the check holds when HERMES_HOME sits in a checkout but the process runs
+    (not cwd) so the check holds when TINO_HOME sits in a checkout but the process runs
     elsewhere (cron, service manager). Resolution failure reports True (fail closed)."""
     try:
         resolved = path.resolve()
@@ -1722,7 +1722,7 @@ def _profile_export_directory() -> Path:
     if not _inside_git_checkout(export_dir):
         return export_dir
 
-    # A custom deployment may point HERMES_HOME at its source checkout: use a sibling store,
+    # A custom deployment may point TINO_HOME at its source checkout: use a sibling store,
     # falling back to the OS temp dir only when the user's home itself is a checkout (dotfiles
     # repo). Per-uid temp name: a fixed /tmp/hermes-profile-exports is a predictable shared
     # path another local user could pre-create (or symlink) first.
@@ -1772,8 +1772,8 @@ def _default_export_ignore(root_dir: Path):
 
     * **Root-level allow-list** — only entries whose name appears in ``_DEFAULT_EXPORT_INCLUDE_ROOT``
     survive. Everything else (such as an unrelated ``x11-dev/`` directory in a Docker deployment where
-    HERMES_HOME equals the cwd) is excluded. Blacklisting was tried first and proved unable to anticipate
-    every non-Hermes file the user may have lying alongside HERMES_HOME (#58394). * **Universal exclusions
+    TINO_HOME equals the cwd) is excluded. Blacklisting was tried first and proved unable to anticipate
+    every non-Tino file the user may have lying alongside TINO_HOME (#58394). * **Universal exclusions
     at any depth** — ``__pycache__``, sockets and other special files, temp files
     (:func:`_non_exportable_entries`); plus npm lockfiles, which may appear at the root.
     """
@@ -2046,7 +2046,7 @@ def rename_profile(old_name: str, new_name: str) -> Path:
 # Profile env resolution (called from _apply_profile_override)
 
 def profile_root_for_env_home(env_home: str, default_root: Path) -> Path:
-    """Hermes root named by an exported ``HERMES_HOME``: the grandparent of a profile-shaped value
+    """Tino root named by an exported ``TINO_HOME``: the grandparent of a profile-shaped value
     (``<root>/profiles/<name>``, mirrors ``get_default_hermes_root()``), the value itself otherwise,
     *default_root* when unset. Pure: callers pass any process's env, not only ``os.environ``."""
     env_home = env_home.strip()
@@ -2057,17 +2057,17 @@ def profile_root_for_env_home(env_home: str, default_root: Path) -> Path:
 
 
 def resolve_profile_env(profile_name: str) -> str:
-    """Resolve a profile name to a HERMES_HOME path string. Called early in the CLI entry
-    point, before hermes modules are imported, to set HERMES_HOME.
+    """Resolve a profile name to a TINO_HOME path string. Called early in the CLI entry
+    point, before hermes modules are imported, to set TINO_HOME.
 
-    When HERMES_HOME is already set, the configured spelling IS the launch root (it may be a
+    When TINO_HOME is already set, the configured spelling IS the launch root (it may be a
     junction/symlink alias of the platform default). Keep that spelling so profile re-home does not destroy
-    the launcher's lexical provenance -- the subprocess sanitizer needs it to match Hermes-owned PYTHONPATH
+    the launcher's lexical provenance -- the subprocess sanitizer needs it to match Tino-owned PYTHONPATH
     entries written in the same spelling (#82581 junction follow-up). Physically the paths are identical
     (junction-transparent); only the spelling is preserved.
     """
     canon = _canon_valid(profile_name)
-    root = profile_root_for_env_home(os.environ.get("HERMES_HOME", ""), _get_default_hermes_home())
+    root = profile_root_for_env_home(os.environ.get("TINO_HOME", ""), _get_default_hermes_home())
     if canon == "default":
         return str(root)
     profile_dir = root / "profiles" / canon

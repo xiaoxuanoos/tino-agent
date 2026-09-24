@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Hermes CLI - Main entry point.
+"""Tino CLI - Main entry point.
 
 Usage:
     hermes                     # Interactive chat (default)
@@ -35,7 +35,7 @@ if _bootstrap_root not in sys.path:
     sys.path.insert(0, _bootstrap_root)
 from hermes_cli import _startup_fast  # noqa: E402
 
-# A literal ``~``/``$VAR`` in HERMES_HOME (fish, or any quoted value) must become absolute
+# A literal ``~``/``$VAR`` in TINO_HOME (fish, or any quoted value) must become absolute
 # before the first reader — otherwise it resolves against cwd and scaffolds <cwd>/~/.hermes.
 _startup_fast.normalize_hermes_home_env()
 
@@ -253,7 +253,7 @@ def _config_default_interface_early() -> str:
         return _EARLY_INTERFACE_CACHE[0]
     value = "cli"
     try:
-        home = os.environ.get("HERMES_HOME")
+        home = os.environ.get("TINO_HOME")
         if home:
             cfg_path = os.path.join(home, "config.yaml")
         else:
@@ -279,7 +279,7 @@ def _config_default_interface_early() -> str:
 def _wants_tui_early(argv: "list[str] | None" = None) -> bool:
     """Earliest TUI decision, usable before argparse/config imports.
 
-    Precedence: ``--cli`` wins, then ``--tui``/``HERMES_TUI=1``, then a
+    Precedence: ``--cli`` wins, then ``--tui``/``TINO_TUI=1``, then a
     real-TTY gate, then ``display.interface``. The TTY gate is load-bearing
     for headless spawners (kanban workers, cron, pipes running ``chat -q``):
     a ``display.interface: tui`` default used to boot the TUI here, whose
@@ -290,7 +290,7 @@ def _wants_tui_early(argv: "list[str] | None" = None) -> bool:
         argv = sys.argv[1:]
     if "--cli" in argv:
         return False
-    if os.environ.get("HERMES_TUI") == "1" or "--tui" in argv:
+    if os.environ.get("TINO_TUI") == "1" or "--tui" in argv:
         return True
     try:
         if not (sys.stdin.isatty() and sys.stdout.isatty()):
@@ -304,10 +304,10 @@ def _wants_tui_early(argv: "list[str] | None" = None) -> bool:
 # TUI hot path: while the launcher is still importing (~100-300ms, cooked+echo
 # mode, before the Node TUI takes stdin raw) incoming SGR/X10 mouse reports
 # echo into the shell scrollback as ``^[[<…M``. entry.tsx's
-# `resetTerminalModes()` is the later cousin. ``HERMES_TUI_NO_EARLY_DISABLE``
+# `resetTerminalModes()` is the later cousin. ``TINO_TUI_NO_EARLY_DISABLE``
 # escapes the behaviour for diagnostics.
 def _suppress_mouse_residue_early() -> None:
-    if os.environ.get("HERMES_TUI_NO_EARLY_DISABLE") == "1":
+    if os.environ.get("TINO_TUI_NO_EARLY_DISABLE") == "1":
         return
     if not _wants_tui_early():
         return
@@ -423,8 +423,8 @@ _startup_fast.ensure_project_root_on_path()
 
 
 # Profile override — MUST happen before any hermes module import: many modules
-# cache HERMES_HOME at import time. --profile/-p is pre-parsed from sys.argv,
-# HERMES_HOME set, and the flag stripped so argparse never sees it. Falls back
+# cache TINO_HOME at import time. --profile/-p is pre-parsed from sys.argv,
+# TINO_HOME set, and the flag stripped so argparse never sees it. Falls back
 # to ~/.hermes/active_profile for the sticky default.
 _PROFILE_NAME_RE = r"^[a-z0-9][a-z0-9_-]{0,63}$"  # mirrors hermes_cli.profiles._PROFILE_ID_RE
 
@@ -434,7 +434,7 @@ def _inside_mcp_add_args(argv: list, index: int) -> bool:
 
     ``mcp add --args`` is command-argv passthrough. Flags after that point
     belong to the child MCP command (for example Docker MCP Toolkit's
-    ``--profile``), not to Hermes' own profile selector.
+    ``--profile``), not to Tino's own profile selector.
     """
     try:
         mcp_index = argv.index("mcp", 0, index)
@@ -532,29 +532,29 @@ def _under_gateway_supervisor(argv: list) -> bool:
     """A supervisor-launched gateway child must NOT follow the sticky active_profile.
 
     Each supervised slot has a fixed profile identity: named slots pass
-    ``-p <name>`` or pin HERMES_HOME to the profile dir; a bare invocation
-    means "the root HERMES_HOME profile". If a supervised default-profile
+    ``-p <name>`` or pin TINO_HOME to the profile dir; a bare invocation
+    means "the root TINO_HOME profile". If a supervised default-profile
     child read active_profile, switching the active profile (dashboard,
     ``hermes profile use``) would silently redirect the default gateway into
     that profile — adopting its credentials and double-polling a Telegram
     token already owned by that profile's own gateway (#74872).
 
     Markers (see gateway/restart.py ``is_gateway_supervisor_process``):
-    HERMES_SUPERVISED_CHILD (systemd unit / launchd plist / Windows task),
-    HERMES_S6_SUPERVISED_CHILD (legacy s6 container), INVOCATION_ID (systemd
+    TINO_SUPERVISED_CHILD (systemd unit / launchd plist / Windows task),
+    TINO_S6_SUPERVISED_CHILD (legacy s6 container), INVOCATION_ID (systemd
     service children only — consulted ONLY for gateway commands because it is
     inherited by every descendant of a systemd-launched process, e.g.
-    self-hosted CI runners), HERMES_GATEWAY_EXTERNAL_SUPERVISOR (explicit
+    self-hosted CI runners), TINO_GATEWAY_EXTERNAL_SUPERVISOR (explicit
     opt-in). XPC_SERVICE_NAME is deliberately NOT consulted: interactive macOS
     terminals set it too.
     """
-    if os.environ.get("HERMES_SUPERVISED_CHILD") or os.environ.get("HERMES_S6_SUPERVISED_CHILD"):
+    if os.environ.get("TINO_SUPERVISED_CHILD") or os.environ.get("TINO_S6_SUPERVISED_CHILD"):
         return True
     is_gateway_cmd = next((a for a in argv if not a.startswith("-")), None) == "gateway"
     if is_gateway_cmd and os.environ.get("INVOCATION_ID"):
         return True
     return os.environ.get(
-        "HERMES_GATEWAY_EXTERNAL_SUPERVISOR", ""
+        "TINO_GATEWAY_EXTERNAL_SUPERVISOR", ""
     ).strip().lower() in {"1", "true", "yes", "on"}
 
 
@@ -570,22 +570,22 @@ def _desktop_ssh_backend(argv: list) -> bool:
 
 
 def _apply_profile_override() -> None:
-    """Pre-parse --profile/-p and set HERMES_HOME before imports."""
+    """Pre-parse --profile/-p and set TINO_HOME before imports."""
     argv = sys.argv[1:]
     profile_name, consume, profile_index = _scan_profile_flag(argv)
 
-    # HERMES_HOME already set with no explicit flag: trust it only when it
+    # TINO_HOME already set with no explicit flag: trust it only when it
     # points at a specific profile dir ("profiles" as immediate parent). If it
-    # points at the hermes root (systemd hardcodes HERMES_HOME=/root/.hermes)
+    # points at the hermes root (systemd hardcodes TINO_HOME=/root/.hermes)
     # we must still read active_profile — the user may have run
     # `hermes profile use` and the gateway should honour it (#22502).
-    hermes_home_env = os.environ.get("HERMES_HOME", "")
+    hermes_home_env = os.environ.get("TINO_HOME", "")
     if profile_name is None and hermes_home_env and Path(hermes_home_env).parent.name == "profiles":
         return
     # The post-swap updater child inherits the home its parent already resolved (possibly the
     # root for `-p default`); re-reading the sticky active_profile here would finish the update
     # — receipt, config migration, exit code — in another profile's home.
-    if profile_name is None and hermes_home_env and os.environ.get("HERMES_UPDATE_POST_SWAP") == "1":
+    if profile_name is None and hermes_home_env and os.environ.get("TINO_UPDATE_POST_SWAP") == "1":
         return
 
     if profile_name is None and not _under_gateway_supervisor(argv) and not _desktop_ssh_backend(argv):
@@ -618,7 +618,7 @@ def _apply_profile_override() -> None:
         # A bug in profiles.py must NEVER prevent hermes from starting
         print(f"Warning: profile override failed ({exc}), using default", file=sys.stderr)
         return
-    os.environ["HERMES_HOME"] = hermes_home
+    os.environ["TINO_HOME"] = hermes_home
     # Strip the flag from argv so argparse doesn't choke
     if consume > 0 and profile_index is not None:
         start = profile_index + 1  # +1 because argv is sys.argv[1:]
@@ -668,7 +668,7 @@ from hermes_cli.env_loader import load_hermes_dotenv
 # owns that argv check for every dotenv load in the process. See #73381.
 load_hermes_dotenv(project_env=PROJECT_ROOT / ".env")
 
-# Bridge security.redact_secrets → HERMES_REDACT_SECRETS BEFORE hermes_logging
+# Bridge security.redact_secrets → TINO_REDACT_SECRETS BEFORE hermes_logging
 # imports agent.redact, which snapshots the flag exactly once at import. A
 # .env value still wins — this is config.yaml fallback only. network.force_ipv4
 # is read from the same parse to avoid a second full load_config() (~17ms).
@@ -682,12 +682,12 @@ try:
     _cfg_path = get_hermes_home() / "config.yaml"
     if _cfg_path.exists():
         _early_cfg_raw = _load_effective_early(_cfg_path)
-        if "HERMES_REDACT_SECRETS" not in os.environ:
+        if "TINO_REDACT_SECRETS" not in os.environ:
             _early_sec_cfg = _early_cfg_raw.get("security", {})
             if isinstance(_early_sec_cfg, dict):
                 _early_redact = _early_sec_cfg.get("redact_secrets")
                 if _early_redact is not None:
-                    os.environ["HERMES_REDACT_SECRETS"] = str(_early_redact).lower()
+                    os.environ["TINO_REDACT_SECRETS"] = str(_early_redact).lower()
         _early_net_cfg = _early_cfg_raw.get("network", {})
         if isinstance(_early_net_cfg, dict) and _early_net_cfg.get("force_ipv4"):
             _FORCE_IPV4_EARLY = True
@@ -941,7 +941,7 @@ def _termux_bundled_skills_stamp_path() -> Path:
 def _termux_bundled_skills_sync_needed() -> bool:
     if not _is_termux_startup_environment():
         return True
-    if os.environ.get("HERMES_TERMUX_FORCE_SKILLS_SYNC") == "1":
+    if os.environ.get("TINO_TERMUX_FORCE_SKILLS_SYNC") == "1":
         return True
     try:
         stamp = _termux_bundled_skills_stamp_path()
@@ -981,7 +981,7 @@ def _sync_bundled_skills_for_startup() -> bool:
 def _termux_should_prefetch_update_check() -> bool:
     if not _is_termux_startup_environment():
         return True
-    return os.environ.get("HERMES_TERMUX_PREFETCH_UPDATES") == "1"
+    return os.environ.get("TINO_TERMUX_PREFETCH_UPDATES") == "1"
 
 
 def _dotenv_has_provider_key(env_file: Path, provider_env_vars: set) -> bool:
@@ -1098,7 +1098,7 @@ def _has_any_provider_configured(*, strict_profile_scope: bool = False) -> bool:
         except Exception:
             pass
 
-    # Claude Code OAuth credentials count only once Hermes is explicitly
+    # Claude Code OAuth credentials count only once Tino is explicitly
     # configured — having Claude Code installed isn't consent to use its tokens.
     if _has_hermes_config and not strict_profile_scope:
         try:
@@ -1694,7 +1694,7 @@ def _first_run_setup_guard(args) -> None:
     """No provider configured: offer `hermes setup` (TTY) or exit 1 with guidance."""
     print()
     print(
-        "It looks like Hermes isn't configured yet -- no API keys or providers found."
+        "It looks like Tino isn't configured yet -- no API keys or providers found."
     )
     print()
     print("  Run:  hermes setup")
@@ -1768,7 +1768,7 @@ def cmd_chat(args):
     _apply_user_config_bypass(args)
     _guard_noninteractive_user_config(args)
     from hermes_cli.stream_json import stream_json_requested
-    # Structured stdout is a non-interactive protocol: it overrides HERMES_TUI/display.interface too.
+    # Structured stdout is a non-interactive protocol: it overrides TINO_TUI/display.interface too.
     use_tui = False if stream_json_requested(args) else _resolve_use_tui(args)
 
     _resolve_chat_session_args(args, use_tui)
@@ -1791,17 +1791,17 @@ def cmd_chat(args):
     # before tool imports freeze _YOLO_MODE_FROZEN. This is a safety net for
     # callers that invoke cmd_chat directly (e.g. subcommand dispatch).
     if getattr(args, "yolo", False):
-        os.environ["HERMES_YOLO_MODE"] = "1"
+        os.environ["TINO_YOLO_MODE"] = "1"
     # --ignore-rules: skip AGENTS.md/SOUL.md/.cursorrules injection, memory
     # entries and preloaded skills (AIAgent(skip_context_files, skip_memory)).
     if getattr(args, "ignore_rules", False):
-        os.environ["HERMES_IGNORE_RULES"] = "1"
+        os.environ["TINO_IGNORE_RULES"] = "1"
     # --source: tag session source for filtering (e.g. 'tool' for integrations)
     if getattr(args, "source", None):
-        os.environ["HERMES_SESSION_SOURCE"] = args.source
+        os.environ["TINO_SESSION_SOURCE"] = args.source
         # Explicit flag, not a label inherited from a parent TUI/Desktop session — one-shot
         # runs must keep it (see run_agent._session_source_for_agent).
-        os.environ["HERMES_SESSION_SOURCE_EXPLICIT"] = "1"
+        os.environ["TINO_SESSION_SOURCE_EXPLICIT"] = "1"
 
     _pin_kanban_board_env()
     _confirm_startup_expensive_model_override(args)
@@ -1893,7 +1893,7 @@ def _forward_command(name: str, module: str, attr: str, *, forward_return: bool 
 
 
 cmd_setup = _forward_command("cmd_setup", "hermes_cli.setup", "run_setup_wizard", doc='Interactive setup wizard.')
-cmd_login = _forward_command("cmd_login", "hermes_cli.auth", "login_command", doc='Authenticate Hermes CLI with a provider.')
+cmd_login = _forward_command("cmd_login", "hermes_cli.auth", "login_command", doc='Authenticate Tino CLI with a provider.')
 cmd_logout = _forward_command("cmd_logout", "hermes_cli.auth", "logout_command", doc='Clear provider authentication.')
 cmd_auth = _forward_command("cmd_auth", "hermes_cli.auth_commands", "auth_command", doc='Manage pooled credentials.')
 cmd_status = _forward_command("cmd_status", "hermes_cli.status", "show_status", doc='Show status of all components.')
@@ -1906,7 +1906,7 @@ cmd_doctor = _forward_command("cmd_doctor", "hermes_cli.doctor", "run_doctor", d
 cmd_dump = _forward_command("cmd_dump", "hermes_cli.dump", "run_dump", doc='Dump setup summary for support/debugging.')
 cmd_debug = _forward_command("cmd_debug", "hermes_cli.debug", "run_debug", doc='Debug tools (share report, etc.).')
 cmd_skin = _forward_command("cmd_skin", "hermes_cli.skin_cmd", "skin_command", doc='Skin management (list / use / set).')
-cmd_import = _forward_command("cmd_import", "hermes_cli.backup", "run_import", doc='Restore a Hermes backup from a zip file.')
+cmd_import = _forward_command("cmd_import", "hermes_cli.backup", "run_import", doc='Restore a Tino backup from a zip file.')
 cmd_dashboard_register = _forward_command("cmd_dashboard_register", "hermes_cli.dashboard_register", "cmd_dashboard_register", doc='Register a self-hosted dashboard OAuth client with Nous Portal.')
 cmd_gateway_enroll = _forward_command("cmd_gateway_enroll", "hermes_cli.gateway_enroll", "cmd_gateway_enroll", doc='Enroll a self-hosted gateway with a relay connector.')
 cmd_prompt_size = _forward_command("cmd_prompt_size", "hermes_cli.prompt_size", "cmd_prompt_size", doc='Show a byte/char breakdown of the system prompt + tool schemas.')
@@ -2069,7 +2069,7 @@ def select_provider_and_model(args=None):
     # Effective provider the same way the CLI resolves it at startup:
     # config.yaml model.provider > env var > auto-detect
     config_provider = model_cfg.get("provider") if isinstance(model_cfg, dict) else None
-    effective_provider = config_provider or os.getenv("HERMES_INFERENCE_PROVIDER") or "auto"
+    effective_provider = config_provider or os.getenv("TINO_INFERENCE_PROVIDER") or "auto"
 
     # User-defined custom providers from config.yaml: key → {name, base_url, api_key}
     _custom_provider_map = _named_custom_provider_map(config)
@@ -2237,7 +2237,7 @@ def cmd_config(args):
 
 
 def cmd_backup(args):
-    """Back up Hermes home directory to a zip file."""
+    """Back up Tino home directory to a zip file."""
     from hermes_cli import backup
 
     if getattr(args, "quick", False):
@@ -2257,7 +2257,7 @@ def cmd_version(args):
 
 
 def cmd_uninstall(args):
-    """Uninstall Hermes Agent (or just the Chat GUI with --gui).
+    """Uninstall Tino Agent (or just the Chat GUI with --gui).
 
     ``--yes`` paths run from the desktop app's non-interactive cleanup scripts,
     so the TTY gate applies only when we actually need to prompt.
@@ -2325,14 +2325,14 @@ def _update_preflight_handled(args) -> bool:
     from hermes_cli.config import is_managed, managed_error
 
     if is_managed():
-        managed_error("update Hermes Agent")
+        managed_error("update Tino Agent")
         return True
 
     # --plan is read-only and deployment-kind aware, so it runs BEFORE the
     # docker/nix/apt refusal gates: on an image/package-managed install the
     # plan itself reports "not updatable in place" plus the right mechanism.
     if getattr(args, "plan", False):
-        # Read-only plan phase (#91277 Phase 2): inventory every running Hermes runtime across profiles, its
+        # Read-only plan phase (#91277 Phase 2): inventory every running Tino runtime across profiles, its
         # supervisor, and its running code version — without mutating anything. Safe on a live fleet.
         from hermes_cli.update_inventory import (
             collect_runtime_inventory,
@@ -2376,7 +2376,7 @@ def _update_preflight_handled(args) -> bool:
 
 
 def cmd_update(args):
-    """Update Hermes Agent: hangup protection + update lock around ``_cmd_update_impl``."""
+    """Update Tino Agent: hangup protection + update lock around ``_cmd_update_impl``."""
     if _update_preflight_handled(args):
         return
     gateway_mode = getattr(args, "gateway", False)
@@ -2550,21 +2550,21 @@ def _dashboard_validate_serve_args(args, headless_backend, token_file):
 def _dashboard_sanitize_desktop_env(headless_backend) -> None:
     """Strip Desktop-inherited env that hijacks a standalone launch.
 
-    Desktop Electron spawns its backend with HERMES_DESKTOP=1 plus
-    HERMES_WEB_DIST=<packaged app.asar[/unpacked]/dist> (and often
-    HERMES_SERVE_HEADLESS=1). A shell inheriting those then running
+    Desktop Electron spawns its backend with TINO_DESKTOP=1 plus
+    TINO_WEB_DIST=<packaged app.asar[/unpacked]/dist> (and often
+    TINO_SERVE_HEADLESS=1). A shell inheriting those then running
     `hermes dashboard` would serve the desktop renderer ("Desktop IPC bridge
     is unavailable", #52945) or disable the SPA. Only Electron-packaged
     WEB_DIST contamination is stripped — caller-managed overrides (dev /
     custom builds) must still work, and the desktop-spawned backend itself
-    (HERMES_DESKTOP=1) keeps its dist. Headless `serve` re-sets
-    HERMES_SERVE_HEADLESS itself.
+    (TINO_DESKTOP=1) keeps its dist. Headless `serve` re-sets
+    TINO_SERVE_HEADLESS itself.
     """
-    if os.environ.get("HERMES_DESKTOP") != "1":
-        if _is_electron_packaged_web_dist(os.environ.get("HERMES_WEB_DIST", "")):
-            os.environ.pop("HERMES_WEB_DIST", None)
+    if os.environ.get("TINO_DESKTOP") != "1":
+        if _is_electron_packaged_web_dist(os.environ.get("TINO_WEB_DIST", "")):
+            os.environ.pop("TINO_WEB_DIST", None)
     if not headless_backend:
-        os.environ.pop("HERMES_SERVE_HEADLESS", None)
+        os.environ.pop("TINO_SERVE_HEADLESS", None)
 
 
 def _dashboard_prepare_runtime(args, headless_backend) -> bool:
@@ -2573,7 +2573,7 @@ def _dashboard_prepare_runtime(args, headless_backend) -> bool:
     Returns ``start_mcp_discovery_after_bind`` for start_server.
     """
     # Attach gui.log early so dashboard startup/build failures are captured in
-    # the same logs directory as every other Hermes surface.
+    # the same logs directory as every other Tino surface.
     try:
         from hermes_logging import setup_logging as _setup_logging_gui
         _setup_logging_gui(mode="gui")
@@ -2635,7 +2635,7 @@ def _dashboard_prepare_runtime(args, headless_backend) -> bool:
     # wait_for_mcp_discovery covers a server still connecting at first turn.
     # A standalone (non-Desktop) dashboard may sit idle and unvisited for days
     # (#58733): it arms discovery instead and the first /api/ws client fires it.
-    desktop = os.environ.get("HERMES_DESKTOP") == "1"
+    desktop = os.environ.get("TINO_DESKTOP") == "1"
     if headless_backend and desktop:
         return True
     try:
@@ -2718,7 +2718,7 @@ def cmd_completion(args, parser=None):
 
 
 def cmd_logs(args):
-    """View and filter Hermes log files."""
+    """View and filter Tino log files."""
     from hermes_cli.logs import tail_log, list_logs
 
     log_name = getattr(args, "log_name", "agent") or "agent"
@@ -2739,7 +2739,7 @@ def cmd_logs(args):
 
 
 def cmd_console(args):
-    """Open the safe Hermes command console."""
+    """Open the safe Tino command console."""
     from hermes_cli.console_engine import run_console_repl
 
     return run_console_repl()
@@ -2843,10 +2843,10 @@ _AGENT_SUBCOMMANDS = {
 
 
 def _is_tui_chat_launch(args) -> bool:
-    if getattr(args, "tui", False) or os.environ.get("HERMES_TUI") == "1":
+    if getattr(args, "tui", False) or os.environ.get("TINO_TUI") == "1":
         return True
     # The chat path decides TUI-vs-classic via _resolve_use_tui (--cli/--tui
-    # flags, TTY gate, HERMES_TUI env, display.interface config). Bare
+    # flags, TTY gate, TINO_TUI env, display.interface config). Bare
     # `hermes`/`hermes chat` with a TUI display config was previously missed
     # here, so the wrapper pre-warmed its own MCP discovery while the TUI
     # gateway (spawned moments later) ran a second one — an idle stdio MCP
@@ -2877,13 +2877,13 @@ def _should_background_mcp_startup(args) -> bool:
 
 def _prepare_agent_startup(args) -> None:
     """Discover plugins/MCP/hooks for commands that can run an agent turn."""
-    # --yolo chokepoint: HERMES_YOLO_MODE must be set before any discovery
+    # --yolo chokepoint: TINO_YOLO_MODE must be set before any discovery
     # below imports tools.approval, which freezes _YOLO_MODE_FROZEN at import.
     # main() sets it earlier too, but other launchers (Termux fast-CLI) reach
     # here directly, so the guarantee lives where the import is triggered.
     # See #7994.
     if getattr(args, "yolo", False):
-        os.environ["HERMES_YOLO_MODE"] = "1"
+        os.environ["TINO_YOLO_MODE"] = "1"
     _apply_safe_mode(args)
     _apply_user_config_bypass(args)
     _guard_noninteractive_user_config(args)
@@ -2973,15 +2973,15 @@ def _prepare_agent_startup(args) -> None:
 def _apply_safe_mode(args) -> None:
     if not getattr(args, "safe_mode", False):
         return
-    os.environ["HERMES_SAFE_MODE"] = "1"
-    os.environ["HERMES_IGNORE_USER_CONFIG"] = "1"
-    os.environ["HERMES_IGNORE_RULES"] = "1"
+    os.environ["TINO_SAFE_MODE"] = "1"
+    os.environ["TINO_IGNORE_USER_CONFIG"] = "1"
+    os.environ["TINO_IGNORE_RULES"] = "1"
 
 
 def _apply_user_config_bypass(args) -> None:
     """Apply the explicit config bypass before any startup config reads."""
     if getattr(args, "ignore_user_config", False):
-        os.environ["HERMES_IGNORE_USER_CONFIG"] = "1"
+        os.environ["TINO_IGNORE_USER_CONFIG"] = "1"
 
 
 def _guard_noninteractive_user_config(args) -> None:
@@ -3075,7 +3075,7 @@ def _try_fast_serve_launch() -> bool:
     thousands of filesystem-backed lookups on Windows. Unknown or global
     arguments fall back to normal parsing so error reporting is unchanged.
     """
-    if os.environ.get("HERMES_DISABLE_FAST_SERVE_LAUNCH") == "1":
+    if os.environ.get("TINO_DISABLE_FAST_SERVE_LAUNCH") == "1":
         return False
 
     argv = sys.argv[1:]
@@ -3116,7 +3116,7 @@ def _try_fast_chat_launch() -> bool:
     ``_try_termux_fast_cli_launch`` minus the Termux deferred startup; kept
     separate so phone-tuned behavior doesn't leak to desktops.
     """
-    if os.environ.get("HERMES_DISABLE_FAST_CHAT_LAUNCH") == "1":
+    if os.environ.get("TINO_DISABLE_FAST_CHAT_LAUNCH") == "1":
         return False
     argv = sys.argv[1:]
     if "-h" in argv or "--help" in argv:
@@ -3147,7 +3147,7 @@ def _try_fast_chat_launch() -> bool:
         return False
 
     if getattr(args, "yolo", False):
-        os.environ["HERMES_YOLO_MODE"] = "1"
+        os.environ["TINO_YOLO_MODE"] = "1"
     _prepare_agent_startup(args)
 
     if getattr(args, "oneshot", None):
@@ -3163,7 +3163,7 @@ def _try_termux_fast_cli_launch() -> bool:
     """Run obvious Termux non-TUI chat/oneshot/version paths on a light parser."""
     if not _is_termux_startup_environment():
         return False
-    if os.environ.get("HERMES_TERMUX_DISABLE_FAST_CLI") == "1":
+    if os.environ.get("TINO_TERMUX_DISABLE_FAST_CLI") == "1":
         return False
 
     argv = sys.argv[1:]
@@ -3202,10 +3202,10 @@ def _try_termux_fast_cli_launch() -> bool:
         if interactive_prompt:
             # Reach the prompt first; agent-only discovery on the first turn.
             setattr(args, "compact", True)
-            os.environ["HERMES_DEFER_AGENT_STARTUP"] = "1"
-            os.environ["HERMES_FAST_STARTUP_BANNER"] = "1"
+            os.environ["TINO_DEFER_AGENT_STARTUP"] = "1"
+            os.environ["TINO_FAST_STARTUP_BANNER"] = "1"
             if getattr(args, "accept_hooks", False):
-                os.environ["HERMES_ACCEPT_HOOKS"] = "1"
+                os.environ["TINO_ACCEPT_HOOKS"] = "1"
         else:
             _prepare_agent_startup(args)
         cmd_chat(args)
@@ -3254,15 +3254,15 @@ def _advertise_agent_env() -> None:
 
     ``AI_AGENT`` is the cross-agent standard (huggingface_hub reads it); the
     value must be our id in the public agent-harness registry
-    (``hermes-agent``) — matching is exact. ``HERMES_AGENT`` is the
-    Hermes-specific marker. setdefault: never clobber an outer harness.
+    (``hermes-agent``) — matching is exact. ``TINO_AGENT`` is the
+    Tino-specific marker. setdefault: never clobber an outer harness.
 
     ``AI_AGENT`` is the emerging cross-agent standard (huggingface_hub's agent detection reads it; pi and
     other agents set it — earendil-works/pi#7493) so generic tooling can attribute subprocesses to the
-    harness that spawned them. Hermes running inside another agent's terminal).
+    harness that spawned them. Tino running inside another agent's terminal).
     """
     os.environ.setdefault("AI_AGENT", "hermes-agent")
-    os.environ.setdefault("HERMES_AGENT", "true")
+    os.environ.setdefault("TINO_AGENT", "true")
 
 
 def _attach_plugin_cli_command(subparsers, cmd_info) -> None:
@@ -3420,7 +3420,7 @@ def _build_cli_parser():
         cmd_dashboard=cmd_dashboard,
         cmd_dashboard_register=cmd_dashboard_register,
     )
-    # "desktop" is canonical (Hermes-Setup.exe tells users to run it, so it
+    # "desktop" is canonical (Tino-Setup.exe tells users to run it, so it
     # must be the name --help shows); "gui" is a deprecated alias.
     build_gui_parser(subparsers, cmd_gui=cmd_gui)
     build_logs_parser(subparsers, cmd_logs=cmd_logs)
@@ -3547,7 +3547,7 @@ def main():
     # --yolo must be set *before* plugin discovery: tools.approval freezes
     # _YOLO_MODE_FROZEN at import; set later (inside cmd_chat) it does nothing.
     if getattr(args, "yolo", False):
-        os.environ["HERMES_YOLO_MODE"] = "1"
+        os.environ["TINO_YOLO_MODE"] = "1"
 
     # Plugin discovery + shell hooks once, gated so introspection commands
     # (hooks list, cron list, gateway status, ...) pay no discovery cost and

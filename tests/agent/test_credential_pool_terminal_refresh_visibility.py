@@ -2,7 +2,7 @@
 
 The pool quarantines a dead ``openai-codex`` / ``xai-oauth`` / ``nous`` / ``anthropic`` refresh
 token — for the user this is the moment the login is lost, and a debug-only line made it look like
-"I signed in once and Hermes keeps failing" (#113023). Two invariants: the WARNING carries the
+"I signed in once and Tino keeps failing" (#113023). Two invariants: the WARNING carries the
 ``hermes auth add <provider>`` hint, and a row the quarantine does not drop (an independent
 ``manual:*`` login) is marked DEAD so it leaves rotation instead of re-firing the WARNING on every
 later refresh attempt.
@@ -140,8 +140,8 @@ def test_nous_login_missing_refresh_failure_is_terminal(tmp_path, monkeypatch, c
     access token with no refresh token to redeem — is terminal: retrying cannot succeed, so the row
     leaves rotation with a WARNING naming the fix and the reason recorded, instead of an hour-long
     bench with null error fields (#113718). Driven through ``_refresh_entry_impl`` against a temp
-    HERMES_HOME so the production raise site's code is what reaches the classifier."""
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    TINO_HOME so the production raise site's code is what reaches the classifier."""
+    monkeypatch.setenv("TINO_HOME", str(tmp_path))
     providers = {"nous": nous_state} if nous_state else {}
     (tmp_path / "auth.json").write_text(json.dumps({"version": 1, "providers": providers}), encoding="utf-8")
     pool = _pool("nous")

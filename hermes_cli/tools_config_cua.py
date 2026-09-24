@@ -88,7 +88,7 @@ def _post_setup_no_window_flags(*, streams_to_console: bool = False) -> int:
 
 def _cua_driver_cmd() -> str:
     """Return the configured cua-driver override, or the bare default name."""
-    return os.environ.get("HERMES_CUA_DRIVER_CMD", "").strip() or "cua-driver"
+    return os.environ.get("TINO_CUA_DRIVER_CMD", "").strip() or "cua-driver"
 
 
 def _cua_version_summary(raw: str, *, limit: int = 120) -> str:
@@ -103,7 +103,7 @@ def _resolved_cua_driver_cmd() -> Optional[str]:
 
 
 def _cua_driver_env() -> dict:
-    """cua-driver child env with the Hermes telemetry policy applied; falls back to the current
+    """cua-driver child env with the Tino telemetry policy applied; falls back to the current
     environment if the helper can't be imported, so install/status never break."""
     try:
         from tools.computer_use.cua_backend import cua_driver_child_env
@@ -116,7 +116,7 @@ _CUA_DRIVER_CONTRACT_CACHE: dict = {}
 
 
 def _cua_driver_contract_status(binary: Optional[str] = None) -> dict:
-    """Inspect whether an installed driver supports Hermes' runtime contract (30s cache keyed on the
+    """Inspect whether an installed driver supports Tino's runtime contract (30s cache keyed on the
     binary's path/mtime/size fingerprint)."""
     from tools.computer_use.cua_backend_driver import cua_driver_runtime_contract_status
     resolved = binary or _resolved_cua_driver_cmd()
@@ -149,7 +149,7 @@ def _pip_install(args: List[str], *, timeout: int = 300, capture_output: bool = 
     venv_root = Path(sys.executable).parent.parent
     install_flags = _post_setup_no_window_flags(streams_to_console=not capture_output)
 
-    # Managed uv first: $HERMES_HOME/bin is never on PATH, so a bare which() misses the uv Hermes
+    # Managed uv first: $TINO_HOME/bin is never on PATH, so a bare which() misses the uv Tino
     # installed; ensure_uv() (not a pure lookup) because installing uv is in scope during setup.
     from hermes_cli.managed_uv import ensure_uv
     uv_bin = ensure_uv()
@@ -274,9 +274,9 @@ def install_cua_driver(upgrade: bool = False, require_confirmed_update: bool = F
     driver_cmd, binary = _cua_driver_cmd(), _resolved_cua_driver_cmd()
     # An explicit override is authoritative even when broken: installing the standard driver
     # cannot repair the configured path and would mutate an unrelated installation.
-    override = os.environ.get("HERMES_CUA_DRIVER_CMD", "").strip()
+    override = os.environ.get("TINO_CUA_DRIVER_CMD", "").strip()
     if override and not binary:
-        return _fail(f"    HERMES_CUA_DRIVER_CMD does not resolve to an executable: {override}",
+        return _fail(f"    TINO_CUA_DRIVER_CMD does not resolve to an executable: {override}",
                      "    Fix or unset the override before running computer-use install.")
 
     # Not installed → fresh install path (only when caller asked for it).
@@ -290,8 +290,8 @@ def install_cua_driver(upgrade: bool = False, require_confirmed_update: bool = F
                          f"      {_CUA_MANUAL_README}")
         return _run_cua_driver_installer(label="Installing")
 
-    # A driver failing Hermes' runtime contract (version floor, missing manifest verbs) is repaired
-    # regardless of mode. Hermes' minimum requirement IS the confirmation an upgrade is needed, so
+    # A driver failing Tino' runtime contract (version floor, missing manifest verbs) is repaired
+    # regardless of mode. Tino' minimum requirement IS the confirmation an upgrade is needed, so
     # this path must not defer to the driver's `check-update` verb — a cached/indeterminate "no
     # update" answer would pin users on an unusable driver forever.
     contract = _cua_driver_contract_status(binary) if binary else None
@@ -308,10 +308,10 @@ def install_cua_driver(upgrade: bool = False, require_confirmed_update: bool = F
         return True
     if repair_existing:
         _print_warning(f"    Found cua-driver {contract.get('version') or 'unknown version'}, but "
-                       "Hermes cannot use its current runtime contract: "
+                       "Tino cannot use its current runtime contract: "
                        f"{contract.get('reason') or 'required runtime features are missing'}.")
         if override:
-            return _fail("    Update the binary selected by HERMES_CUA_DRIVER_CMD, or unset the "
+            return _fail("    Update the binary selected by TINO_CUA_DRIVER_CMD, or unset the "
                          f"override and run: {_UPGRADE_CMD}", warn=False)
         if is_windows and require_confirmed_update:
             return _fail("    Automatic Windows updates cannot safely run cua-driver's interactive "
@@ -557,7 +557,7 @@ def _print_cua_platform_notes(is_windows: bool, is_linux: bool, *, fresh_install
         _print_info("      System Settings > Privacy & Security > Accessibility")
         _print_info("      System Settings > Privacy & Security > Screen Recording")
         if fresh_install:
-            _print_info("    Both must allow the terminal / Hermes process.")
+            _print_info("    Both must allow the terminal / Tino process.")
 
 
 def _kill_installer_tree(proc, *, is_windows: bool) -> None:

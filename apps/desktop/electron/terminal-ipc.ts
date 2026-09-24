@@ -116,11 +116,11 @@ export function registerTerminalIpc({
   // Resolve the interactive shell for the embedded terminal: an explicit user
   // override wins, otherwise auto-detect the best one installed for the platform.
   function terminalShellCommand() {
-    // HERMES_DESKTOP_SHELL is the cross-platform escape hatch (a path or a bare
+    // TINO_DESKTOP_SHELL is the cross-platform escape hatch (a path or a bare
     // name on PATH); $SHELL is honored on POSIX, where it's the user's canonical
     // choice, but ignored on Windows, where it's usually a stray MSYS/Git path
     // node-pty can't spawn natively.
-    const override = (process.env.HERMES_DESKTOP_SHELL || (isWindows ? '' : process.env.SHELL) || '').trim()
+    const override = (process.env.TINO_DESKTOP_SHELL || (isWindows ? '' : process.env.SHELL) || '').trim()
 
     if (override) {
       const resolved = isExecutableFile(override) ? override : findOnPath(override)
@@ -164,7 +164,7 @@ export function registerTerminalIpc({
 
     // Strip color/theme-detection vars that ride along when Electron is launched
     // from a non-tty agent shell (Cursor's runner sets NO_COLOR/FORCE_COLOR=0
-    // /TERM=dumb; some terminals set COLORFGBG which would flip Hermes' TUI into
+    // /TERM=dumb; some terminals set COLORFGBG which would flip Tino's TUI into
     // light-mode). Our PTY is a real xterm-compat terminal — force truecolor.
     delete env.NO_COLOR
     delete env.FORCE_COLOR
@@ -173,13 +173,13 @@ export function registerTerminalIpc({
     env.COLORTERM = 'truecolor'
     env.LC_CTYPE = terminalLcCtype(env)
     env.TERM = 'xterm-256color'
-    env.TERM_PROGRAM = 'Hermes'
+    env.TERM_PROGRAM = 'Tino'
     env.TERM_PROGRAM_VERSION = app.getVersion()
 
     // Let a hermes/--tui launched in this pane know it's embedded in the desktop
-    // GUI (build_environment_hints surfaces this). Distinct from HERMES_DESKTOP,
+    // GUI (build_environment_hints surfaces this). Distinct from TINO_DESKTOP,
     // which marks the agent *backend* and gates cron/gateway behavior.
-    env.HERMES_DESKTOP_TERMINAL = '1'
+    env.TINO_DESKTOP_TERMINAL = '1'
 
     return env
   }

@@ -30,7 +30,7 @@ _PROBE = (
 )
 def test_interrupt_debug_flag_uses_shared_truthy_values(value, expected):
     env = os.environ.copy()
-    env["HERMES_DEBUG_INTERRUPT"] = value
+    env["TINO_DEBUG_INTERRUPT"] = value
 
     result = subprocess.run(
         [sys.executable, "-c", _PROBE],

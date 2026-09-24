@@ -123,11 +123,11 @@ def test_error_change_mints_new_incident(monkeypatch, tmp_path):
 
 
 def test_redaction_applied_to_incident_error(monkeypatch, tmp_path):
-    # agent.redact snapshots _REDACT_ENABLED from HERMES_REDACT_SECRETS at
+    # agent.redact snapshots _REDACT_ENABLED from TINO_REDACT_SECRETS at
     # module-import time. When another collected test module imports the
     # gateway/scheduler chain (e.g. test_codex_execution_paths.py), that
     # import happens at COLLECTION time — before the conftest env scrub —
-    # so a developer shell exporting HERMES_REDACT_SECRETS=false freezes
+    # so a developer shell exporting TINO_REDACT_SECRETS=false freezes
     # redaction off and this test fails only in full-directory runs.
     # Pin the flag explicitly, matching the repo-wide pattern.
     monkeypatch.setattr("agent.redact._REDACT_ENABLED", True, raising=False)
@@ -233,7 +233,7 @@ def test_repeat_failure_alerts_once_then_reminds_after_cooldown(monkeypatch, tmp
     # A real (non-local) lane: the ping leaves the process, so the incident is marked alerted.
     job = _job(deliver="telegram:123")
     (tmp_path / "config.yaml").write_text("cron:\n  preflight: false\n", encoding="utf-8")
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("TINO_HOME", str(tmp_path))
     with cron_jobs.use_cron_store(tmp_path):
         cron_jobs.save_jobs([job])
         _tick_failing(job, tmp_path, deliveries, error="repeat boom")

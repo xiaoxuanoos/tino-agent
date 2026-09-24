@@ -54,17 +54,17 @@ _ASYNC_UNSUPPORTED_NOTE = (
     "background; retrieve its result with process(action='poll') or process(action='wait')."
 )
 
-# proc_session attribute -> HERMES_SESSION_* env var carrying it.
+# proc_session attribute -> TINO_SESSION_* env var carrying it.
 _ROUTING_FIELDS = (
-    ("watcher_chat_id", "HERMES_SESSION_CHAT_ID"),
-    ("watcher_user_id", "HERMES_SESSION_USER_ID"),
-    ("watcher_user_name", "HERMES_SESSION_USER_NAME"),
-    ("watcher_thread_id", "HERMES_SESSION_THREAD_ID"),
-    ("watcher_message_id", "HERMES_SESSION_MESSAGE_ID"),
+    ("watcher_chat_id", "TINO_SESSION_CHAT_ID"),
+    ("watcher_user_id", "TINO_SESSION_USER_ID"),
+    ("watcher_user_name", "TINO_SESSION_USER_NAME"),
+    ("watcher_thread_id", "TINO_SESSION_THREAD_ID"),
+    ("watcher_message_id", "TINO_SESSION_MESSAGE_ID"),
     # The spawning conversation's session-db id lets the gateway's completion
     # pre-flight drop the notification if the user closed this session (/new)
     # before the process finished, instead of injecting it into the NEW one.
-    ("parent_session_id", "HERMES_SESSION_ID"),
+    ("parent_session_id", "TINO_SESSION_ID"),
 )
 
 
@@ -78,7 +78,7 @@ def _looks_like_homebrew_ci_poller(command: str) -> bool:
 def _stamp_gateway_routing(proc_session, get_session_env) -> None:
     """Copy the spawning chat's routing metadata onto the process session so
     completion / watch notifications reach the right chat/thread."""
-    platform = get_session_env("HERMES_SESSION_PLATFORM", "")
+    platform = get_session_env("TINO_SESSION_PLATFORM", "")
     if not platform:
         return
     proc_session.watcher_platform = platform

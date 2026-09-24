@@ -93,7 +93,7 @@ def test_root_warning_stderr_fallback_honors_policy(tmp_path, monkeypatch, capsy
     the logger.warning is always recorded."""
     import json
     home = tmp_path / f"home-{setting}"; home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("TINO_HOME", str(home))
     (home / "config.yaml").write_text(json.dumps({"display": {} if setting is None else {"suppress_warning_notifications": setting}}))
     provider = _make_local_embedded_provider(monkeypatch)
     monkeypatch.setattr(hindsight.os, "geteuid", lambda: 0, raising=False)

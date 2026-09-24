@@ -7,7 +7,7 @@ full credential environment. Two tiers:
 
   * Tier 1 (_ALWAYS_STRIP_KEYS): gateway bot tokens, GitHub auth, infra
     secrets — stripped even when inherit_credentials=True.
-  * Tier 2 (_HERMES_PROVIDER_ENV_BLOCKLIST): LLM provider/tool keys — stripped
+  * Tier 2 (_TINO_PROVIDER_ENV_BLOCKLIST): LLM provider/tool keys — stripped
     unless the caller opts into inherit_credentials=True.
 """
 
@@ -15,7 +15,7 @@ import os
 from unittest.mock import patch
 
 from tools.environments.local import hermes_subprocess_env
-from tools.environments.local_env_policy import _ALWAYS_STRIP_KEYS, _HERMES_PROVIDER_ENV_FORCE_PREFIX
+from tools.environments.local_env_policy import _ALWAYS_STRIP_KEYS, _TINO_PROVIDER_ENV_FORCE_PREFIX
 
 
 _TIER1_SAMPLE = {
@@ -23,7 +23,7 @@ _TIER1_SAMPLE = {
     "TELEGRAM_BOT_TOKEN": "bot-token",
     "SLACK_APP_TOKEN": "xapp-secret",
     "MODAL_TOKEN_SECRET": "modal-secret",
-    "HERMES_DASHBOARD_SESSION_TOKEN": "dash-secret",
+    "TINO_DASHBOARD_SESSION_TOKEN": "dash-secret",
 }
 
 _PROVIDER_SAMPLE = {
@@ -158,23 +158,23 @@ class TestDelegatedChildMarker:
             os.environ,
             {
                 **_SAFE_SAMPLE,
-                "HERMES_KANBAN_TASK": "t_parent",
-                "HERMES_KANBAN_RUN_ID": "123",
-                "HERMES_KANBAN_DB": "/tmp/parent-kanban.db",
-                "HERMES_KANBAN_WORKSPACE": "/tmp/parent-workspace",
+                "TINO_KANBAN_TASK": "t_parent",
+                "TINO_KANBAN_RUN_ID": "123",
+                "TINO_KANBAN_DB": "/tmp/parent-kanban.db",
+                "TINO_KANBAN_WORKSPACE": "/tmp/parent-workspace",
             },
             clear=True,
         ):
             with delegated_child_context():
                 env = hermes_subprocess_env(inherit_credentials=True)
 
-        assert env["HERMES_DELEGATED_CHILD_CONTEXT"]  # fenced board root (path), not a bare flag
+        assert env["TINO_DELEGATED_CHILD_CONTEXT"]  # fenced board root (path), not a bare flag
         # Worker identity is scrubbed; board location and workspace routing survive so the
         # fenced descendant can still read the board it belongs to.
-        assert "HERMES_KANBAN_TASK" not in env
-        assert "HERMES_KANBAN_RUN_ID" not in env
-        assert env["HERMES_KANBAN_DB"] == "/tmp/parent-kanban.db"
-        assert env["HERMES_KANBAN_WORKSPACE"] == "/tmp/parent-workspace"
+        assert "TINO_KANBAN_TASK" not in env
+        assert "TINO_KANBAN_RUN_ID" not in env
+        assert env["TINO_KANBAN_DB"] == "/tmp/parent-kanban.db"
+        assert env["TINO_KANBAN_WORKSPACE"] == "/tmp/parent-workspace"
         assert env["MY_APP_VAR"] == "keep-me"
 
 

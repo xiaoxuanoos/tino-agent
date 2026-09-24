@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Hermes Agent CLI — interactive terminal interface (``python cli.py --help`` for usage)."""
+"""Tino Agent CLI — interactive terminal interface (``python cli.py --help`` for usage)."""
 
 # Must be the very first import (UTF-8 stdio on Windows). Missing only mid-``hermes update``.
 try:
@@ -28,7 +28,7 @@ from typing import List, Dict, Any, Optional, Mapping
 
 logger = logging.getLogger(__name__)
 
-os.environ["HERMES_QUIET"] = "1"  # suppress our modules' startup chatter
+os.environ["TINO_QUIET"] = "1"  # suppress our modules' startup chatter
 
 from hermes_cli.fallback_config import get_fallback_chain
 from hermes_cli.cli_agent_setup_mixin import CLIAgentSetupMixin
@@ -263,7 +263,7 @@ def _resolve_prefill_messages_file(config: Dict[str, Any]) -> str:
     """Prefill file path: env, then top-level ``prefill_messages_file``, then legacy ``agent.*``."""
     agent_cfg = config.get("agent", {})
     return (
-        os.getenv("HERMES_PREFILL_MESSAGES_FILE", "").strip()
+        os.getenv("TINO_PREFILL_MESSAGES_FILE", "").strip()
         or str(config.get("prefill_messages_file", "") or "").strip()
         or (str(agent_cfg.get("prefill_messages_file", "") or "").strip() if isinstance(agent_cfg, dict) else "")
     )
@@ -344,7 +344,7 @@ def _mirror_config_to_env(defaults, _file_has_terminal_config):
 
     # TERMINAL_CWD is force-exported (beats stale .env) except inside a gateway process,
     # whose config bridge already set it.
-    _is_gateway = os.environ.get("_HERMES_GATEWAY") == "1"
+    _is_gateway = os.environ.get("_TINO_GATEWAY") == "1"
     for config_key, env_var in _TERMINAL_ENV_MAPPINGS.items():
         if config_key not in terminal_config:
             continue
@@ -374,15 +374,15 @@ def _mirror_config_to_env(defaults, _file_has_terminal_config):
     if isinstance(security_config, dict):
         redact = security_config.get("redact_secrets")
         if redact is not None:
-            os.environ["HERMES_REDACT_SECRETS"] = str(redact).lower()
+            os.environ["TINO_REDACT_SECRETS"] = str(redact).lower()
 
     # Session-search index knobs (hermes_state reads the env carriers).
     sessions_config = defaults.get("sessions", {})
     if isinstance(sessions_config, dict):
         if "cjk_fts" in sessions_config:
-            os.environ["HERMES_CJK_FTS"] = str(sessions_config["cjk_fts"])
+            os.environ["TINO_CJK_FTS"] = str(sessions_config["cjk_fts"])
         if "search_slow_ms" in sessions_config:
-            os.environ["HERMES_SEARCH_SLOW_MS"] = str(sessions_config["search_slow_ms"])
+            os.environ["TINO_SEARCH_SLOW_MS"] = str(sessions_config["search_slow_ms"])
 
 
 def _cli_config_defaults():
@@ -464,10 +464,10 @@ def _merge_file_config(defaults: Dict[str, Any], file_config: Dict[str, Any]) ->
 def load_cli_config() -> Dict[str, Any]:
     """~/.hermes/config.yaml (else ./cli-config.yaml) over built-in defaults; env vars win.
 
-    ``HERMES_IGNORE_USER_CONFIG=1`` skips the user config entirely (``.env`` still loads).
+    ``TINO_IGNORE_USER_CONFIG=1`` skips the user config entirely (``.env`` still loads).
     """
     config_path = _hermes_home / 'config.yaml'
-    if not config_path.exists() or os.environ.get("HERMES_IGNORE_USER_CONFIG") == "1":
+    if not config_path.exists() or os.environ.get("TINO_IGNORE_USER_CONFIG") == "1":
         config_path = Path(__file__).parent / 'cli-config.yaml'
 
     defaults = _cli_config_defaults()
@@ -635,10 +635,10 @@ def _prepare_deferred_agent_startup() -> None:
     global _deferred_agent_startup_done
     if _deferred_agent_startup_done:
         return
-    if os.environ.get("HERMES_DEFER_AGENT_STARTUP") != "1":
+    if os.environ.get("TINO_DEFER_AGENT_STARTUP") != "1":
         return
     _deferred_agent_startup_done = True
-    _accept_hooks = os.environ.get("HERMES_ACCEPT_HOOKS", "").lower() in {"1", "true", "yes", "on"}
+    _accept_hooks = os.environ.get("TINO_ACCEPT_HOOKS", "").lower() in {"1", "true", "yes", "on"}
     try:
         from hermes_cli.plugins import discover_plugins
 
@@ -681,8 +681,8 @@ def _float_env(name: str, default: float) -> float:
 
 
 def _exit_watchdog_timeout() -> float:
-    """``HERMES_EXIT_WATCHDOG_S`` as a float (default 30; ``0`` disables)."""
-    return _float_env("HERMES_EXIT_WATCHDOG_S", 30.0)
+    """``TINO_EXIT_WATCHDOG_S`` as a float (default 30; ``0`` disables)."""
+    return _float_env("TINO_EXIT_WATCHDOG_S", 30.0)
 
 
 def _arm_exit_watchdog(timeout_s: float | None = None, *, from_signal: bool = False) -> None:
@@ -690,7 +690,7 @@ def _arm_exit_watchdog(timeout_s: float | None = None, *, from_signal: bool = Fa
 
     Backstop for a cleanup step wedged on network I/O and for interpreter teardown
     blocked joining non-daemon threads (ThreadPoolExecutor's atexit join). The daemon
-    timer survives ``Py_FinalizeEx``'s joins. ``HERMES_EXIT_WATCHDOG_S=0`` disables.
+    timer survives ``Py_FinalizeEx``'s joins. ``TINO_EXIT_WATCHDOG_S=0`` disables.
 
     1. 2. Interpreter teardown blocked joining non-daemon threads — stdlib ``ThreadPoolExecutor`` workers
     are joined unconditionally by ``concurrent.futures``' atexit hook even after ``shutdown(wait=False)``,
@@ -1161,7 +1161,7 @@ def _hex_to_ansi(hex_color: str, *, bold: bool = False) -> str:
 
 
 # Light/dark terminal detection (mirrors ui-tui/src/theme.ts detectLightMode()). Priority:
-# HERMES_LIGHT/HERMES_TUI_LIGHT env, HERMES_TUI_THEME, HERMES_TUI_BACKGROUND, COLORFGBG
+# TINO_LIGHT/TINO_TUI_LIGHT env, TINO_TUI_THEME, TINO_TUI_BACKGROUND, COLORFGBG
 # (bg slot 7/15 = light), OSC 11 query, default dark. Cached so the terminal is queried once.
 _LIGHT_MODE_CACHE: bool | None = None
 _TRUE_RE = re.compile(r"^(1|true|on|yes|y)$")
@@ -1288,18 +1288,18 @@ def _heal_cooked_mode_drift(fd: int) -> bool:
 
 def _detect_light_mode_uncached() -> bool:
     """The detection ladder documented above; may raise (caller maps errors to dark)."""
-    for var in ("HERMES_LIGHT", "HERMES_TUI_LIGHT"):
+    for var in ("TINO_LIGHT", "TINO_TUI_LIGHT"):
         v = (os.environ.get(var) or "").strip().lower()
         if _TRUE_RE.match(v):
             return True
         if _FALSE_RE.match(v):
             return False
-    theme = (os.environ.get("HERMES_TUI_THEME") or "").strip().lower()
+    theme = (os.environ.get("TINO_TUI_THEME") or "").strip().lower()
     if theme == "light":
         return True
     if theme == "dark":
         return False
-    bg_lum = _luminance_from_hex(os.environ.get("HERMES_TUI_BACKGROUND") or "")
+    bg_lum = _luminance_from_hex(os.environ.get("TINO_TUI_BACKGROUND") or "")
     if bg_lum is not None:
         return bg_lum >= 0.5
     last = (os.environ.get("COLORFGBG") or "").strip().split(";")[-1]
@@ -2302,14 +2302,14 @@ def _build_compact_banner() -> str:
     if (getattr(_skin, "name", "default") if _skin else "default") == "default":
         tiny_line = "☤ NOUS HERMES"
     else:
-        tiny_line = _skin.get_branding("agent_name", "Hermes Agent") if _skin else "Hermes Agent"
+        tiny_line = _skin.get_branding("agent_name", "Tino Agent") if _skin else "Tino Agent"
     line1 = f"{tiny_line} - AI Agent Framework"
 
-    if os.environ.get("HERMES_FAST_STARTUP_BANNER") == "1":
+    if os.environ.get("TINO_FAST_STARTUP_BANNER") == "1":
         from hermes_cli import __release_date__ as _release_date
         from hermes_cli import __version__ as _version
 
-        version_line = f"Hermes Agent v{_version} ({_release_date})"
+        version_line = f"Tino Agent v{_version} ({_release_date})"
     else:
         version_line = format_banner_version_label()
 
@@ -2397,7 +2397,7 @@ def _parse_skills_argument(skills: str | list[str] | tuple[str, ...] | None) -> 
 
 
 def save_config_value(key_path: str, value: any) -> bool:
-    """Persist dot-separated ``key_path`` = value into HERMES_HOME/config.yaml; True on success.
+    """Persist dot-separated ``key_path`` = value into TINO_HOME/config.yaml; True on success.
 
     Never the repo's cli-config.yaml: no config reader loads it, so the value would vanish.
     """
@@ -2533,7 +2533,7 @@ _PASTE_REF_RE = re.compile(r'\[Pasted text #\d+: \d+ lines \u2192 (.+?)\]')
 
 
 class HermesCLI(CLIProcessNotificationsMixin, CLIAgentSetupMixin, CLICommandsMixin, CLIBillingMixin, CLITuiMixin, CLIStatusBarMixin, CLIVoiceMixin, CLIModelSwitchMixin, CLISessionMixin, CLIStreamMixin, CLIModalMixin, CLITerminalMixin, CLIInfoMixin, CLILoopsMixin, CLIChatTurnMixin):
-    """Interactive REPL for the Hermes Agent."""
+    """Interactive REPL for the Tino Agent."""
 
     # Seeded -q first message (see _should_seed_interactive); run() re-creates
     # _pending_input, so it is enqueued only after the fresh queue exists.
@@ -2654,7 +2654,7 @@ class HermesCLI(CLIProcessNotificationsMixin, CLIAgentSetupMixin, CLICommandsMix
         # resume must not clobber an explicit -m with the session's stored model.
         self._explicit_model_override = bool(model)
         self.model = model or _config_model or ""
-        _cfg_provider = _model_config.get("provider") or os.getenv("HERMES_INFERENCE_PROVIDER")
+        _cfg_provider = _model_config.get("provider") or os.getenv("TINO_INFERENCE_PROVIDER")
         _startup_provider_override = _startup_base_url_override = _startup_api_key_override = ""
         if self.model:
             from hermes_cli.model_switch import resolve_startup_model_route
@@ -2737,7 +2737,7 @@ class HermesCLI(CLIProcessNotificationsMixin, CLIAgentSetupMixin, CLICommandsMix
         from hermes_cli.config import resolve_turn_limit as _resolve_turn_limit
         self.max_turns = _resolve_turn_limit(next(
             (v for v in (max_turns, CLI_CONFIG["agent"].get("max_turns"), CLI_CONFIG.get("max_turns")) if v is not None),
-            os.getenv("HERMES_MAX_ITERATIONS"),
+            os.getenv("TINO_MAX_ITERATIONS"),
         ))
         self.run_budget_seconds = run_budget if run_budget is not None else CLI_CONFIG["agent"].get("run_budget_seconds")
 
@@ -2764,14 +2764,14 @@ class HermesCLI(CLIProcessNotificationsMixin, CLIAgentSetupMixin, CLICommandsMix
         self.checkpoint_max_file_size_mb = cp_cfg.get("max_file_size_mb", 10)
         self.pass_session_id = pass_session_id
         # --ignore-rules: AIAgent skips context files (AGENTS.md/SOUL.md/...) and memory.
-        self.ignore_rules = ignore_rules or is_truthy_value(os.environ.get("HERMES_IGNORE_RULES"))
+        self.ignore_rules = ignore_rules or is_truthy_value(os.environ.get("TINO_IGNORE_RULES"))
 
     def _init_prompt_and_reasoning(self, reasoning):
         """Ephemeral system prompt/prefill, reasoning + service tier, OpenRouter routing knobs, fallback chain."""
         # Env var wins, then hermes_cli.personality (single owner of overlay resolution).
         from hermes_cli.personality import available_personalities, resolve_ephemeral_system_prompt
 
-        self.system_prompt = os.getenv("HERMES_EPHEMERAL_SYSTEM_PROMPT", "") or resolve_ephemeral_system_prompt(CLI_CONFIG)
+        self.system_prompt = os.getenv("TINO_EPHEMERAL_SYSTEM_PROMPT", "") or resolve_ephemeral_system_prompt(CLI_CONFIG)
         self.personalities = available_personalities(CLI_CONFIG)
 
         self.prefill_messages = _load_prefill_messages(_resolve_prefill_messages_file(CLI_CONFIG))
@@ -3675,7 +3675,7 @@ class HermesCLI(CLIProcessNotificationsMixin, CLIAgentSetupMixin, CLICommandsMix
             self._display_resumed_history()
 
         _welcome_skin = None  # stays None when the skin engine failed
-        _welcome_text = "Welcome to Hermes Agent! Type your message or /help for commands."
+        _welcome_text = "Welcome to Tino Agent! Type your message or /help for commands."
         _welcome_color = "#FFF8DC"
         try:
             from hermes_cli.skin_engine import get_active_skin
@@ -3707,7 +3707,7 @@ class HermesCLI(CLIProcessNotificationsMixin, CLIAgentSetupMixin, CLICommandsMix
         # Pre-import the agent runtime (~1.5s: run_agent + OpenAI SDK) off-thread; the import
         # lock makes an early submit block on the remaining work rather than redo it.
         # Skipped when Termux defers agent startup on purpose.
-        if os.environ.get("HERMES_DEFER_AGENT_STARTUP") != "1":
+        if os.environ.get("TINO_DEFER_AGENT_STARTUP") != "1":
             def _prewarm_agent_runtime() -> None:
                 try:
                     import run_agent  # noqa: F401  (imports model_tools + tool registry)
@@ -3722,11 +3722,11 @@ class HermesCLI(CLIProcessNotificationsMixin, CLIAgentSetupMixin, CLICommandsMix
             # The redactor snapshots its state at import time so any toggle now won't affect the running
             # process — we just want the operator to see that they're running without the safety net. See
             # #17691.
-            _redact_raw = os.getenv("HERMES_REDACT_SECRETS", "true")
+            _redact_raw = os.getenv("TINO_REDACT_SECRETS", "true")
             if _redact_raw.lower() not in {"1", "true", "yes", "on"}:
                 self._console_print(
                     "[bold red]⚠  Secret redaction is DISABLED[/] "
-                    f"(HERMES_REDACT_SECRETS={_redact_raw}). "
+                    f"(TINO_REDACT_SECRETS={_redact_raw}). "
                     "API keys and tokens may appear verbatim in chat output, "
                     "session JSONs, and logs. Set "
                     "[cyan]security.redact_secrets: true[/] in config.yaml "
@@ -4039,7 +4039,7 @@ def _int_or(value, default: int) -> int:
 
 
 def _interrupt_agent_for_signal(agent, signum) -> None:
-    """Hard-interrupt ``agent`` for a shutdown signal, then sleep ``HERMES_SIGTERM_GRACE`` (1.5 s).
+    """Hard-interrupt ``agent`` for a shutdown signal, then sleep ``TINO_SIGTERM_GRACE`` (1.5 s).
 
     The grace lets the agent thread kill the tool's setsid subprocess group before the
     main thread unwinds (else an orphan child). Never raises.
@@ -4047,7 +4047,7 @@ def _interrupt_agent_for_signal(agent, signum) -> None:
     try:
         if agent is not None:
             request_hard_interrupt(agent, f"received signal {signum}")
-            _grace = _float_env("HERMES_SIGTERM_GRACE", 1.5)
+            _grace = _float_env("TINO_SIGTERM_GRACE", 1.5)
             if _grace > 0:
                 time.sleep(_grace)
     except Exception:
@@ -4061,13 +4061,13 @@ def _run_kanban_goal_loop_q(cli: "HermesCLI", first_response: str, run_turn=None
     passes ``cli.chat`` so every follow-up turn keeps the tool activity feed that the Kanban
     worker log is made of. The caller swallows all errors: a broken loop must never wedge a worker.
     """
-    task_id = (os.environ.get("HERMES_KANBAN_TASK") or "").strip()
+    task_id = (os.environ.get("TINO_KANBAN_TASK") or "").strip()
     if not task_id:
         return
-    raw_run_id = (os.environ.get("HERMES_KANBAN_RUN_ID") or "").strip()
+    raw_run_id = (os.environ.get("TINO_KANBAN_RUN_ID") or "").strip()
     worker_run_id = _int_or(raw_run_id, None) if raw_run_id else None
     if raw_run_id and worker_run_id is None:
-        logger.warning("invalid HERMES_KANBAN_RUN_ID=%r", raw_run_id)
+        logger.warning("invalid TINO_KANBAN_RUN_ID=%r", raw_run_id)
 
     from hermes_cli import kanban_db as _kb
     from hermes_cli import kanban_db_connect as _kbc
@@ -4149,7 +4149,7 @@ def _single_query_exit_code(result) -> int:
 
     0 only when the turn completed; 130 when it was interrupted; 1 when it failed, stopped
     partway (`partial`, `completed: False`) or never ran at all (credentials / agent init
-    failed, so ``result`` is not a dict). A Kanban worker (``HERMES_KANBAN_TASK`` set) that
+    failed, so ``result`` is not a dict). A Kanban worker (``TINO_KANBAN_TASK`` set) that
     failed purely on a provider rate-limit / billing wall exits ``KANBAN_RATE_LIMIT_EXIT_CODE``
     (EX_TEMPFAIL): the dispatcher books that run ``rate_limited`` and requeues the task
     WITHOUT counting a failure, so a quota window or a provider outage cannot trip the breaker.
@@ -4162,7 +4162,7 @@ def _single_query_exit_code(result) -> int:
         return 130
     if not (result.get("failed") or result.get("partial") or result.get("completed") is False):
         return 0
-    if os.environ.get("HERMES_KANBAN_TASK"):
+    if os.environ.get("TINO_KANBAN_TASK"):
         reason = result.get("failure_reason")
         if reason in _TRANSIENT_PROVIDER_REASONS:
             from hermes_cli.kanban_db import KANBAN_RATE_LIMIT_EXIT_CODE
@@ -4176,7 +4176,7 @@ def _single_query_exit_code(result) -> int:
 def _run_quiet_single_query(cli, effective_query, emitter=None):
     """Quiet (-Q) one-shot turn: run, print the response (stderr for errors/session_id), then sys.exit with the automation exit code.
     With a ``StreamJsonEmitter`` the final answer and the exit line become the terminal ``result`` JSONL record instead.
-    HERMES_TURN_AUTHOR (set only by a bot-to-bot dispatcher) is consumed here so tool subprocesses do not inherit it.
+    TINO_TURN_AUTHOR (set only by a bot-to-bot dispatcher) is consumed here so tool subprocesses do not inherit it.
     Nested Bot Mode notifies bind this session's key (not the dispatcher's) and resume in-process
     before stdout is printed, so a teammate reply is the quiet run's final answer rather than a
     stranded receipt."""
@@ -4261,7 +4261,7 @@ def _run_quiet_single_query(cli, effective_query, emitter=None):
 
     # Kanban goal_mode: keep working in THIS session until a judge agrees the card is
     # done, the worker terminates it, or the turn budget runs out (sticky block).
-    if os.environ.get("HERMES_KANBAN_GOAL_MODE") == "1":
+    if os.environ.get("TINO_KANBAN_GOAL_MODE") == "1":
         try:
             _run_kanban_goal_loop_q(cli, response)
         except Exception as _goal_exc:
@@ -4323,7 +4323,7 @@ def _route_single_query_images(cli, query, effective_query, single_query_images,
 def _collect_kanban_task_images(single_query_images):
     """Kanban workers: image paths/URLs in the task body join the first turn's attachments."""
     single_query_image_urls: list[str] = []
-    _kanban_task_id = os.environ.get("HERMES_KANBAN_TASK", "").strip()
+    _kanban_task_id = os.environ.get("TINO_KANBAN_TASK", "").strip()
     if not _kanban_task_id:
         return single_query_image_urls
     try:
@@ -4373,7 +4373,7 @@ def _install_single_query_signal_handlers(cli):
         # + stdout/stderr first so the final debug trace isn't lost; SIGALRM deadman guards the flush
         # against any rare blocking-I/O case (the reporter measured flush in <1ms; the alarm is a failsafe,
         # not the common path).
-        if os.environ.get("HERMES_KANBAN_TASK"):
+        if os.environ.get("TINO_KANBAN_TASK"):
             with suppress(Exception):
                 if hasattr(_signal, "SIGALRM"):
                     _signal.signal(_signal.SIGALRM, lambda *_: os._exit(0))
@@ -4444,7 +4444,7 @@ def _build_cli_from_args(model, toolsets, provider, reasoning, api_key, base_url
 
     # skills.auto_load rides the same background preload as -s; --ignore-rules skips it with
     # the rest of the auto-injected context. Resolved here (not lazily in the agent) so the
-    # session id is real for ${HERMES_SESSION_ID} and -s can dedupe against it.
+    # session id is real for ${TINO_SESSION_ID} and -s can dedupe against it.
     from agent.skill_commands import build_auto_load_prompt, resolve_auto_load_skills
     auto_load_names = [] if getattr(cli, "ignore_rules", ignore_rules) else resolve_auto_load_skills(CLI_CONFIG)
     if not auto_load_names:
@@ -4477,7 +4477,7 @@ def _run_legacy_gateway():
         from hermes_startup_watchdog import arm_startup_watchdog
         arm_startup_watchdog()
     from gateway.run import start_gateway
-    print("Starting Hermes Gateway (messaging platforms)...")
+    print("Starting Tino Gateway (messaging platforms)...")
     asyncio.run(start_gateway())
 
 
@@ -4566,12 +4566,12 @@ def _run_single_query_mode(cli, query, image, quiet, oneshot, stream_json: bool 
     # No user can answer approval prompts: the approval gate takes the deterministic path.
     # One-shot mode: no between-turns MCP late-binding refresh, so the agent must wait the full MCP
     # cold-start bound before its first (and only) tool snapshot. See #51316.
-    # Mark single-query for the approval gate. cli.py sets HERMES_INTERACTIVE earlier for interactive sudo
+    # Mark single-query for the approval gate. cli.py sets TINO_INTERACTIVE earlier for interactive sudo
     # prompts, but a -q run has NO user waiting to answer approval prompts. The gate reads this marker (via
     # gateway.session_context.get_session_env, which falls back to os.environ when the session-context layer
     # isn't engaged) and takes the deterministic approvals.single_query_mode path instead of waiting the
     # full timeout. See #86878.
-    os.environ["HERMES_SINGLE_QUERY_SESSION"] = "1"
+    os.environ["TINO_SINGLE_QUERY_SESSION"] = "1"
     from hermes_cli.quiet_single_query import exit_single_query
     if not cli._claim_active_session("cli", stderr=bool(quiet)):
         exit_single_query(1)
@@ -4617,7 +4617,7 @@ def _run_single_query_mode(cli, query, image, quiet, oneshot, stream_json: bool 
         # Kanban goal_mode on the `-q` path: same judge loop as `-Q`, but each follow-up turn
         # runs through cli.chat so the worker log keeps its live tool feed (the dispatcher
         # used to force -Q here, which left goal_mode cards with a blank Worker log).
-        if os.environ.get("HERMES_KANBAN_GOAL_MODE") == "1":
+        if os.environ.get("TINO_KANBAN_GOAL_MODE") == "1":
             try:
                 _run_kanban_goal_loop_chat(cli, response or "")
             except Exception as _goal_exc:
@@ -4660,7 +4660,7 @@ def main(
     ignore_rules: bool = False,
 ):
     """
-    Hermes Agent CLI - Interactive AI Assistant
+    Tino Agent CLI - Interactive AI Assistant
     
     Args:
         query: Query to run. On a real TTY this seeds an interactive session
@@ -4702,7 +4702,7 @@ def main(
         from hermes_cli.stdio import configure_windows_stdio
         configure_windows_stdio()
 
-    os.environ["HERMES_INTERACTIVE"] = "1"  # terminal_tool: interactive sudo prompts with timeout
+    os.environ["TINO_INTERACTIVE"] = "1"  # terminal_tool: interactive sudo prompts with timeout
     # The banner names affected plugins; the raw per-name compat warnings would only duplicate it on stderr.
     with suppress(Exception):
         from hermes_cli.plugin_compat import quiet_for_interactive
@@ -4800,8 +4800,8 @@ def CanonicalUsage(*args, **kwargs):
 
 _PLUGIN_COMPAT_LAZY = {
     'DEFAULT_BROWSER_CDP_URL': ('hermes_cli.browser_connect', 'DEFAULT_BROWSER_CDP_URL'),
-    'HERMES_AGENT_LOGO': ('hermes_cli.banner', 'HERMES_AGENT_LOGO'),
-    'HERMES_CADUCEUS': ('hermes_cli.banner', 'HERMES_CADUCEUS'),
+    'TINO_AGENT_LOGO': ('hermes_cli.banner', 'TINO_AGENT_LOGO'),
+    'TINO_CADUCEUS': ('hermes_cli.banner', 'TINO_CADUCEUS'),
     'SlashCommandAutoSuggest': ('hermes_cli.commands_completion', 'SlashCommandAutoSuggest'),
     'SlashCommandCompleter': ('hermes_cli.commands_completion', 'SlashCommandCompleter'),
     'build_welcome_banner': ('hermes_cli.banner', 'build_welcome_banner'),

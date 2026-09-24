@@ -1,4 +1,4 @@
-"""Hermes Agent Uninstaller."""
+"""Tino Agent Uninstaller."""
 
 import os
 import shutil
@@ -71,11 +71,11 @@ _SHELL_RC_NAMES = (".bashrc", ".bash_profile", ".profile", ".zshrc", ".zprofile"
 
 
 def _strip_hermes_path_lines(content: str) -> str:
-    """Drop the ``# Hermes Agent`` marker (+ its PATH line) and any hermes PATH line; squash blank runs."""
+    """Drop the ``# Tino Agent`` marker (+ its PATH line) and any hermes PATH line; squash blank runs."""
     new_lines = []
     skip_next = False
     for line in content.split('\n'):
-        if '# Hermes Agent' in line or '# hermes-agent' in line:
+        if '# Tino Agent' in line or '# hermes-agent' in line:
             skip_next = True
             continue
         if skip_next and ('hermes' in line.lower() and 'PATH' in line):
@@ -92,7 +92,7 @@ def _strip_hermes_path_lines(content: str) -> str:
 
 
 def remove_path_from_shell_configs():
-    """Remove Hermes PATH entries from shell configuration files."""
+    """Remove Tino PATH entries from shell configuration files."""
     removed_from = []
     for config_path in (c for c in (Path.home() / n for n in _SHELL_RC_NAMES) if c.exists()):
         try:
@@ -255,14 +255,14 @@ _GATEWAY_SERVICE_REMOVERS = {
     "Windows": (_remove_windows_gateway, "Could not check Windows gateway service")}
 
 # Windows helpers. install.ps1 leaves four things no rc file covers: User-scope env vars
-# HERMES_HOME / HERMES_GIT_BASH_PATH (HKCU\Environment), User-scope PATH entries
+# TINO_HOME / TINO_GIT_BASH_PATH (HKCU\Environment), User-scope PATH entries
 # (%LOCALAPPDATA%\hermes\git\{cmd,bin,usr\bin}, ...\hermes\node), PortableGit + Node copies
 # (~200MB) and the gateway-service dir. Direct winreg writes (not PowerShell): no subprocess, and
 # they work under Constrained Language Mode; new shells see them without WM_SETTINGCHANGE.
 
 
 def _hermes_path_markers(hermes_home: Path, *, include_managed_bin: bool = False) -> list[str]:
-    """Prefixes identifying Hermes-owned User-PATH entries (prefix match sweeps git\cmd, git\bin,
+    """Prefixes identifying Tino-owned User-PATH entries (prefix match sweeps git\cmd, git\bin,
     node...). ``include_managed_bin`` adds ``<root>\bin`` (launchers + managed uv) — only when that
     dir is about to be deleted, so a keep-data uninstall keeps the working uv resolvable."""
     root = str(hermes_home).rstrip("\\/")
@@ -271,7 +271,7 @@ def _hermes_path_markers(hermes_home: Path, *, include_managed_bin: bool = False
 
 
 def remove_path_from_windows_registry(hermes_home: Path, *, include_managed_bin: bool = False) -> list[str]:
-    """Strip Hermes-owned entries from User-scope PATH in the registry (see ``_hermes_path_markers``)."""
+    """Strip Tino-owned entries from User-scope PATH in the registry (see ``_hermes_path_markers``)."""
     markers = tuple(m.lower() for m in _hermes_path_markers(hermes_home, include_managed_bin=include_managed_bin))
 
     def edit(winreg, key, removed):
@@ -291,9 +291,9 @@ def remove_path_from_windows_registry(hermes_home: Path, *, include_managed_bin:
 
 
 def remove_hermes_env_vars_windows() -> list[str]:
-    """Delete HERMES_HOME and HERMES_GIT_BASH_PATH from User-scope env vars."""
+    """Delete TINO_HOME and TINO_GIT_BASH_PATH from User-scope env vars."""
     def edit(winreg, key, removed):
-        for name in ("HERMES_HOME", "HERMES_GIT_BASH_PATH"):
+        for name in ("TINO_HOME", "TINO_GIT_BASH_PATH"):
             try:
                 winreg.QueryValueEx(key, name)
             except FileNotFoundError:
@@ -388,7 +388,7 @@ def _discover_named_profiles():
 def _uninstall_profile(profile) -> None:
     """Fully uninstall a named profile: stop its gateway, remove its alias, wipe its home. Shells
     out to ``hermes -p <name> gateway stop|uninstall`` because service names / unit paths derive
-    from the current HERMES_HOME and can't be switched in-process."""
+    from the current TINO_HOME and can't be switched in-process."""
     name = profile.name
     log_info(f"Uninstalling profile '{name}'...")
 
@@ -412,7 +412,7 @@ def _uninstall_profile(profile) -> None:
             log_success(f"  Removed alias {alias_path}")
         except Exception as e:
             log_warn(f"  Could not remove alias {alias_path}: {e}")
-    # 3. Wipe the profile's HERMES_HOME directory.
+    # 3. Wipe the profile's TINO_HOME directory.
     _rmtree_step(profile.path, indent="  ", fully=False)
 
 
@@ -425,15 +425,15 @@ def run_gui_uninstall(args):
     skip_confirm = bool(getattr(args, "yes", False))
 
     print()
-    _print_box("│         ☤ Hermes Chat GUI Uninstaller                  │", Colors.MAGENTA)
+    _print_box("│         ☤ Tino Chat GUI Uninstaller                  │", Colors.MAGENTA)
     print()
 
     if not summary["gui_installed"]:
-        print("No Hermes Chat GUI installation was found.")
+        print("No Tino Chat GUI installation was found.")
         print(f"  Checked: {hermes_home}, and the standard app locations for this OS.")
         return
 
-    print(color("This removes the Chat GUI only. The Hermes agent stays installed.", Colors.CYAN))
+    print(color("This removes the Chat GUI only. The Tino agent stays installed.", Colors.CYAN))
     print()
     print(color("Will remove:", Colors.YELLOW, Colors.BOLD))
     for p in (*summary["source_built_artifacts"], *summary["packaged_app_paths"]):
@@ -443,7 +443,7 @@ def run_gui_uninstall(args):
     print()
     if agent_is_installed(hermes_home):
         print(color("Kept intact:", Colors.GREEN, Colors.BOLD))
-        print(f"  • The Hermes agent at {hermes_home / 'hermes-agent'}")
+        print(f"  • The Tino agent at {hermes_home / 'hermes-agent'}")
         print(f"  • Your config, sessions, and secrets under {hermes_home}")
         print()
 
@@ -458,7 +458,7 @@ def run_gui_uninstall(args):
     print()
     _print_box("│            ✓ Chat GUI Uninstalled!                      │", Colors.GREEN)
     print()
-    print("The Hermes agent is still installed. Run 'hermes' to use the CLI,")
+    print("The Tino agent is still installed. Run 'hermes' to use the CLI,")
     print("or 'hermes uninstall' to remove the agent too.")
     print()
 
@@ -476,7 +476,7 @@ def run_uninstall(args):
         return
 
     # Named profiles (only when uninstalling from the default root) are offered for cleanup too,
-    # instead of leaving zombie HERMES_HOMEs and systemd units behind.
+    # instead of leaving zombie TINO_HOMEs and systemd units behind.
     is_default_profile = _is_default_hermes_home(hermes_home)
     named_profiles = _discover_named_profiles() if is_default_profile else []
 
@@ -489,7 +489,7 @@ def run_uninstall(args):
         return
 
     print()
-    _print_box("│            ☤ Hermes Agent Uninstaller                  │", Colors.MAGENTA)
+    _print_box("│            ☤ Tino Agent Uninstaller                  │", Colors.MAGENTA)
     print()
 
     # Show what will be affected
@@ -529,7 +529,7 @@ def run_uninstall(args):
     full_uninstall = (choice == "2")
 
     # Full uninstall from the default profile: offer to remove named profiles too (gateway
-    # services, alias wrappers, HERMES_HOME dirs) — otherwise they leave zombie services behind.
+    # services, alias wrappers, TINO_HOME dirs) — otherwise they leave zombie services behind.
     remove_profiles = False
     n_profiles = len(named_profiles)
     profile_names = ", ".join(p.name for p in named_profiles)
@@ -546,12 +546,12 @@ def run_uninstall(args):
     # Final confirmation
     print()
     if full_uninstall:
-        print(color("⚠️  WARNING: This will permanently delete ALL Hermes data!", Colors.RED, Colors.BOLD))
+        print(color("⚠️  WARNING: This will permanently delete ALL Tino data!", Colors.RED, Colors.BOLD))
         print(color("   Including: configs, API keys, sessions, scheduled jobs, logs", Colors.RED))
         if remove_profiles:
             print(color(f"   Plus {n_profiles} profile(s): {profile_names}", Colors.RED))
     else:
-        print("This will remove the Hermes code but keep your configuration and data.")
+        print("This will remove the Tino code but keep your configuration and data.")
 
     print()
     if not _confirm_yes("to confirm"):
@@ -569,14 +569,14 @@ def _print_uninstall_dry_run(*, project_root: Path, hermes_home: Path, full_unin
     print()
     print(color("Would inspect/remove:", Colors.YELLOW, Colors.BOLD))
     print("  • Gateway services and standalone gateway processes")
-    print("  • Hermes PATH entries from shell configs / Windows User PATH")
-    print("  • Hermes wrapper scripts and Hermes-managed node/npm/npx symlinks")
+    print("  • Tino PATH entries from shell configs / Windows User PATH")
+    print("  • Tino wrapper scripts and Tino-managed node/npm/npx symlinks")
     print("  • Desktop Chat GUI artifacts")
     print(f"  • Code checkout: {project_root}")
     if not full_uninstall:
-        print(f"  • Keep Hermes config/data: {hermes_home}")
+        print(f"  • Keep Tino config/data: {hermes_home}")
     else:
-        print(f"  • Hermes config/data: {hermes_home}")
+        print(f"  • Tino config/data: {hermes_home}")
         profiles = _discover_named_profiles() if _is_default_hermes_home(hermes_home) else []
         if profiles:
             print("  • Named profiles (interactive uninstall asks before removing):")
@@ -616,7 +616,7 @@ def _perform_uninstall(
     named_profiles: list) -> None:
     """The uninstall steps shared by the interactive and ``--yes`` paths: stop gateway -> strip PATH
     (rc files + Windows registry) -> wrapper/launchers/node symlinks -> Chat GUI artifacts -> delete
-    the checkout -> (Windows) PortableGit/Node -> optionally ``$HERMES_HOME`` and named profiles."""
+    the checkout -> (Windows) PortableGit/Node -> optionally ``$TINO_HOME`` and named profiles."""
     print()
     print(color("Uninstalling...", Colors.CYAN, Colors.BOLD))
     print()
@@ -638,20 +638,20 @@ def _perform_uninstall(
         (windows, "Removing PATH entries from Windows User environment...",
          lambda: remove_path_from_windows_registry(
              Path(os.path.expandvars(str(hermes_home))), include_managed_bin=sweep_managed_bin),
-         "Removed from User PATH: {}", "No Hermes-owned PATH entries in User environment"),
-        (windows, "Removing HERMES_HOME / HERMES_GIT_BASH_PATH User env vars...",
-         remove_hermes_env_vars_windows, "Removed User env var: {}", "No Hermes-set User env vars to remove"),
+         "Removed from User PATH: {}", "No Tino-owned PATH entries in User environment"),
+        (windows, "Removing TINO_HOME / TINO_GIT_BASH_PATH User env vars...",
+         remove_hermes_env_vars_windows, "Removed User env var: {}", "No Tino-set User env vars to remove"),
         (True, "Removing hermes command...", remove_wrapper_script, "Removed {}", "No wrapper script found"),
         (windows, "Removing Windows hermes launchers...",
          remove_windows_bin_launchers, "Removed {}", "No Windows hermes launchers found"),
-        (True, "Removing Hermes-managed node/npm/npx symlinks...",
-         lambda: remove_node_symlinks(hermes_home), "Removed {}", "No Hermes-managed node/npm/npx symlinks found"),
+        (True, "Removing Tino-managed node/npm/npx symlinks...",
+         lambda: remove_node_symlinks(hermes_home), "Removed {}", "No Tino-managed node/npm/npx symlinks found"),
     ):
         if on_this_platform:
             _remove_step(label, remove, success_fmt, none_msg)
 
     # 3c. Chat GUI artifacts go with the agent code. uninstall_gui() never touches config/sessions/
-    #     .env (safe in keep-data mode); the packaged app + Electron userData live OUTSIDE HERMES_HOME.
+    #     .env (safe in keep-data mode); the packaged app + Electron userData live OUTSIDE TINO_HOME.
     log_info("Removing desktop Chat GUI artifacts...")
     try:
         from hermes_cli.gui_uninstall import uninstall_gui
@@ -697,7 +697,7 @@ def _perform_uninstall(
     for line, col in _RELOAD_HINT[windows]:
         print(color(line, col) if col else line)
     print()
-    print("Thank you for using Hermes Agent! ☤")
+    print("Thank you for using Tino Agent! ☤")
     print()
 
 

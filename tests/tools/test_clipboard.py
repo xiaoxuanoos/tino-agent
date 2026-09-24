@@ -117,7 +117,7 @@ class TestMacosOsascript:
 class TestMacosClipboardFileUrl:
     """Finder / file-copy puts «class furl» on the clipboard, not PNGf/TIFF.
 
-    Other apps still paste the image; Hermes must treat a local image file-url
+    Other apps still paste the image; Tino must treat a local image file-url
     as a clipboard image too.
     """
 
@@ -551,7 +551,7 @@ class TestTryAttachClipboardImage:
         with patch("hermes_cli.clipboard.save_clipboard_image", return_value=True):
             cli._try_attach_clipboard_image()
         path = cli._attached_images[0]
-        assert path.parent == Path(os.environ["HERMES_HOME"]) / "images"
+        assert path.parent == Path(os.environ["TINO_HOME"]) / "images"
         assert path.name.startswith("clip_")
         assert path.suffix == ".png"
 

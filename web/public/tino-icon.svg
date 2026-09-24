@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="Tino Agent">
+  <defs>
+    <linearGradient id="shell" x1="0" x2="1" y1="0" y2="1">
+      <stop stop-color="#8eeaff"/>
+      <stop offset=".45" stop-color="#2f95d7"/>
+      <stop offset="1" stop-color="#102c67"/>
+    </linearGradient>
+    <linearGradient id="face" x1="0" x2="0" y1="0" y2="1">
+      <stop stop-color="#123761"/>
+      <stop offset="1" stop-color="#071524"/>
+    </linearGradient>
+  </defs>
+  <rect x="8" y="8" width="112" height="112" rx="36" fill="url(#shell)" stroke="#a9eaff" stroke-width="3"/>
+  <rect x="18" y="32" width="92" height="73" rx="24" fill="url(#face)" stroke="#5ae7f3" stroke-width="3"/>
+  <path d="M30 22h68L80 36H48Z" fill="#effbff" stroke="#b5eaff" stroke-width="2"/>
+  <path d="M50 25h28L68 74h-8Z" fill="#effbff"/>
+  <path d="M38 70q9-13 18 0m16 0q9-13 18 0" fill="none" stroke="#45f0ee" stroke-width="6" stroke-linecap="round"/>
+  <path d="M54 87q10 9 20 0" fill="none" stroke="#45f0ee" stroke-width="5" stroke-linecap="round"/>
+</svg>

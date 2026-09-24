@@ -226,7 +226,7 @@ describe('connection-aware plugin host APIs', () => {
     // badge whose click hot-loops against the deletion guard (#88769).
     expect(refreshProfiles).toHaveBeenCalled()
     // A leftover Bot Mode tile would restore on relaunch and dial the deleted
-    // profile's backend, re-creating its HERMES_HOME (#94235).
+    // profile's backend, re-creating its TINO_HOME (#94235).
     expect(dropTilesForProfile).toHaveBeenCalledWith('worker', undefined)
   })
 

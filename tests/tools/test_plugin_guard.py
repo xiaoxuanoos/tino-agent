@@ -386,7 +386,7 @@ class TestInstallIntegration:
         files[filename] = content
         repo = tmp_path / "repo"
         self._make_git_repo(repo, files)
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path / "home"))
+        monkeypatch.setenv("TINO_HOME", str(tmp_path / "home"))
         plugins_dir = pc._plugins_dir()
 
         # Declined → blocked

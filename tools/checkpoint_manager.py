@@ -36,7 +36,7 @@ _CHECKPOINT_BASE_AT_IMPORT = CHECKPOINT_BASE
 
 def _resolve_checkpoint_base() -> Path:
     """Active profile's checkpoint root at call time: the patched ``CHECKPOINT_BASE`` when a test
-    changed it, else live profile-scoped HERMES_HOME — under the multiplexed gateway one process
+    changed it, else live profile-scoped TINO_HOME — under the multiplexed gateway one process
     serves every profile, so the import-time constant would write every profile's code-edit
     checkpoints into the launch profile's store."""
     return CHECKPOINT_BASE if CHECKPOINT_BASE != _CHECKPOINT_BASE_AT_IMPORT else get_hermes_home() / "checkpoints"
@@ -50,7 +50,7 @@ DEFAULT_EXCLUDES = [
     "__pycache__/", "*.pyc", "*.pyo", ".cache/", ".pytest_cache/", ".mypy_cache/",  # caches
     ".ruff_cache/", "coverage/", ".coverage",
     ".venv/", "venv/", "env/",  # virtualenvs
-    ".git/", ".hg/", ".svn/", ".worktrees/",  # VCS + worktrees (Hermes convention — don't snapshot siblings)
+    ".git/", ".hg/", ".svn/", ".worktrees/",  # VCS + worktrees (Tino convention — don't snapshot siblings)
     "*.so", "*.dylib", "*.dll", "*.o", "*.a", "*.jar", "*.class", "*.exe", "*.obj",  # compiled binaries
     "*.mp4", "*.mov", "*.mkv", "*.webm", "*.zip", "*.tar", "*.tar.gz", "*.tgz",  # media / large binaries
     "*.7z", "*.rar", "*.iso",
@@ -58,14 +58,14 @@ DEFAULT_EXCLUDES = [
     ".DS_Store", "Thumbs.db", "*.log",  # OS junk / logs
 ]
 
-_GIT_TIMEOUT: int = max(10, min(60, env_int("HERMES_CHECKPOINT_TIMEOUT", 30)))
+_GIT_TIMEOUT: int = max(10, min(60, env_int("TINO_CHECKPOINT_TIMEOUT", 30)))
 _MAX_FILES = 50_000  # skip huge directories to avoid slowdowns
 _COMMIT_HASH_RE = re.compile(r'^[0-9a-fA-F]{4,64}$')  # short or full SHA-1/SHA-256
 _MB = 1024 * 1024
 # Inherited GIT_* vars that would redirect the shadow store's git calls.
 _GIT_LEAK_VARS = ("GIT_DIR", "GIT_WORK_TREE", "GIT_INDEX_FILE", "GIT_NAMESPACE", "GIT_ALTERNATE_OBJECT_DIRECTORIES")
 # Per-store config: isolated by env vars already, but belt-and-suspenders.
-_STORE_GIT_CONFIG = (("user.email", "hermes@local"), ("user.name", "Hermes Checkpoint"),
+_STORE_GIT_CONFIG = (("user.email", "hermes@local"), ("user.name", "Tino Checkpoint"),
                      ("commit.gpgsign", "false"), ("tag.gpgSign", "false"), ("gc.auto", "0"))
 _PROJECT_MARKERS = {".git", "pyproject.toml", "package.json", "Cargo.toml", "go.mod", "Makefile", "pom.xml", ".hg", "Gemfile"}
 
@@ -170,7 +170,7 @@ def _hash_file(path: Path) -> Optional[str]:
 
 def _load_ledger(store: Path, dir_hash: str) -> Dict[str, Dict]:
     """Agent-write ledger ``{abs_path: {"sha256", "ts"}}``: hash of every file the last
-    ``write_file``/``patch`` produced, so restores can tell Hermes' writes from later user edits."""
+    ``write_file``/``patch`` produced, so restores can tell Tino's writes from later user edits."""
     return _read_json_dict(_ledger_path(store, dir_hash)) or {}
 
 
@@ -491,8 +491,8 @@ def _pre_v2_shadow_repos(base: Path) -> List[Dict]:
         workdir: Optional[str] = None
         marker_unreadable = False
         try:
-            if (child / "HERMES_WORKDIR").exists():
-                workdir = (child / "HERMES_WORKDIR").read_text(encoding="utf-8").strip()
+            if (child / "TINO_WORKDIR").exists():
+                workdir = (child / "TINO_WORKDIR").read_text(encoding="utf-8").strip()
         except (OSError, UnicodeDecodeError):
             marker_unreadable = True  # present but unreadable: no evidence the project is gone
         out.append({"path": child, "workdir": workdir, "marker_unreadable": marker_unreadable,
@@ -625,7 +625,7 @@ class CheckpointManager:
     # --- public API ---
 
     def record_agent_write(self, file_path: str) -> None:
-        """Record the content hash of a file Hermes just wrote (agent-write ledger), so safe-mode
+        """Record the content hash of a file Tino just wrote (agent-write ledger), so safe-mode
         :meth:`restore` can skip files the user hand-edited afterwards.  Never raises."""
         if not self.enabled:
             return
@@ -640,9 +640,9 @@ class CheckpointManager:
             logger.debug("record_agent_write failed for %s: %s", file_path, exc)
 
     def safe_restore_plan(self, working_dir: str, commit_hash: str) -> Dict:
-        """Classify files changed since ``commit_hash``: ``restore`` = still matching what Hermes
+        """Classify files changed since ``commit_hash``: ``restore`` = still matching what Tino
         last wrote (or deleted since); ``skipped`` = user-edited afterwards or never written by
-        Hermes.  ``ledger_empty`` => no ledger, callers fall back to a full restore."""
+        Tino.  ``ledger_empty`` => no ledger, callers fall back to a full restore."""
         p, err = _locate(working_dir, commit_hash)
         if err:
             return err
@@ -761,7 +761,7 @@ class CheckpointManager:
     def restore(self, working_dir: str, commit_hash: str, file_path: str = None,
                 safe: bool = False) -> Dict:
         """Restore files to a checkpoint state.  ``safe=True`` (full-directory only) leaves files
-        the user hand-edited after Hermes' last write untouched (agent-write ledger); the result
+        the user hand-edited after Tino's last write untouched (agent-write ledger); the result
         then gains ``skipped_user_edits``, ``skipped_oversize`` (size cap kept them out of every
         checkpoint) and, only when a delete failed, ``failed_deletes``."""
         p, err = _locate(working_dir, commit_hash, file_path)
@@ -814,7 +814,7 @@ class CheckpointManager:
     def _apply_safe_restore_deletes(self, p: _ProjectRefs, commit_hash: str,
                                     restore_paths: List[str]) -> _SafeRestoreTargets:
         """Split ledger-approved paths into checkout targets and delete the rest.  A path absent
-        from the checkpoint is Hermes-created (delete to restore) — unless ``max_file_size_mb`` kept
+        from the checkpoint is Tino-created (delete to restore) — unless ``max_file_size_mb`` kept
         it out of every checkpoint: no prior copy exists and the ledger can't prove it agent-created
         (hashes, not create-vs-modify), so leaving it costs a stale file, deleting costs the file."""
         targets = _SafeRestoreTargets()

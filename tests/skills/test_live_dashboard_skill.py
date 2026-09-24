@@ -58,7 +58,7 @@ def test_procedure_is_structured_setup_tick_show():
 
 def test_tools_wired_and_home_not_hardcoded():
     """Scheduling goes through `cronjob`, desktop rendering through `desktop_preview`,
-    no-change ticks stay silent, and the Hermes home path is resolved, never assumed."""
+    no-change ticks stay silent, and the Tino home path is resolved, never assumed."""
     _, body = _frontmatter_and_body()
     assert re.search(r"cronjob\(action=\"create\"", body)
     assert re.search(r"desktop_preview\(action=\"open\"", body)

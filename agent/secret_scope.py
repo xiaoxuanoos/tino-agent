@@ -40,7 +40,7 @@ def is_multiplex_active() -> bool:
 
 def serves_routed_profile() -> bool:
     """True when the current task runs for a profile other than the process's own: always under
-    multiplexing, else when a HERMES_HOME override names another home (dashboard/desktop backend,
+    multiplexing, else when a TINO_HOME override names another home (dashboard/desktop backend,
     per-profile cron ticker). The MCP registry scope and the check_fn cache key both follow this
     predicate so a served profile's view never aliases the launch profile's (#111151)."""
     if is_multiplex_active():
@@ -71,7 +71,7 @@ class UnscopedSecretError(RuntimeError):
             secret_name, developer_detail = "", secret_name
         what = f"this profile's {secret_name}" if secret_name else "this profile's API key"
         super().__init__(
-            f"Hermes could not read {what} (an internal profile-scoping bug on the multiplexed "
+            f"Tino could not read {what} (an internal profile-scoping bug on the multiplexed "
             "gateway, not your configuration). Run `hermes gateway restart`; if it keeps happening, "
             "report it with `hermes debug share`."
         )
@@ -100,16 +100,16 @@ def current_secret_scope() -> Optional[Mapping[str, str]]:
 # fail-closed path would wrongly crash). Keep this tight — when in doubt a
 # value is a profile secret. Membership is exact name OR prefix.
 _GLOBAL_ENV_EXACT = frozenset({
-    # Hermes runtime / deployment
-    "HERMES_HOME", "HERMES_PROFILE", "HERMES_GATEWAY_LOCK_DIR",
-    "HERMES_MAX_ITERATIONS", "HERMES_API_TIMEOUT",
-    "HERMES_REDACT_SECRETS", "HERMES_NOUS_TIMEOUT_SECONDS",
-    "_HERMES_GATEWAY",
+    # Tino runtime / deployment
+    "TINO_HOME", "TINO_PROFILE", "TINO_GATEWAY_LOCK_DIR",
+    "TINO_MAX_ITERATIONS", "TINO_API_TIMEOUT",
+    "TINO_REDACT_SECRETS", "TINO_NOUS_TIMEOUT_SECONDS",
+    "_TINO_GATEWAY",
     # OS / interpreter
     "PATH", "HOME", "USER", "LANG", "LC_ALL", "TZ", "PWD", "SHELL", "TMPDIR",
     "VIRTUAL_ENV", "PYTHONPATH", "SSL_CERT_FILE",
     # Kanban paths (per-board, not per-profile-secret)
-    "HERMES_KANBAN_DB", "HERMES_KANBAN_WORKSPACES_ROOT", "HERMES_KANBAN_BOARD",
+    "TINO_KANBAN_DB", "TINO_KANBAN_WORKSPACES_ROOT", "TINO_KANBAN_BOARD",
     # API-server LISTENER settings — deployment config (compose/systemd env),
     # which the scoped runner reload must keep seeing or containers silently
     # lose the api_server platform. API_SERVER_KEY is a credential: NOT here.
@@ -128,8 +128,8 @@ _GLOBAL_ENV_EXACT = frozenset({
     "GATEWAY_RELAY_WAKE_URL", "GATEWAY_RELAY_DISPLAY_NAME",
 })
 _GLOBAL_ENV_PREFIXES = (
-    "HERMES_KANBAN_",
-    "HERMES_TELEGRAM_",   # tuning knobs (batch delays, fallback toggles) — NOT the token
+    "TINO_KANBAN_",
+    "TINO_TELEGRAM_",   # tuning knobs (batch delays, fallback toggles) — NOT the token
     "TERMINAL_",          # terminal/sandbox backend settings
 )
 
@@ -206,7 +206,7 @@ def _strip_inline_comment(value: str) -> str:
 
 
 def _parse_env_value(raw_value: str) -> str:
-    """Parse the small .env value subset Hermes writes itself (bare, 'single', or "double" with
+    """Parse the small .env value subset Tino writes itself (bare, 'single', or "double" with
     ``\\"`` / ``\\\\`` escapes)."""
     value = raw_value.strip()
     if len(value) >= 2 and value[0] == value[-1] == '"':
@@ -234,7 +234,7 @@ def _parse_env_value(raw_value: str) -> str:
 # EACCES must not become "this profile has no secrets"), and the descriptor pins one inode so a
 # symlink repointed mid-read can't file one file's contents under another's identity.
 # ``invalidate_env_file_cache()`` is the explicit knob; ``hermes_cli.config.invalidate_env_cache()``
-# calls it for Hermes's own .env writers.
+# calls it for Tino's own .env writers.
 _ENV_FILE_CACHE: "OrderedDict[str, Tuple[tuple, Dict[str, str]]]" = OrderedDict()
 _ENV_FILE_CACHE_LOCK = threading.Lock()
 _ENV_FILE_CACHE_MAX = 64  # one entry per profile home in practice

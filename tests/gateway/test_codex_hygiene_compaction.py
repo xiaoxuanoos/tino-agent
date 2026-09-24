@@ -12,7 +12,7 @@ history and each turn submits only the new user message), so:
   ``thread/compact/start`` (asserted here at the compact_thread RPC-stub
   boundary) and keeps that agent cached;
 * ``compression.codex_app_server_auto`` semantics hold: only ``hermes``
-  lets Hermes' threshold start a compaction; ``native``/``off`` skip
+  lets Tino' threshold start a compaction; ``native``/``off`` skip
   cleanly, and no mode ever runs the local transcript compressor.
 """
 
@@ -240,7 +240,7 @@ def test_force_compacts_thread_never_local_fallback(mode):
 
 @pytest.mark.parametrize("mode", ["native", "off"])
 def test_force_without_live_thread_does_not_run_local_compressor(mode):
-    # The #73715 branch let force=True fall through to the local Hermes
+    # The #73715 branch let force=True fall through to the local Tino
     # compressor in native/off when no thread existed. That is wrong on this
     # runtime in every mode: rewriting the mirror cannot shrink the thread.
     agent = LiveCodexAgent(mode=mode, session=None)
@@ -369,7 +369,7 @@ def test_manual_compress_without_live_thread_reports_honestly():
 
 # ---------------------------------------------------------------------------
 # Multiplexed gateway: the hygiene worker must see the caller's ContextVars
-# (profile secret scope / HERMES_HOME override). A bare run_in_executor worker
+# (profile secret scope / TINO_HOME override). A bare run_in_executor worker
 # starts with an EMPTY Context, so get_secret(<PROVIDER>_API_KEY) inside the
 # summary path fails closed and every hygiene compaction degrades to a lossy
 # truncation (#100849 bundle).

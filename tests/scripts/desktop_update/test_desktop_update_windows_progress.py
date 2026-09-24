@@ -74,7 +74,7 @@ def test_progress_advances_while_the_orchestrator_blocks(tmp_path: Path) -> None
     # stability window + retry sleeps), so: 30s, and every sampling deadline
     # below is derived from the moment the held stage lands, keeping the
     # whole window comfortably inside the hold.
-    env["HERMES_SELFTEST_HOLD_SECONDS"] = "30"
+    env["TINO_SELFTEST_HOLD_SECONDS"] = "30"
 
     with output_path.open("wb") as output:
         process = subprocess.Popen(
@@ -110,7 +110,7 @@ def test_progress_advances_while_the_orchestrator_blocks(tmp_path: Path) -> None
 
         # The URL prints BEFORE the orchestrator publishes its held stage —
         # sampling immediately races the publish and can catch the page's
-        # boot default instead ('Hermes will open once done.' ==
+        # boot default instead ('Tino will open once done.' ==
         # 'Testing quiet update', PR #90358 first run). Wait for the held
         # stage to actually land, THEN start the stability window.
         held_stage = "Testing quiet update"

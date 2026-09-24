@@ -96,4 +96,4 @@ class TestSetupFdaTip:
         out = _capture(_print_macos_fda_tip)
         assert "Full Disk Access" in out
         assert "Privacy_AllFiles" in out
-        assert "survives every Hermes update" in out
+        assert "survives every Tino update" in out

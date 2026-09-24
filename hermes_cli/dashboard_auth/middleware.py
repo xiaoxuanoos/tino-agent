@@ -47,7 +47,7 @@ def _path_is_public(path: str) -> bool:
     """:data:`PUBLIC_API_PATHS` (shared with the legacy middleware) matched exactly so
     ``/api/status`` never exposes ``/api/status/extension``; :data:`_GATE_PUBLIC_PREFIXES`
     prefix-matched."""
-    return path in PUBLIC_API_PATHS or any(
+    return path == "/tino-icon.svg" or path in PUBLIC_API_PATHS or any(
         path == p or path.startswith(p) for p in _GATE_PUBLIC_PREFIXES)
 
 

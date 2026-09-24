@@ -33,7 +33,7 @@ def _whatsapp_choose_mode(get_env_value, save_env_value):
         mode_label = "separate bot number" if current_mode == "bot" else "personal number (self-chat)"
         print(f"\n✓ Mode: {mode_label}")
         return current_mode
-    _say("", "How will you use WhatsApp with Hermes?", "",
+    _say("", "How will you use WhatsApp with Tino?", "",
          "  1. Separate bot number (recommended)",
          "     People message the bot's number directly — cleanest experience.",
          "     Requires a second phone number with WhatsApp installed on a device.", "",
@@ -192,12 +192,12 @@ def cmd_whatsapp(args):
         _say("  Next steps:", "    1. Start the gateway:  hermes gateway",
              "    2. Send a message to the bot's WhatsApp number",
              "    3. The agent will reply automatically", "",
-             "  Tip: Agent responses are prefixed with '☤ Hermes Agent'")
+             "  Tip: Agent responses are prefixed with '☤ Tino Agent'")
     else:
         _say("  Next steps:", "    1. Start the gateway:  hermes gateway",
              "    2. Open WhatsApp → Message Yourself",
              "    3. Type a message — the agent will reply", "",
-             "  Tip: Agent responses are prefixed with '☤ Hermes Agent'",
+             "  Tip: Agent responses are prefixed with '☤ Tino Agent'",
              "  so you can tell them apart from your own messages.")
     _say("", "  Or install as a service: hermes gateway install")
 
@@ -299,10 +299,10 @@ def _sync_status(ssc) -> int:
     elif not status.get("nous_admin"):
         _err("\nSync is not enabled for your account yet.")
     elif not status.get("feature_enabled"):
-        _err("\nSync feature is off for this instance (set HERMES_SYNC_ENABLED=1 "
+        _err("\nSync feature is off for this instance (set TINO_SYNC_ENABLED=1 "
              "or config.yaml sync.enabled: true). Sync is inert.")
     elif not status.get("base_url"):
-        _err("\nNo sync base URL configured (config.yaml sync.base_url or HERMES_SYNC_BASE_URL). Sync is inert.")
+        _err("\nNo sync base URL configured (config.yaml sync.base_url or TINO_SYNC_BASE_URL). Sync is inert.")
     return 0
 
 
@@ -362,7 +362,7 @@ def cmd_sync(args):
         _err("sync unavailable: not enabled for your account yet.")
         return 1
     if not ssc.resolve_sync_base_url():
-        _err("sync inert: no sync base URL configured (config.yaml sync.base_url or HERMES_SYNC_BASE_URL).")
+        _err("sync inert: no sync base URL configured (config.yaml sync.base_url or TINO_SYNC_BASE_URL).")
         return 1
 
     action = _SYNC_GATED.get(sub)

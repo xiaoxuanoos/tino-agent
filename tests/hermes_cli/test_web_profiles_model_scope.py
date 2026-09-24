@@ -1,6 +1,6 @@
 """``PUT /api/profiles/{name}/model`` must validate under the target profile's secret scope.
 
-``_write_profile_model`` used to enter only the HERMES_HOME override. Once the dashboard
+``_write_profile_model`` used to enter only the TINO_HOME override. Once the dashboard
 has served a secondary profile (fail-closed multiplexing on), ``switch_model``'s
 ``key_env`` probe reads through ``get_secret``, which fails closed without an installed
 scope — the pick was rejected with "<provider> is not connected" even though the named
@@ -27,12 +27,12 @@ ACME_YAML = (
 
 @pytest.fixture()
 def homes(tmp_path, monkeypatch):
-    """A throwaway HERMES_HOME whose named profile carries its own ``.env`` credential.
+    """A throwaway TINO_HOME whose named profile carries its own ``.env`` credential.
 
     The process env holds a DIFFERENT value for the same variable: a scoped read must
     resolve the profile's key, never the dashboard home's (fail-closed isolation).
     """
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("TINO_HOME", str(tmp_path))
     monkeypatch.setenv("ACME_RELAY_KEY", "dashboard-home-key")
     from hermes_cli import profiles as profiles_mod
     from hermes_cli.config import invalidate_env_cache
@@ -93,7 +93,7 @@ def test_model_pick_for_default_from_named_profile_launch(homes, probe, monkeypa
     """Dashboard launched from ``profiles/demo``: targeting ``default`` must scope the ROOT
     (name ``default``), not the root directory's basename, which is not a profile name."""
     root, demo = homes
-    monkeypatch.setenv("HERMES_HOME", str(demo))
+    monkeypatch.setenv("TINO_HOME", str(demo))
     (root / ".env").write_text("ACME_RELAY_KEY=root-key\n", encoding="utf-8")
     from hermes_cli.config import invalidate_env_cache, load_config
     from hermes_cli.web_server_profiles import _hermes_home_scope

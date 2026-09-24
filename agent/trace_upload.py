@@ -1,4 +1,4 @@
-"""Upload a Hermes session transcript to Hugging Face as an agent trace, re-emitted in the **Claude Code
+"""Upload a Tino session transcript to Hugging Face as an agent trace, re-emitted in the **Claude Code
 JSONL** shape the HF Agent Trace Viewer auto-detects (https://huggingface.co/docs/hub/agent-traces).
 Deterministic, zero LLM turns. Private by default: traces can carry prompts, tool output, local paths and
 secrets, so the dataset is created private and every text body passes the secret redactor (``force=True``)
@@ -18,7 +18,7 @@ from typing import Any, Dict, List, Optional, Tuple
 logger = logging.getLogger(__name__)
 
 DEFAULT_DATASET_NAME = "hermes-traces"
-_HERMES_VERSION = "hermes-agent"
+_TINO_VERSION = "hermes-agent"
 _REDACTION_BLOCKED_MESSAGE = (
     "Trace upload blocked: secret redaction failed, so the transcript may "
     "still contain credentials or other sensitive data. Fix the redactor or "
@@ -40,7 +40,7 @@ class TraceRedactionError(RuntimeError):
     """Raised when a trace cannot be safely redacted before upload."""
 
 
-# --- Conversion: Hermes OpenAI-format messages -> Claude Code JSONL ---
+# --- Conversion: Tino OpenAI-format messages -> Claude Code JSONL ---
 
 def _now_iso() -> str:
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z"
@@ -157,7 +157,7 @@ def build_trace_jsonl(messages: List[Dict[str, Any]], *, session_id: str, model:
         line_type, render = _ROLE_RENDERERS.get(role, ("user", _user_message))
         entry = {  # key order is the wire order
             "parentUuid": parent, "isSidechain": False, "userType": "external", "cwd": cwd or os.getcwd(),
-            "sessionId": session_id, "version": _HERMES_VERSION, "gitBranch": git_branch, "uuid": turn_uuid,
+            "sessionId": session_id, "version": _TINO_VERSION, "gitBranch": git_branch, "uuid": turn_uuid,
             "timestamp": base_ts, "type": line_type, "message": render(msg, model, redact),
         }
         lines.append(json.dumps(entry, ensure_ascii=False))

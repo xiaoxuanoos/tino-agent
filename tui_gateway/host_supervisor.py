@@ -312,7 +312,7 @@ class HostSupervisor:
         self._hello_event.clear()
         self._hello = {}
         env = {**hermes_subprocess_env(inherit_credentials=True), **os.environ, **(self.env or {})}
-        env["HERMES_COMPUTE_HOST_HEARTBEAT_SECS"] = str(self.heartbeat_secs)
+        env["TINO_COMPUTE_HOST_HEARTBEAT_SECS"] = str(self.heartbeat_secs)
         root = str(_repo_root())
         env.setdefault("PYTHONPATH", root)
         if root not in env["PYTHONPATH"].split(os.pathsep):
@@ -341,7 +341,7 @@ class HostSupervisor:
         got_home = str(hello.get("hermes_home") or "")
         if got_home and got_home != self.expected_hermes_home:
             raise RuntimeError(
-                f"compute host HERMES_HOME mismatch: {got_home} != {self.expected_hermes_home}")
+                f"compute host TINO_HOME mismatch: {got_home} != {self.expected_hermes_home}")
         got_sha = str(hello.get("build_sha") or "")
         expected = self.expected_build_sha
         if expected != "unknown" and got_sha not in {"", "unknown", expected}:

@@ -5,7 +5,7 @@ This is the command the plugin-catalog admission CI (and the
 candidate plugin. It performs static manifest checks plus a
 subprocess-isolated capability probe: the plugin is imported and its
 ``register(ctx)`` called against a minimal recording stub context in a
-scratch child process (with a throwaway ``HERMES_HOME``), so a crashing or
+scratch child process (with a throwaway ``TINO_HOME``), so a crashing or
 malicious plugin cannot take down the CLI, and the *actually registered*
 tools/hooks/middleware are compared against the manifest's declared
 ``provides_*`` lists.
@@ -31,7 +31,7 @@ _CONFIG_TYPES = {
     "bool", "boolean", "list", "array", "dict", "mapping", "map",
 }
 _PROBE_TIMEOUT = 30
-_PROBE_SENTINEL = "HERMES_VALIDATE_JSON:"
+_PROBE_SENTINEL = "TINO_VALIDATE_JSON:"
 
 
 @dataclass
@@ -325,7 +325,7 @@ def _run_capability_probe(plugin_dir: Path, manifest: dict) -> Tuple[Optional[di
     """
     with tempfile.TemporaryDirectory(prefix="hermes-validate-") as scratch:
         env = dict(os.environ)
-        env["HERMES_HOME"] = scratch
+        env["TINO_HOME"] = scratch
         try:
             result = subprocess.run(
                 [
@@ -523,7 +523,7 @@ _LOADABLE_ENTRYPOINTS = ("__init__.py", "desktop/plugin.js", "plugin.json")
 
 
 def _check_loadable(report: ValidationReport, plugin_dir: Path) -> None:
-    """A plugin.yaml with nothing beside it that Hermes can load (no ``register()`` module, no
+    """A plugin.yaml with nothing beside it that Tino can load (no ``register()`` module, no
     desktop bundle, no portable manifest) installs "successfully" and does nothing — a pip-layout
     repo whose code lives under ``src/`` behind an entry point is the usual shape."""
     present = [rel for rel in _LOADABLE_ENTRYPOINTS if (plugin_dir / rel).is_file()]

@@ -81,7 +81,7 @@ class _Profile:
 class TestLaunchdGatewayLabelsForInstall:
     def test_labels_derive_from_this_installs_profiles(self, monkeypatch):
         """The fleet is THIS install's profiles, root first — never a glob of
-        the shared per-user LaunchAgents dir. A sandboxed HERMES_HOME (tests,
+        the shared per-user LaunchAgents dir. A sandboxed TINO_HOME (tests,
         side-by-side installs) must not enumerate — and restart — another
         install's services, and the hermetic test suite must not see the dev
         machine's real fleet."""
@@ -628,7 +628,7 @@ def _write_launchd_plist(agents_dir: Path, label: str, *, argv=(), hermes_home=N
         return path
     data: dict = {"Label": label, "ProgramArguments": list(argv)}
     if hermes_home is not None:
-        data["EnvironmentVariables"] = {"HERMES_HOME": str(hermes_home)}
+        data["EnvironmentVariables"] = {"TINO_HOME": str(hermes_home)}
     path.write_bytes(plistlib.dumps(data))
     return path
 
@@ -646,8 +646,8 @@ def _fake_launchd_account(monkeypatch, tmp_path) -> Path:
 
 class TestLegacyLaunchdLabelsForInstall:
     """#115254 — hash-suffixed labels of THIS install join the restart pass; ownership is judged
-    from the plist's pinned HERMES_HOME, fail-closed, so another install's fleet stays untouched
-    (the #41403 boundary) and a sandboxed HERMES_HOME never enumerates the account's real units."""
+    from the plist's pinned TINO_HOME, fail-closed, so another install's fleet stays untouched
+    (the #41403 boundary) and a sandboxed TINO_HOME never enumerates the account's real units."""
 
     def test_only_units_pinned_to_this_installs_homes_are_credited(self, monkeypatch, tmp_path):
         agents = _fake_launchd_account(monkeypatch, tmp_path)

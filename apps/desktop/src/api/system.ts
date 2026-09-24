@@ -143,7 +143,7 @@ export function restartGateway(): Promise<ActionResponse> {
   })
 }
 
-export function updateHermes(): Promise<ActionResponse> {
+export function updateTino(): Promise<ActionResponse> {
   return hermesApi<ActionResponse>({
     ...profileScoped(),
     path: '/api/hermes/update',

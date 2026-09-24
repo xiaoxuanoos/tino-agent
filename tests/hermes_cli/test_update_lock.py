@@ -44,10 +44,10 @@ def marker(tmp_path):
 def test_marker_path_follows_process_hermes_home(tmp_path, monkeypatch):
     """The lock must land where the Rust updater and Electron gate look.
 
-    All three resolve the *process* HERMES_HOME; a profile-scoped path would
+    All three resolve the *process* TINO_HOME; a profile-scoped path would
     put the lock somewhere the other two owners never read.
     """
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("TINO_HOME", str(tmp_path))
     assert update_marker_path() == tmp_path / ".hermes-update-in-progress"
 
 
@@ -182,7 +182,7 @@ class TestHandoffFromOrchestratingUpdater:
     """The Tauri updater holds the marker, then spawns ``hermes update``.
 
     The regression: the child saw its own parent's live marker and exited 2,
-    so every GUI update failed with "Hermes is still running" and retrying
+    so every GUI update failed with "Tino is still running" and retrying
     just re-ran the same self-deadlock. The parent names its pid in
     HANDOFF_PID_ENV; a live holder matching it is our own orchestrator.
     """

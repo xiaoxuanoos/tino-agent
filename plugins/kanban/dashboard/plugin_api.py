@@ -101,7 +101,7 @@ def _board_conn(board: Optional[str]) -> Iterator[tuple[Optional[str], sqlite3.C
 
 def _with_board_pinned(board: Optional[str], fn: Callable[[], Any]) -> Any:
     """Run ``fn`` with the board pinned context-locally, not via the process-global
-    ``HERMES_KANBAN_BOARD`` env var (concurrent requests for different boards would cross-write)."""
+    ``TINO_KANBAN_BOARD`` env var (concurrent requests for different boards would cross-write)."""
     with kanban_db.scoped_current_board(_resolve_board(board) or kanban_db.DEFAULT_BOARD):
         return fn()
 
@@ -271,7 +271,7 @@ def get_board(
     workflow_template_id: Optional[str] = Query(None, description="Restrict to tasks using this workflow template id"),
     current_step_key: Optional[str] = Query(None, description="Restrict to tasks at this workflow step key")):
     """Full board grouped by status column; omitting ``board`` uses the active board
-    (``HERMES_KANBAN_BOARD`` env → on-disk ``current`` pointer → ``default``)."""
+    (``TINO_KANBAN_BOARD`` env → on-disk ``current`` pointer → ``default``)."""
     with _board_conn(board) as (board, conn):
         tasks = kanban_db.list_tasks(
             conn, tenant=tenant, include_archived=include_archived,
@@ -401,7 +401,7 @@ def create_task(payload: CreateTaskBody, board: Optional[str] = Query(None)):
         # Dispatcher-presence warning so the UI can banner a ready+assigned task that would
         # otherwise sit idle (no gateway / dispatch_in_gateway=false); triage/todo are expected
         # to wait, unassigned tasks can't dispatch anyway. Probe the request's active home: the
-        # dashboard backend may run under a different HERMES_HOME than the board's profile.
+        # dashboard backend may run under a different TINO_HOME than the board's profile.
         if task and task.status == "ready" and task.assignee:
             try:
                 from hermes_cli.kanban import _check_dispatcher_presence
@@ -1139,7 +1139,7 @@ def _configured_home_channels() -> list[dict]:
 
 
 def _active_profile_name() -> str:
-    """Current Hermes profile name for notify-sub ownership."""
+    """Current Tino profile name for notify-sub ownership."""
     try:
         from hermes_cli.profiles import get_active_profile_name
         return get_active_profile_name() or "default"
@@ -1241,7 +1241,7 @@ def dispatch(dry_run: bool = Query(False), max_n: int = Query(8, alias="max"), b
 @router.get("/model-options")
 def model_options():
     """Providers + curated models for the override dropdown via ``inventory.build_models_payload``
-    (same substrate as the Models page) so it can't offer a pair Hermes rejects. Skips pricing
+    (same substrate as the Models page) so it can't offer a pair Tino rejects. Skips pricing
     and custom-provider probes: a slow/offline local endpoint must not hang the drawer."""
     try:
         from hermes_cli.inventory import build_models_payload, load_picker_context

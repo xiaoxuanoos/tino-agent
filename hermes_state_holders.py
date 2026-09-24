@@ -30,9 +30,9 @@ def read_only_db_uri(db_path) -> str:
 logger = logging.getLogger(__name__)
 
 _IS_WINDOWS = sys.platform == "win32"
-_HERMES_EXECUTABLES = frozenset({"hermes", "hermes-agent", "hermes-acp"})
-_HERMES_PYTHON_MODULES = frozenset({"acp_adapter", "hermes_cli.main"})
-_HERMES_PYTHON_SCRIPTS = frozenset({"hermes_cli/main.py", "run_agent.py"})
+_TINO_EXECUTABLES = frozenset({"hermes", "hermes-agent", "hermes-acp"})
+_TINO_PYTHON_MODULES = frozenset({"acp_adapter", "hermes_cli.main"})
+_TINO_PYTHON_SCRIPTS = frozenset({"hermes_cli/main.py", "run_agent.py"})
 _PYTHON_SHORT_OPTIONS_WITH_OPERANDS = frozenset({"Q", "W", "X"})
 _PYTHON_LONG_OPTIONS_WITH_OPERANDS = frozenset(
     {"--check-hash-based-pycs", "--jit"}
@@ -117,11 +117,11 @@ def _python_execution_target(argv: Sequence[str]) -> Optional[Tuple[str, str]]:
 
 
 def _looks_like_hermes(argv: Sequence[str]) -> bool:
-    """Return whether argv identifies a supported Hermes execution target."""
+    """Return whether argv identifies a supported Tino execution target."""
     if not argv:
         return False
     program = os.path.basename(argv[0]).lower().removesuffix(".exe")
-    if program in _HERMES_EXECUTABLES:
+    if program in _TINO_EXECUTABLES:
         return True
     if not _looks_like_python_executable(program):
         return False
@@ -131,10 +131,10 @@ def _looks_like_hermes(argv: Sequence[str]) -> bool:
     kind, value = target
     normalized = value.lower().replace("\\", "/")
     if kind == "module":
-        return normalized in _HERMES_PYTHON_MODULES
+        return normalized in _TINO_PYTHON_MODULES
     return any(
         normalized == script or normalized.endswith(f"/{script}")
-        for script in _HERMES_PYTHON_SCRIPTS
+        for script in _TINO_PYTHON_SCRIPTS
     )
 
 
@@ -146,9 +146,9 @@ def canonical_sqlite_path(path: str) -> str:
 def _argv_scoped_to_other_home(argv: Sequence[str], db_path: Path) -> bool:
     """Return whether argv proves the process belongs to a DIFFERENT instance.
 
-    ``state.db`` lives at the HERMES_HOME root, so an absolute-path token
+    ``state.db`` lives at the TINO_HOME root, so an absolute-path token
     containing a ``/.hermes`` segment (or naming a ``state.db``/WAL/SHM under
-    some other parent) identifies that token's own Hermes home.  When at least
+    some other parent) identifies that token's own Tino home.  When at least
     one such token exists AND no token references this instance's state.db,
     its sidecars, or its home directory, the process provably works on a
     different generation and must not be counted as an uninspectable holder
@@ -207,7 +207,7 @@ def foreign_state_db_holders(db_path: Path) -> List[Tuple[int, str]]:
         return []
 
     # realpath, not abspath: psutil/libproc report the kernel-resolved pathname, so a symlinked
-    # HERMES_HOME would otherwise make every holder invisible and let maintenance proceed.
+    # TINO_HOME would otherwise make every holder invisible and let maintenance proceed.
     db_path_str = os.path.realpath(os.fspath(db_path))
     watched = {
         canonical_sqlite_path(db_path_str),

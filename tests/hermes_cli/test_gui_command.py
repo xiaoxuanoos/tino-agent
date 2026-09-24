@@ -48,7 +48,7 @@ def _stable_keychain_detection(monkeypatch):
     """
     monkeypatch.delenv("KDE_SESSION_VERSION", raising=False)
     monkeypatch.delenv("KDE_FULL_SESSION", raising=False)
-    monkeypatch.delenv("HERMES_DESKTOP_PASSWORD_STORE", raising=False)
+    monkeypatch.delenv("TINO_DESKTOP_PASSWORD_STORE", raising=False)
     monkeypatch.setenv("GNOME_KEYRING_CONTROL", "/run/user/1000/keyring")
 
 
@@ -92,9 +92,9 @@ def _make_packaged_executable(root: Path, monkeypatch) -> Path:
     """
     desktop_dir = root / "apps" / "desktop"
     if sys.platform == "darwin":
-        exe = desktop_dir / "release" / "mac-arm64" / "Hermes.app" / "Contents" / "MacOS" / "Hermes"
+        exe = desktop_dir / "release" / "mac-arm64" / "Tino.app" / "Contents" / "MacOS" / "Tino"
     elif sys.platform == "win32":
-        exe = desktop_dir / "release" / "win-unpacked" / "Hermes.exe"
+        exe = desktop_dir / "release" / "win-unpacked" / "Tino.exe"
     else:
         exe = desktop_dir / "release" / "linux-unpacked" / "hermes"
     exe.parent.mkdir(parents=True, exist_ok=True)
@@ -116,9 +116,9 @@ def _staging_dir_from(cmd) -> Path:
 def _packaged_exe_rel() -> Path:
     """Packaged-exe path relative to electron-builder's output dir on THIS host."""
     if sys.platform == "darwin":
-        return Path("mac-arm64") / "Hermes.app" / "Contents" / "MacOS" / "Hermes"
+        return Path("mac-arm64") / "Tino.app" / "Contents" / "MacOS" / "Tino"
     if sys.platform == "win32":
-        return Path("win-unpacked") / "Hermes.exe"
+        return Path("win-unpacked") / "Tino.exe"
     return Path("linux-unpacked") / "hermes"
 
 
@@ -190,7 +190,7 @@ def test_gui_installs_packages_and_launches_desktop_app(tmp_path, monkeypatch):
 def test_gui_install_env_prepends_managed_node_on_bare_path(tmp_path, monkeypatch):
     """Regression: npm's child scripts (electron-winstaller's select-7z-arch.js)
     shell out to bare ``node``. When Desktop is launched from the updater chain
-    the parent PATH is stripped, so the install env MUST carry the Hermes-managed
+    the parent PATH is stripped, so the install env MUST carry the Tino-managed
     Node ahead of that bare PATH or the install dies with ``node: not found``.
     """
     import os
@@ -204,7 +204,7 @@ def test_gui_install_env_prepends_managed_node_on_bare_path(tmp_path, monkeypatc
     # A managed Node tree on disk so with_hermes_node_path() actually prepends it.
     home = tmp_path / "hermes-home"
     (home / "node" / "bin").mkdir(parents=True)
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("TINO_HOME", str(home))
     # Simulate the stripped PATH the desktop updater chain hands us.
     monkeypatch.setenv("PATH", os.pathsep.join(["/usr/bin", "/bin"]))
 
@@ -301,7 +301,7 @@ def test_gui_does_not_retry_after_packaged_executable_exists(tmp_path, monkeypat
     Electron-download problem the cache purge + mirror retries exist to repair.
 
     Regression for #40187: a late failure such as macOS code signing leaves
-    Hermes.app/Contents/MacOS/Hermes in place. Re-downloading Electron can't
+    Tino.app/Contents/MacOS/Tino in place. Re-downloading Electron can't
     repair a signing failure, so the destructive purge + slow mirror retry must
     be skipped — we fail directly instead of grinding through an identical retry.
     """
@@ -567,18 +567,18 @@ def _write_info_plist(bundle: Path, identifier: str) -> None:
 
 
 def _make_signable_app(desktop_dir: Path) -> Path:
-    """Build a fake packaged Hermes.app with the pieces the signer must find."""
+    """Build a fake packaged Tino.app with the pieces the signer must find."""
     ent_dir = desktop_dir / "electron"
     ent_dir.mkdir(parents=True, exist_ok=True)
     (ent_dir / "entitlements.mac.plist").write_text("<plist/>", encoding="utf-8")
     (ent_dir / "entitlements.mac.inherit.plist").write_text("<plist/>", encoding="utf-8")
 
-    app = desktop_dir / "release" / "mac-arm64" / "Hermes.app"
+    app = desktop_dir / "release" / "mac-arm64" / "Tino.app"
     _write_info_plist(app, "com.nousresearch.hermes")
     (app / "Contents" / "MacOS").mkdir(parents=True)
-    (app / "Contents" / "MacOS" / "Hermes").write_text("", encoding="utf-8")
+    (app / "Contents" / "MacOS" / "Tino").write_text("", encoding="utf-8")
 
-    helper = app / "Contents" / "Frameworks" / "Hermes Helper.app"
+    helper = app / "Contents" / "Frameworks" / "Tino Helper.app"
     _write_info_plist(helper, "com.nousresearch.hermes.helper")
 
     native_dir = app / "Contents" / "Resources" / "app.asar.unpacked" / "node_modules" / "pty"
@@ -606,7 +606,7 @@ def test_desktop_macos_local_codesign_signs_native_binaries(tmp_path, monkeypatc
     """The standalone Mach-O pass must actually find files inside the bundle.
 
     Regression: an absolute-path parts check always matches the outer
-    Hermes.app component, silently skipping every .node/.dylib/crashpad
+    Tino.app component, silently skipping every .node/.dylib/crashpad
     binary — codesign then rejects the outer signature (nested code unsigned).
     """
     desktop_dir = tmp_path / "apps" / "desktop"
@@ -681,7 +681,7 @@ def test_setup_tcc_identity_creates_cert_imports_trusts_and_configures(tmp_path,
     )
     monkeypatch.setattr(cli_main.Path, "home", classmethod(lambda cls: tmp_path))
 
-    identity = "Hermes Local Signing"
+    identity = "Tino Local Signing"
     calls = []
     state = {"trusted": False}
 
@@ -733,7 +733,7 @@ def test_setup_tcc_identity_retries_pkcs12_with_legacy_on_mac_verification_failu
     )
     monkeypatch.setattr(cli_main.Path, "home", classmethod(lambda cls: tmp_path))
 
-    identity = "Hermes Local Signing"
+    identity = "Tino Local Signing"
     calls = []
     state = {"legacy_exported": False, "trusted": False}
 
@@ -792,7 +792,7 @@ def test_setup_tcc_identity_fails_when_trust_step_fails(tmp_path, monkeypatch, c
 
     monkeypatch.setattr(cli_main.subprocess, "run", fake_run)
 
-    assert main_desktop._desktop_macos_setup_tcc_identity("Hermes Local Signing") is False
+    assert main_desktop._desktop_macos_setup_tcc_identity("Tino Local Signing") is False
     assert "could not trust the certificate" in capsys.readouterr().out
 
 
@@ -815,7 +815,7 @@ def test_setup_tcc_identity_fails_when_identity_never_becomes_valid(tmp_path, mo
 
     monkeypatch.setattr(cli_main.subprocess, "run", fake_run)
 
-    assert main_desktop._desktop_macos_setup_tcc_identity("Hermes Local Signing") is False
+    assert main_desktop._desktop_macos_setup_tcc_identity("Tino Local Signing") is False
     assert "not a VALID code-signing identity" in capsys.readouterr().out
 
 
@@ -834,7 +834,7 @@ def test_setup_tcc_identity_skips_generation_when_already_valid(tmp_path, monkey
     def fake_run(cmd, **kwargs):
         calls.append(list(cmd))
         if cmd[:4] == ["/usr/bin/security", "find-identity", "-v", "-p"]:
-            return _fake_proc(cmd, stdout='  1) ABCD "Hermes Local Signing"\n     1 valid identities found')
+            return _fake_proc(cmd, stdout='  1) ABCD "Tino Local Signing"\n     1 valid identities found')
         return _fake_proc(cmd)
 
     monkeypatch.setattr(cli_main.subprocess, "run", fake_run)
@@ -842,7 +842,7 @@ def test_setup_tcc_identity_skips_generation_when_already_valid(tmp_path, monkey
     monkeypatch.setattr(main_desktop, "_desktop_macos_relaunchable_fixup", lambda d: True)
     monkeypatch.setattr("hermes_cli.config.set_config_value", lambda key, value: None)
 
-    assert main_desktop._desktop_macos_setup_tcc_identity("Hermes Local Signing") is True
+    assert main_desktop._desktop_macos_setup_tcc_identity("Tino Local Signing") is True
 
     out = capsys.readouterr().out
     assert "already valid in keychain" in out
@@ -872,7 +872,7 @@ def test_setup_tcc_identity_untrusted_existing_cert_is_repaired(tmp_path, monkey
             # -v never lists the untrusted cert; it only appears once the
             # repair path has run add-trusted-cert.
             if state["trusted"]:
-                return _fake_proc(cmd, stdout='  1) ABCD "Hermes Local Signing"\n     1 valid identities found')
+                return _fake_proc(cmd, stdout='  1) ABCD "Tino Local Signing"\n     1 valid identities found')
             return _fake_proc(cmd, stdout="     0 valid identities found")
         if cmd[0] == "/usr/bin/security" and cmd[1] == "add-trusted-cert":
             state["trusted"] = True
@@ -884,7 +884,7 @@ def test_setup_tcc_identity_untrusted_existing_cert_is_repaired(tmp_path, monkey
     monkeypatch.setattr(main_desktop, "_desktop_macos_relaunchable_fixup", lambda d: True)
     monkeypatch.setattr("hermes_cli.config.set_config_value", lambda key, value: None)
 
-    assert main_desktop._desktop_macos_setup_tcc_identity("Hermes Local Signing") is True
+    assert main_desktop._desktop_macos_setup_tcc_identity("Tino Local Signing") is True
     assert any(c[0] == "/usr/bin/security" and c[1] == "add-trusted-cert" for c in calls)
 
 
@@ -906,10 +906,10 @@ def test_cmd_gui_setup_tcc_identity_exits_before_build(tmp_path, monkeypatch):
     with patch("hermes_cli.main_desktop._desktop_macos_setup_tcc_identity", return_value=True) as mock_setup, \
          patch("hermes_cli.main_web_build._run_npm_install_deterministic") as mock_install, \
          pytest.raises(SystemExit) as exc:
-        cli_main.cmd_gui(_ns(setup_tcc_identity=True, identity="Hermes Local Signing"))
+        cli_main.cmd_gui(_ns(setup_tcc_identity=True, identity="Tino Local Signing"))
 
     assert exc.value.code == 0
-    mock_setup.assert_called_once_with("Hermes Local Signing")
+    mock_setup.assert_called_once_with("Tino Local Signing")
     mock_install.assert_not_called()
 
 
@@ -1117,10 +1117,10 @@ def test_gui_registers_linux_desktop_entry_before_launch(tmp_path, monkeypatch):
 def test_gui_shell_launch_defers_desktop_entry_until_window_reveal(tmp_path, monkeypatch):
     """An app-grid launch (DESKTOP_STARTUP_ID set) writes the entry only after Electron reports
     its window on screen — never before the spawn, while gnome-shell has the app in STARTING
-    (#111906). Electron gets the pipe's write end via HERMES_DESKTOP_READY_FD."""
+    (#111906). Electron gets the pipe's write end via TINO_DESKTOP_READY_FD."""
     root = _make_desktop_tree(tmp_path)
     monkeypatch.setattr(cli_main, "PROJECT_ROOT", root)
-    monkeypatch.setenv("DESKTOP_STARTUP_ID", "gnome-shell/Hermes/1-0_TIME1")
+    monkeypatch.setenv("DESKTOP_STARTUP_ID", "gnome-shell/Tino/1-0_TIME1")
     monkeypatch.setattr("hermes_cli.linux_desktop_entry.time.sleep", lambda _s: None)
     packaged_exe = _make_packaged_executable(root, monkeypatch)
 
@@ -1133,7 +1133,7 @@ def test_gui_shell_launch_defers_desktop_entry_until_window_reveal(tmp_path, mon
 
     def fake_electron(cmd, **kwargs):
         events.append("spawn")
-        fd = int(kwargs["env"]["HERMES_DESKTOP_READY_FD"])
+        fd = int(kwargs["env"]["TINO_DESKTOP_READY_FD"])
         assert fd in kwargs["pass_fds"]
         os.write(fd, b"r")  # main window revealed
         deadline = time.monotonic() + 10
@@ -1299,7 +1299,7 @@ def _clear_keychain_env(monkeypatch):
         "KDE_SESSION_VERSION",
         "KDE_FULL_SESSION",
         "GNOME_KEYRING_CONTROL",
-        "HERMES_DESKTOP_PASSWORD_STORE",
+        "TINO_DESKTOP_PASSWORD_STORE",
     ):
         monkeypatch.delenv(var, raising=False)
 
@@ -1370,7 +1370,7 @@ def test_gui_linux_packaged_launch_bridges_detected_password_store(tmp_path, mon
         cli_main.cmd_gui(_ns())
 
     launch_env = mock_run.call_args_list[1].kwargs["env"]
-    assert launch_env["HERMES_DESKTOP_PASSWORD_STORE"] == "gnome-libsecret"
+    assert launch_env["TINO_DESKTOP_PASSWORD_STORE"] == "gnome-libsecret"
 
 
 @pytest.mark.linux_only
@@ -1394,7 +1394,7 @@ def test_gui_linux_source_launch_bridges_detected_password_store(tmp_path, monke
 
     assert mock_run.call_args_list[1].args[0] == ["/usr/bin/npm", "exec", "--", "electron", "."]
     launch_env = mock_run.call_args_list[1].kwargs["env"]
-    assert launch_env["HERMES_DESKTOP_PASSWORD_STORE"] == "kwallet6"
+    assert launch_env["TINO_DESKTOP_PASSWORD_STORE"] == "kwallet6"
 
 
 @pytest.mark.linux_only
@@ -1422,13 +1422,13 @@ def test_gui_config_password_store_skips_detection(tmp_path, monkeypatch):
 
     mock_detect.assert_not_called()
     launch_env = mock_run.call_args_list[1].kwargs["env"]
-    assert launch_env["HERMES_DESKTOP_PASSWORD_STORE"] == "kwallet6"
+    assert launch_env["TINO_DESKTOP_PASSWORD_STORE"] == "kwallet6"
 
 
 @pytest.mark.linux_only
 def test_gui_explicit_password_store_env_wins_over_config_and_detection(tmp_path, monkeypatch):
     _clear_keychain_env(monkeypatch)
-    monkeypatch.setenv("HERMES_DESKTOP_PASSWORD_STORE", "basic")
+    monkeypatch.setenv("TINO_DESKTOP_PASSWORD_STORE", "basic")
     root = _make_desktop_tree(tmp_path)
     monkeypatch.setattr(cli_main, "PROJECT_ROOT", root)
     _make_packaged_executable(root, monkeypatch)
@@ -1451,7 +1451,7 @@ def test_gui_explicit_password_store_env_wins_over_config_and_detection(tmp_path
 
     mock_detect.assert_not_called()
     launch_env = mock_run.call_args_list[1].kwargs["env"]
-    assert launch_env["HERMES_DESKTOP_PASSWORD_STORE"] == "basic"
+    assert launch_env["TINO_DESKTOP_PASSWORD_STORE"] == "basic"
 
 
 @pytest.mark.macos_only
@@ -1477,7 +1477,7 @@ def test_gui_password_store_bridge_is_linux_only(tmp_path, monkeypatch):
 
     mock_detect.assert_not_called()
     launch_env = mock_run.call_args_list[1].kwargs["env"]
-    assert "HERMES_DESKTOP_PASSWORD_STORE" not in launch_env
+    assert "TINO_DESKTOP_PASSWORD_STORE" not in launch_env
 
 
 # ---------------------------------------------------------------------------

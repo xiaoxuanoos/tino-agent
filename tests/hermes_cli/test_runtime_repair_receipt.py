@@ -18,7 +18,7 @@ from hermes_cli import update_receipt as receipts
     ("skipped", None, "skips"),
 ])
 def test_runtime_repair_outcome_reaches_persisted_receipt(tmp_path, monkeypatch, status, ok, bucket):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("TINO_HOME", str(tmp_path))
     monkeypatch.setattr(receipts, "_current", None)
     result = uv.RuntimeRepairResult(
         status, "candidate dependency sync failed (rc=1): error: lockfile stale", "3.50.4", "3.53.1")

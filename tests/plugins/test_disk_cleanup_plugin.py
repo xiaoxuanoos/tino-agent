@@ -23,15 +23,15 @@ import pytest
 
 @pytest.fixture(autouse=True)
 def _isolate_env(tmp_path, monkeypatch):
-    """Isolate HERMES_HOME for each test.
+    """Isolate TINO_HOME for each test.
 
-    The global hermetic fixture already redirects HERMES_HOME to a tempdir,
+    The global hermetic fixture already redirects TINO_HOME to a tempdir,
     but we want the plugin to work with a predictable subpath. We reset
-    HERMES_HOME here for clarity.
+    TINO_HOME here for clarity.
     """
     hermes_home = tmp_path / ".hermes"
     hermes_home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+    monkeypatch.setenv("TINO_HOME", str(hermes_home))
     yield hermes_home
 
 
@@ -152,7 +152,7 @@ class TestProfileUserTreesNeverCleaned:
 
     def test_session_end_hook_leaves_workspace_files_alone(self, _isolate_env):
         """End-to-end: write_file into a project tree, then session end. A scratch file at
-        the HERMES_HOME root is the control: it is still tracked and removed."""
+        the TINO_HOME root is the control: it is still tracked and removed."""
         pi = _load_plugin_init()
         dg = _load_lib()
         keep = _isolate_env / "workspace" / "proj" / "tests" / "test_parse.py"

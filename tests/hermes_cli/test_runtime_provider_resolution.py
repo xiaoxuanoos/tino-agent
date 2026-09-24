@@ -102,7 +102,7 @@ def test_codex_pool_honors_hermes_codex_base_url(monkeypatch):
 
     monkeypatch.setattr(rp, "resolve_provider", lambda *a, **k: "openai-codex")
     monkeypatch.setattr(rp, "load_pool", lambda provider: _Pool())
-    monkeypatch.setenv("HERMES_CODEX_BASE_URL", "http://127.0.0.1:8787/v1")
+    monkeypatch.setenv("TINO_CODEX_BASE_URL", "http://127.0.0.1:8787/v1")
 
     resolved = rp.resolve_runtime_provider(requested="openai-codex")
 
@@ -127,7 +127,7 @@ def test_codex_pool_honors_model_base_url(monkeypatch):
 
     monkeypatch.setattr(rp, "resolve_provider", lambda *a, **k: "openai-codex")
     monkeypatch.setattr(rp, "load_pool", lambda provider: _Pool())
-    monkeypatch.delenv("HERMES_CODEX_BASE_URL", raising=False)
+    monkeypatch.delenv("TINO_CODEX_BASE_URL", raising=False)
     monkeypatch.setattr(rp, "_get_model_config", lambda: {
         "provider": "openai-codex", "default": "gpt-5.3-codex", "base_url": "http://127.0.0.1:8400/backend-api/codex/"})
 
@@ -686,7 +686,7 @@ def test_codex_app_server_opt_in_routes_only_named_custom_providers(monkeypatch)
     resolved = rp.resolve_runtime_provider(requested="custom:my-gateway")
     assert (resolved["provider"], resolved["requested_provider"], resolved["api_mode"]) == (
         "custom", "custom:my-gateway", "codex_app_server")
-    assert resolved["api_key"] == "test-key"  # Hermes' own aux/fallback client keeps the credential
+    assert resolved["api_key"] == "test-key"  # Tino' own aux/fallback client keeps the credential
 
     anonymous = rp.resolve_runtime_provider(requested="custom", explicit_base_url="https://gateway.example.com/v1",
                                             explicit_api_key="k")

@@ -43,7 +43,6 @@ import {
 import { SETTINGS_ROUTE } from './routes'
 
 /** Same installer page Settings → About links to. */
-const INSTALLER_URL = 'https://hermes-agent.nousresearch.com/'
 
 /** Main puts the raw cause after "Details:" — show it as the dimmed line. */
 function splitDetails(text: string): [string, string | null] {
@@ -211,19 +210,12 @@ function IdleView({
   }
 
   if (!status.supported) {
-    // A copy without version-control metadata can't self-update; the website
-    // carries the current installer (same URL as Settings → About).
+    // A copy without version-control metadata can't self-update.
     const [lead, detail] = splitDetails(status.message ?? u.unsupportedMessage)
 
     return (
       <CenteredStatus
-        action={
-          status.reason === 'not-a-git-checkout' ? (
-            <Button onClick={() => openExternalLink(INSTALLER_URL)} size="sm">
-              {u.openDownloadPage}
-            </Button>
-          ) : undefined
-        }
+        action={undefined}
         body={lead}
         detail={detail ?? undefined}
         icon={<AlertCircle className="size-6 text-muted-foreground" />}

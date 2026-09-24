@@ -5,7 +5,7 @@ import { __resetBackendSkinSync, ingestBackendSkin } from './backend-sync'
 import { getBaseColors, skinPref, ThemeProvider, useTheme } from './context'
 import { BUILTIN_THEME_LIST, everforestTheme } from './presets'
 
-// The live-authoring loop: Hermes writes/edits one skin file and every surface
+// The live-authoring loop: Tino writes/edits one skin file and every surface
 // repaints. An in-place edit keeps the NAME — only the palette moves.
 const bloomberg = (foreground: string) => ({
   name: 'bloomberg',

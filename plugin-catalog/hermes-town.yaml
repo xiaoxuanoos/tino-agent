@@ -2,7 +2,7 @@ name: hermes-town
 repo: https://github.com/sxuff/hermes-town
 sha: 83aae757264b8cbae541830ba91834eed067c31a
 subdir: integrations/hermes-town-plugin
-description: Local pixel-art town where every Hermes session is a resident and every tool call walks to a building. Passive lifecycle bridge to a loopback-only server; prompts, arguments, and output never leave the process.
+description: Local pixel-art town where every Tino session is a resident and every tool call walks to a building. Passive lifecycle bridge to a loopback-only server; prompts, arguments, and output never leave the process.
 maintainer: sxuff
 tier: community
 category: tools

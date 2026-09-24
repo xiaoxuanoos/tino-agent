@@ -38,7 +38,7 @@ class TestQRCode:
 
     def test_print_qr_code_tip_targets_active_interpreter(self, capsys):
         # Regression for #111695: a bare `pip install` targets the wrong
-        # environment when Hermes runs in an isolated venv (which has no pip
+        # environment when Tino runs in an isolated venv (which has no pip
         # module at all). The fallback tip must name the interpreter that is
         # actually running, via uv.
         import sys
@@ -58,27 +58,27 @@ class TestCreatePairing:
             "pairing_id": "abcdefghijklmnop",
             "poll_token": "secret-token",
             "suggested_username": "hermes_abcdefghijklmnop_bot",
-            "deep_link": "https://t.me/newbot/HermesSetupBot/hermes_abcdefghijklmnop_bot?name=Hermes+Agent",
-            "qr_payload": "https://t.me/newbot/HermesSetupBot/hermes_abcdefghijklmnop_bot?name=Hermes+Agent",
+            "deep_link": "https://t.me/newbot/HermesSetupBot/hermes_abcdefghijklmnop_bot?name=Tino+Agent",
+            "qr_payload": "https://t.me/newbot/HermesSetupBot/hermes_abcdefghijklmnop_bot?name=Tino+Agent",
             "expires_at": "2026-05-18T00:00:00.000Z",
         }
 
         with patch(
             "hermes_cli.telegram_managed_bot.httpx.post", return_value=mock_resp
         ) as post:
-            pairing = create_pairing("https://api.example.com", bot_name="Hermes Agent")
+            pairing = create_pairing("https://api.example.com", bot_name="Tino Agent")
 
         assert pairing == TelegramPairing(
             pairing_id="abcdefghijklmnop",
             poll_token="secret-token",
             suggested_username="hermes_abcdefghijklmnop_bot",
-            deep_link="https://t.me/newbot/HermesSetupBot/hermes_abcdefghijklmnop_bot?name=Hermes+Agent",
-            qr_payload="https://t.me/newbot/HermesSetupBot/hermes_abcdefghijklmnop_bot?name=Hermes+Agent",
+            deep_link="https://t.me/newbot/HermesSetupBot/hermes_abcdefghijklmnop_bot?name=Tino+Agent",
+            qr_payload="https://t.me/newbot/HermesSetupBot/hermes_abcdefghijklmnop_bot?name=Tino+Agent",
             expires_at="2026-05-18T00:00:00.000Z",
         )
         post.assert_called_once_with(
             "https://api.example.com/v1/telegram/pairings",
-            json={"bot_name": "Hermes Agent"},
+            json={"bot_name": "Tino Agent"},
             timeout=10.0,
         )
 

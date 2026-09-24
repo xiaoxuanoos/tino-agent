@@ -19,7 +19,7 @@ from fastapi.testclient import TestClient
 
 @pytest.fixture
 def client(tmp_path, monkeypatch):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / ".hermes"))
+    monkeypatch.setenv("TINO_HOME", str(tmp_path / ".hermes"))
     from hermes_cli import web_server
 
     test_client = TestClient(web_server.app)
@@ -53,6 +53,12 @@ def test_quickstart_without_recommendation_requires_explicit_choice(client, monk
         ram_available_bytes=64 * gib, uma=False,
     )
     monkeypatch.setattr(lm.hardware, "probe_budget", lambda **kw: budget)
+    # This branch exercises a catalog with no compact entry. Tino's shipped
+    # catalog now includes a 1.5B recommendation for this budget, so limit the
+    # fixture to the larger families whose spill path the test targets.
+    monkeypatch.setattr(lm.catalog, "CATALOG", tuple(
+        entry for entry in lm.catalog.CATALOG if not entry.id.startswith("qwen3.5-")
+    ))
     monkeypatch.setattr(lm.catalog, "refresh_catalog_soon", lambda: None)
     monkeypatch.setattr(lm.binaries, "installed_tags", lambda: [lm.binaries.default_tag()])
     monkeypatch.setattr(lm.bootstrap, "staged_model_ids", lambda: set())

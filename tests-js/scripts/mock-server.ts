@@ -284,7 +284,7 @@ const CORRECTION_SWITCH_SCRIPT: ScriptedTurn[] = [
 export const CORRECTION_SWITCH_TRIGGER = 'E2E_CORRECTION_SWITCH_TRIGGER'
 
 /**
- * Drives a real code edit followed by two finish attempts. Hermes should add
+ * Drives a real code edit followed by two finish attempts. Tino should add
  * its synthetic verify-on-stop continuation after each finish attempt until
  * the bounded verifier gives up. The mock's request capture proves the nudge
  * reached the model; desktop must never render it as chat content.
@@ -1217,7 +1217,7 @@ interface DevSandbox {
   cleanup: () => void
 }
 
-/** Create an isolated HERMES_HOME + Electron user-data dir in the OS temp dir. */
+/** Create an isolated TINO_HOME + Electron user-data dir in the OS temp dir. */
 function createDevSandbox(): DevSandbox {
   const root = fs.mkdtempSync(nodePath.join(os.tmpdir(), `hermes-dev-mock-${Date.now()}`))
   const hermesHome = nodePath.join(root, 'hermes-home')
@@ -1299,17 +1299,17 @@ async function runDevLaunch(): Promise<void> {
 
   const sandbox = createDevSandbox()
   writeMockConfig(sandbox.hermesHome, mock.url)
-  console.log(`  HERMES_HOME: ${sandbox.hermesHome}`)
+  console.log(`  TINO_HOME: ${sandbox.hermesHome}`)
 
   const electronBin = findElectron(repoRoot)
 
   const env: Record<string, string> = {
     ...process.env,
-    HERMES_HOME: sandbox.hermesHome,
-    HERMES_DESKTOP_USER_DATA_DIR: sandbox.userDataDir,
-    HERMES_DESKTOP_IGNORE_EXISTING: '1',
-    HERMES_DESKTOP_HERMES_ROOT: repoRoot,
-    HERMES_DESKTOP_APP_NAME: `HermesDevMock-${Date.now()}`,
+    TINO_HOME: sandbox.hermesHome,
+    TINO_DESKTOP_USER_DATA_DIR: sandbox.userDataDir,
+    TINO_DESKTOP_IGNORE_EXISTING: '1',
+    TINO_DESKTOP_ROOT: repoRoot,
+    TINO_DESKTOP_APP_NAME: `HermesDevMock-${Date.now()}`,
   }
 
   console.log('Launching Electron...')

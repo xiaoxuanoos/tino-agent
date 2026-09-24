@@ -8,7 +8,7 @@ def test_owner_refusal_is_plain_and_never_claims_a_running_turn():
         "surface": "desktop", "pid": 123, "started_at": 1,
     })
     first, details = message.splitlines()
-    assert first.startswith("This chat is open in another Hermes window/terminal.")
+    assert first.startswith("This chat is open in another Tino window/terminal.")
     assert "start a new chat here" in first
     assert details.startswith("Details: ") and "desktop" in details and "ago" in details
     assert "running " not in message

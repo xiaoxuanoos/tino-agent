@@ -2,7 +2,7 @@
 
 Graceful shutdowns leave forensics (``gateway-exit-diag.log``); an unclean
 death (SIGKILL, kernel OOM, VM death) runs no handler.  A sentinel at
-``<HERMES_HOME>/state/gateway.lifecycle.json`` closes the gap:
+``<TINO_HOME>/state/gateway.lifecycle.json`` closes the gap:
 :func:`record_startup` finds ``phase == "running"`` from the previous life →
 unclean death, appended to the exit-diag log as ``gateway.previous_unclean_exit``
 and logged at WARNING; :func:`mark_exited` rewrites ``phase=exited`` on every
@@ -25,11 +25,11 @@ logger = logging.getLogger(__name__)
 
 
 def _process_hermes_home() -> Path:
-    """HERMES_HOME for process-level identity files (ignore task overrides)."""
+    """TINO_HOME for process-level identity files (ignore task overrides)."""
     from hermes_constants import get_hermes_home, get_process_hermes_home
 
     # get_process_hermes_home expands ``~``/``$VAR`` (python -m gateway.run skips the CLI normalizer).
-    return get_process_hermes_home() if os.environ.get("HERMES_HOME", "").strip() else get_hermes_home()
+    return get_process_hermes_home() if os.environ.get("TINO_HOME", "").strip() else get_hermes_home()
 
 
 def _home_path(home: Optional[Path], *relative: str) -> Path:
@@ -37,7 +37,7 @@ def _home_path(home: Optional[Path], *relative: str) -> Path:
 
 
 def get_lifecycle_sentinel_path(home: Optional[Path] = None) -> Path:
-    """Return ``<HERMES_HOME>/state/gateway.lifecycle.json``."""
+    """Return ``<TINO_HOME>/state/gateway.lifecycle.json``."""
     return _home_path(home, "state", "gateway.lifecycle.json")
 
 

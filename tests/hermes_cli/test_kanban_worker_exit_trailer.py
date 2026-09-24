@@ -24,9 +24,9 @@ from hermes_cli.quiet_single_query import KANBAN_WORKER_EXIT_TRAILER, exit_singl
 def kanban_home(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     home = tmp_path / ".hermes"
     home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("TINO_HOME", str(home))
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
-    monkeypatch.setenv("HERMES_KANBAN_CRASH_GRACE_SECONDS", "0")
+    monkeypatch.setenv("TINO_KANBAN_CRASH_GRACE_SECONDS", "0")
     monkeypatch.setattr(kb, "_pid_alive", lambda _pid: False)
     kbd._recent_worker_exits.clear()
     kb.init_db()
@@ -133,13 +133,13 @@ def test_plain_budget_trip_still_auto_recovers(kanban_home):
 
 
 def test_exit_single_query_writes_trailer_only_for_kanban_workers(monkeypatch, capsys):
-    monkeypatch.delenv("HERMES_KANBAN_TASK", raising=False)
+    monkeypatch.delenv("TINO_KANBAN_TASK", raising=False)
     with pytest.raises(SystemExit) as exc:
         exit_single_query(1)
     assert exc.value.code == 1
     assert KANBAN_WORKER_EXIT_TRAILER not in capsys.readouterr().err
 
-    monkeypatch.setenv("HERMES_KANBAN_TASK", "t_1")
+    monkeypatch.setenv("TINO_KANBAN_TASK", "t_1")
     with pytest.raises(SystemExit) as exc:
         exit_single_query(kb.KANBAN_RATE_LIMIT_EXIT_CODE)
     assert exc.value.code == kb.KANBAN_RATE_LIMIT_EXIT_CODE

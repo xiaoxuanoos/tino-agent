@@ -1,6 +1,6 @@
 """Every profile owns its credentials.
 
-A named profile (``HERMES_HOME`` under ``profiles/<name>``) resolves provider state and the
+A named profile (``TINO_HOME`` under ``profiles/<name>``) resolves provider state and the
 credential pool from ITS OWN ``auth.json`` only. The root ``~/.hermes/auth.json`` is never a
 read fallback and never a write-through target (#111724): an isolated service profile must fail
 closed instead of acting — and rotating tokens — as the owner. Writes stay scoped to the profile.
@@ -30,14 +30,14 @@ def profile_env(tmp_path, monkeypatch):
 
     * Path.home() -> tmp_path
     * Global root -> tmp_path/.hermes            (has its own auth.json fixture)
-    * Profile     -> tmp_path/.hermes/profiles/coder   (active, HERMES_HOME points here)
+    * Profile     -> tmp_path/.hermes/profiles/coder   (active, TINO_HOME points here)
     """
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
     global_root = tmp_path / ".hermes"
     global_root.mkdir()
     profile_dir = global_root / "profiles" / "coder"
     profile_dir.mkdir(parents=True)
-    monkeypatch.setenv("HERMES_HOME", str(profile_dir))
+    monkeypatch.setenv("TINO_HOME", str(profile_dir))
     return {"global": global_root, "profile": profile_dir}
 
 
@@ -171,13 +171,13 @@ def test_auth_lock_reentrancy_is_scoped_after_profile_context_switch(profile_env
 
 @pytest.fixture()
 def classic_env(tmp_path, monkeypatch):
-    """Classic single-root layout (HERMES_HOME != ~/.hermes, no profiles)."""
+    """Classic single-root layout (TINO_HOME != ~/.hermes, no profiles)."""
     fake_home = tmp_path / "home"
     fake_home.mkdir()
     monkeypatch.setattr(Path, "home", lambda: fake_home)
     hermes_home = tmp_path / "classic"
     hermes_home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+    monkeypatch.setenv("TINO_HOME", str(hermes_home))
     return hermes_home
 
 

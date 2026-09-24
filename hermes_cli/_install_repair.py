@@ -92,7 +92,7 @@ def _venv_scripts_dir(root: Path) -> Path | None:
 
 
 #: Launcher names install.ps1's Set-PathVariable exposes from the managed binary dir (the default
-#: Hermes root's ``bin``, next to uv.exe). Keep in lockstep with scripts/install.ps1.
+#: Tino root's ``bin``, next to uv.exe). Keep in lockstep with scripts/install.ps1.
 _WINDOWS_BIN_LAUNCHERS = ("hermes", "hermes-acp")
 
 
@@ -105,7 +105,7 @@ def _launchers_missing(target: Path) -> bool:
 
 
 def _default_hermes_root() -> Path | None:
-    """The DEFAULT Hermes root (not ``get_hermes_home()``, which under ``hermes -p <name>`` is
+    """The DEFAULT Tino root (not ``get_hermes_home()``, which under ``hermes -p <name>`` is
     ``profiles\\<name>`` and would fail the managed-clone gate for profile users); ``None`` when
     unresolvable."""
     from hermes_constants import get_default_hermes_root
@@ -166,7 +166,7 @@ def ensure_windows_bin_launchers(
     elsewhere never gain launchers) and the legacy ``<root>\bin`` (only while the user PATH still
     points at it). Never raises.
 
-    The canonical launcher home is the managed binary dir — the default Hermes root's ``bin``
+    The canonical launcher home is the managed binary dir — the default Tino root's ``bin``
     (``%LOCALAPPDATA%\\hermes\\bin``, next to the managed uv) — which lives OUTSIDE the git checkout so no
     git operation can ever touch it. It is a per-machine dir shared by every profile: ``get_hermes_home()``
     would point inside ``profiles\\<name>`` under ``hermes -p``, so the anchor here is
@@ -264,7 +264,7 @@ def _write_user_path_raw(entries: list[str], kind: int) -> None:
 def migrate_windows_bin_path(
     root, *, windows: bool | None = None, read_user_path=None, write_user_path=None,
 ) -> bool:
-    """One-time PATH migration to the ``HERMES_HOME\\bin`` launcher layout (``hermes update`` tail).
+    """One-time PATH migration to the ``TINO_HOME\\bin`` launcher layout (``hermes update`` tail).
 
     1. stage launchers into the managed binary dir; 2. verify both are present — otherwise STOP,
     leaving the user PATH untouched (never strip a working entry before its replacement is proven);

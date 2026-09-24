@@ -65,7 +65,7 @@ const getActionStatusSpy = vi.fn()
 
 vi.mock('@/hermes', () => ({
   checkHermesUpdate: (...args: unknown[]) => checkHermesUpdateSpy(...args),
-  updateHermes: (...args: unknown[]) => updateHermesSpy(...args),
+  updateTino: (...args: unknown[]) => updateHermesSpy(...args),
   getActionStatus: (...args: unknown[]) => getActionStatusSpy(...args)
 }))
 
@@ -317,7 +317,7 @@ describe('checkBackendUpdates', () => {
   })
 })
 
-// The ⌘K "Update Hermes" row. It used to call applyBackendUpdate() flat, which
+// The ⌘K "Update Tino" row. It used to call applyBackendUpdate() flat, which
 // in local mode aimed at the backend checkout instead of the client and, with
 // no overlay open, showed nothing at all.
 describe('requestActiveUpdate', () => {
@@ -910,7 +910,7 @@ describe('applyUpdates terminal state', () => {
       guiUpdated: false,
       manualRestart: true,
       sandboxBlocked: true,
-      message: 'Backend updated. Quit and reopen Hermes to finish.'
+      message: 'Backend updated. Quit and reopen Tino to finish.'
     })
 
     const result = await applyUpdates()

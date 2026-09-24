@@ -14,8 +14,8 @@ class _StubAgent:
 def _build(monkeypatch, tmp_path, *, primary_fails: bool):
     from tui_gateway import server
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
-    monkeypatch.setenv("HERMES_IGNORE_RULES", "1")
+    monkeypatch.setenv("TINO_HOME", str(tmp_path))
+    monkeypatch.setenv("TINO_IGNORE_RULES", "1")
     (tmp_path / "config.yaml").write_text("model:\n  default: gpt-5.6-sol\n  provider: openai-codex\n")
     monkeypatch.setattr(server, "_hermes_home", tmp_path)
     monkeypatch.setattr(server, "_get_db", lambda: None)

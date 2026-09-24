@@ -70,7 +70,7 @@ class TestEnvFileReadBlocking:
 
 
 class TestCacheFileReadBlocking:
-    """Internal Hermes cache files must remain blocked."""
+    """Internal Tino cache files must remain blocked."""
 
     def test_hub_index_cache_blocked(self, tmp_path):
         """Hub index-cache reads are blocked."""
@@ -82,7 +82,7 @@ class TestCacheFileReadBlocking:
         with patch("agent.file_safety._hermes_home_path", return_value=hermes_home):
             error = get_read_block_error(str(cache))
             assert error is not None
-            assert "internal Hermes cache" in error
+            assert "internal Tino cache" in error
 
     def test_hub_directory_blocked(self, tmp_path):
         """Hub directory reads are blocked."""
@@ -105,7 +105,7 @@ class TestCombinedGuards:
     """Both guards should work independently without interference."""
 
     def test_env_guard_works_regardless_of_hermes_home(self, tmp_path):
-        """The env basename guard does not depend on HERMES_HOME resolution."""
+        """The env basename guard does not depend on TINO_HOME resolution."""
         hermes_home = tmp_path / ".hermes"
         hermes_home.mkdir()
 
@@ -128,4 +128,4 @@ class TestCombinedGuards:
         with patch("agent.file_safety._hermes_home_path", return_value=hermes_home):
             error = get_read_block_error(str(cache))
             assert error is not None
-            assert "internal Hermes cache" in error
+            assert "internal Tino cache" in error

@@ -185,8 +185,8 @@ class TestLoadMCPConfig:
         )
         bundled = tmp_path / "bundled"
         bundled.mkdir()
-        monkeypatch.setenv("HERMES_HOME", str(home))
-        monkeypatch.setenv("HERMES_BUNDLED_PLUGINS", str(bundled))
+        monkeypatch.setenv("TINO_HOME", str(home))
+        monkeypatch.setenv("TINO_BUNDLED_PLUGINS", str(bundled))
         monkeypatch.setattr(plugins_mod, "_plugin_manager", None)
 
         from tools.mcp_tool_config import _load_mcp_config
@@ -1168,7 +1168,7 @@ class TestMCPServerTask:
         """A pinned session working directory becomes the stdio default cwd.
 
         Hosted/multiplexed sessions (ACP, gateway) pin their logical cwd; a stdio
-        server spawned there inherits the Hermes process dir instead, so
+        server spawned there inherits the Tino process dir instead, so
         relative-path servers resolve against the wrong tree.
         """
         from agent.runtime_cwd import clear_session_cwd, set_session_cwd

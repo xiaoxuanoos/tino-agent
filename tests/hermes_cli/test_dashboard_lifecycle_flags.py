@@ -104,7 +104,7 @@ class TestDashboardStop:
         """``--stop`` targets only this profile's backends (#113978): both the pre-check and the
         kill run with ``scope_home`` = the invoking home, and an empty scan says so."""
         own_home = tmp_path / "profiles" / "work"
-        monkeypatch.setenv("HERMES_HOME", str(own_home))
+        monkeypatch.setenv("TINO_HOME", str(own_home))
         with patch("hermes_cli.main._find_stale_dashboard_pids", return_value=[12345]) as scan, \
              patch("hermes_cli.dashboard_procs._kill_stale_dashboard_processes",
                    return_value={"matched": [12345], "killed": [12345], "failed": [], "unrecovered": []}) as kill, \

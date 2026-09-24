@@ -17,7 +17,7 @@ import gateway.run as gateway_run
 from gateway.config import GatewayConfig, HomeChannel, Platform, PlatformConfig
 from gateway.platforms.base import SendResult
 
-ONLINE_NOTICE = "♻️ Gateway online — Hermes is back and ready."
+ONLINE_NOTICE = "♻️ Gateway online — Tino is back and ready."
 
 
 def _adapter():
@@ -29,7 +29,7 @@ def _adapter():
 
 @pytest.fixture
 def boot_notice(tmp_path, monkeypatch):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("TINO_HOME", str(tmp_path))
     monkeypatch.setattr(gateway_run, "_hermes_home", tmp_path)
     # Await the boot task to completion and propagate failures deterministically.
     monkeypatch.setattr(gateway_run, "_startup_restore_drain_timeout_secs", lambda: 0)

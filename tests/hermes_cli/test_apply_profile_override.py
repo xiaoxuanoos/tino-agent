@@ -1,10 +1,10 @@
-"""Regression tests for _apply_profile_override HERMES_HOME guard (issue #22502).
+"""Regression tests for _apply_profile_override TINO_HOME guard (issue #22502).
 
-When HERMES_HOME is set to the hermes root (e.g. systemd hardcodes
-HERMES_HOME=/root/.hermes), _apply_profile_override must still read
-active_profile and update HERMES_HOME to the profile directory.
+When TINO_HOME is set to the hermes root (e.g. systemd hardcodes
+TINO_HOME=/root/.hermes), _apply_profile_override must still read
+active_profile and update TINO_HOME to the profile directory.
 
-When HERMES_HOME is already a profile directory (.../profiles/<name>),
+When TINO_HOME is already a profile directory (.../profiles/<name>),
 _apply_profile_override must trust it and return without re-reading
 active_profile (child-process inheritance contract).
 """
@@ -23,7 +23,7 @@ def _run_apply_profile_override(
 ):
     """Run _apply_profile_override in isolation.
 
-    Returns the value of os.environ["HERMES_HOME"] after the call,
+    Returns the value of os.environ["TINO_HOME"] after the call,
     or None if unset.
     """
     hermes_root = tmp_path / ".hermes"
@@ -38,19 +38,19 @@ def _run_apply_profile_override(
 
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
     if hermes_home is not None:
-        monkeypatch.setenv("HERMES_HOME", hermes_home)
+        monkeypatch.setenv("TINO_HOME", hermes_home)
     else:
-        monkeypatch.delenv("HERMES_HOME", raising=False)
+        monkeypatch.delenv("TINO_HOME", raising=False)
 
     monkeypatch.setattr(sys, "argv", argv or ["hermes", "gateway", "start"])
 
     # Scrub supervisor markers the host environment may carry (systemd-run
     # CI runners export INVOCATION_ID) so each test controls them explicitly.
     for var in (
-        "HERMES_SUPERVISED_CHILD",
-        "HERMES_S6_SUPERVISED_CHILD",
+        "TINO_SUPERVISED_CHILD",
+        "TINO_S6_SUPERVISED_CHILD",
         "INVOCATION_ID",
-        "HERMES_GATEWAY_EXTERNAL_SUPERVISOR",
+        "TINO_GATEWAY_EXTERNAL_SUPERVISOR",
     ):
         monkeypatch.delenv(var, raising=False)
 
@@ -60,24 +60,24 @@ def _run_apply_profile_override(
     from hermes_cli.main import _apply_profile_override
     _apply_profile_override()
 
-    return os.environ.get("HERMES_HOME")
+    return os.environ.get("TINO_HOME")
 
 
 class TestApplyProfileOverrideHermesHomeGuard:
     """Regression guard for issue #22502.
 
-    Verifies that HERMES_HOME pointing to the hermes root does NOT suppress
-    the active_profile check, while HERMES_HOME already pointing to a
+    Verifies that TINO_HOME pointing to the hermes root does NOT suppress
+    the active_profile check, while TINO_HOME already pointing to a
     profile directory IS trusted as-is.
     """
 
     def test_hermes_home_at_root_with_active_profile_is_redirected(
         self, tmp_path, monkeypatch
     ):
-        """HERMES_HOME=/root/.hermes + active_profile=coder must redirect
-        HERMES_HOME to .../profiles/coder.
+        """TINO_HOME=/root/.hermes + active_profile=coder must redirect
+        TINO_HOME to .../profiles/coder.
 
-        Bug scenario from #22502: systemd sets HERMES_HOME to the hermes root
+        Bug scenario from #22502: systemd sets TINO_HOME to the hermes root
         and the user switches to a profile via `hermes profile use`.
         Before the fix, the guard returned early and active_profile was ignored.
         """
@@ -91,12 +91,12 @@ class TestApplyProfileOverrideHermesHomeGuard:
             active_profile="coder",
         )
 
-        assert result is not None, "HERMES_HOME must be set after profile redirect"
+        assert result is not None, "TINO_HOME must be set after profile redirect"
         assert "profiles" in result, (
-            f"Expected HERMES_HOME to point into profiles/ dir, got: {result!r}"
+            f"Expected TINO_HOME to point into profiles/ dir, got: {result!r}"
         )
         assert result.endswith("coder"), (
-            f"Expected HERMES_HOME to end with 'coder', got: {result!r}"
+            f"Expected TINO_HOME to end with 'coder', got: {result!r}"
         )
 
 
@@ -111,7 +111,7 @@ class TestApplyProfileOverrideHermesHomeGuard:
 
         monkeypatch.setattr(Path, "home", lambda: root_home)
         monkeypatch.setenv("SUDO_USER", "hermes")
-        monkeypatch.delenv("HERMES_HOME", raising=False)
+        monkeypatch.delenv("TINO_HOME", raising=False)
         monkeypatch.setattr(os, "geteuid", lambda: 0, raising=False)
         monkeypatch.setattr(sys, "argv", ["hermes", "-p", "elias", "gateway", "install", "--system"])
 
@@ -122,7 +122,7 @@ class TestApplyProfileOverrideHermesHomeGuard:
         from hermes_cli.main import _apply_profile_override, _resolve_sudo_user_profile_env
         _apply_profile_override()
 
-        assert os.environ.get("HERMES_HOME") == str(profile_dir)
+        assert os.environ.get("TINO_HOME") == str(profile_dir)
         assert sys.argv == ["hermes", "gateway", "install", "--system"]
         # Same identity gate as ``-p`` without sudo: a marker-less shell is not a profile.
         (user_home / ".hermes" / "profiles" / "ghost" / "cron").mkdir(parents=True)
@@ -135,8 +135,8 @@ class TestSupervisedChildIgnoresStickyProfile:
     """The reserved default gateway s6 slot must not follow active_profile.
 
     Inside the Docker s6 image the ``gateway-default`` service slot runs a
-    bare ``hermes gateway run`` (no ``-p``) to mean "the root HERMES_HOME
-    profile". The run-script exports ``HERMES_S6_SUPERVISED_CHILD=1``.
+    bare ``hermes gateway run`` (no ``-p``) to mean "the root TINO_HOME
+    profile". The run-script exports ``TINO_S6_SUPERVISED_CHILD=1``.
     Without a guard, ``_apply_profile_override`` would read the sticky
     ``active_profile`` file (set by e.g. the dashboard profile switcher) and
     redirect the reserved default gateway into that profile — producing a
@@ -172,14 +172,14 @@ class TestSupervisedChildIgnoresStickyProfile:
             (hermes_root / "profiles" / name / "config.yaml").write_text("{}\n")  # identity marker
 
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
-        monkeypatch.delenv("HERMES_HOME", raising=False)
-        monkeypatch.setenv("HERMES_S6_SUPERVISED_CHILD", "1")
+        monkeypatch.delenv("TINO_HOME", raising=False)
+        monkeypatch.setenv("TINO_S6_SUPERVISED_CHILD", "1")
         monkeypatch.setattr(sys, "argv", ["hermes", "-p", "coder", "gateway", "run"])
 
         from hermes_cli.main import _apply_profile_override
         _apply_profile_override()
 
-        result = os.environ.get("HERMES_HOME")
+        result = os.environ.get("TINO_HOME")
         assert result is not None
         assert result.endswith("coder")
 
@@ -189,13 +189,13 @@ class TestGeneralizedSupervisorMarkers:
     """Regression tests for issue #74872.
 
     A systemd/launchd/Scheduled-Task supervised gateway launch pins its
-    profile identity via the unit's HERMES_HOME (root home for the default
+    profile identity via the unit's TINO_HOME (root home for the default
     profile). It must NEVER follow the sticky ``active_profile`` file —
     otherwise the default-profile gateway silently assumes another profile's
     identity (logs + Telegram bot token) and double-polls that profile's
-    token. Markers: HERMES_SUPERVISED_CHILD (generalized, exported by
+    token. Markers: TINO_SUPERVISED_CHILD (generalized, exported by
     generated units), INVOCATION_ID (systemd, gateway commands only), and
-    HERMES_GATEWAY_EXTERNAL_SUPERVISOR (explicit opt-in).
+    TINO_GATEWAY_EXTERNAL_SUPERVISOR (explicit opt-in).
     """
 
     def _root_home(self, tmp_path):
@@ -206,7 +206,7 @@ class TestGeneralizedSupervisorMarkers:
     def test_supervised_child_marker_skips_active_profile(
         self, tmp_path, monkeypatch
     ):
-        """HERMES_SUPERVISED_CHILD=1 + root HERMES_HOME must keep the
+        """TINO_SUPERVISED_CHILD=1 + root TINO_HOME must keep the
         default profile's home even when active_profile names another
         profile (the #74872 identity-assumption vector)."""
         hermes_root = self._root_home(tmp_path)
@@ -216,7 +216,7 @@ class TestGeneralizedSupervisorMarkers:
             hermes_home=str(hermes_root),
             active_profile="telegram_nick",
             argv=["hermes", "gateway", "run"],
-            extra_env={"HERMES_SUPERVISED_CHILD": "1"},
+            extra_env={"TINO_SUPERVISED_CHILD": "1"},
         )
         assert result == str(hermes_root), (
             f"supervised default gateway was redirected to {result!r}"
@@ -227,7 +227,7 @@ class TestGeneralizedSupervisorMarkers:
     ):
         """INVOCATION_ID (systemd service child) must suppress the sticky
         redirect for gateway commands — covers units installed before the
-        HERMES_SUPERVISED_CHILD marker existed."""
+        TINO_SUPERVISED_CHILD marker existed."""
         hermes_root = self._root_home(tmp_path)
         result = _run_apply_profile_override(
             tmp_path,
@@ -267,7 +267,7 @@ class TestGeneralizedSupervisorMarkers:
             hermes_home=str(hermes_root),
             active_profile="telegram_nick",
             argv=["hermes", "gateway", "run"],
-            extra_env={"HERMES_GATEWAY_EXTERNAL_SUPERVISOR": "1"},
+            extra_env={"TINO_GATEWAY_EXTERNAL_SUPERVISOR": "1"},
         )
         assert result == str(hermes_root)
 
@@ -291,19 +291,19 @@ class TestGeneralizedSupervisorMarkers:
     ):
         """The generated systemd unit must carry the marker so fresh installs
         are protected without relying on the INVOCATION_ID heuristic."""
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path / "home"))
+        monkeypatch.setenv("TINO_HOME", str(tmp_path / "home"))
         (tmp_path / "home").mkdir()
         from hermes_cli.gateway import generate_systemd_unit
 
         unit = generate_systemd_unit()
-        assert 'Environment="HERMES_SUPERVISED_CHILD=1"' in unit
+        assert 'Environment="TINO_SUPERVISED_CHILD=1"' in unit
 
     def test_generated_launchd_plist_exports_supervised_marker(
         self, tmp_path, monkeypatch
     ):
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path / "home"))
+        monkeypatch.setenv("TINO_HOME", str(tmp_path / "home"))
         (tmp_path / "home").mkdir()
         from hermes_cli.gateway import generate_launchd_plist
 
         plist = generate_launchd_plist()
-        assert "<key>HERMES_SUPERVISED_CHILD</key>" in plist
+        assert "<key>TINO_SUPERVISED_CHILD</key>" in plist

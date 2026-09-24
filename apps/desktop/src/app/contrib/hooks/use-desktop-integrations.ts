@@ -83,7 +83,7 @@ export function useDesktopIntegrations({
     // notifies on transitions into needs-auth/error with a Sign in action.
     startMcpHealthChecker()
     // The native "Check for Updates…" menu item lives in the app menu next to
-    // "About Hermes" — it is the OS-standard affordance for updating THIS app,
+    // "About Tino" — it is the OS-standard affordance for updating THIS app,
     // so it always opens the client overlay. Inheriting the connection-mode
     // default pointed a Mac at its remote Linux backend and left the app itself
     // silently stale (#70266).
@@ -263,7 +263,7 @@ export function useDesktopIntegrations({
 
   // Plugin OS notification body/action → optional callback + navigate. Activation
   // is user-driven (click), so this is offer-not-hijack. Paths share the
-  // hermes://index-network/intent/1 vocabulary with deep links.
+  // tino://index-network/intent/1 vocabulary with deep links.
   useEffect(() => {
     const unsubscribe = window.hermesDesktop?.onNotificationActivate?.(payload => {
       if (!payload) {
@@ -293,7 +293,7 @@ export function useDesktopIntegrations({
     return () => unsubscribe?.()
   }, [navigate])
 
-  // hermes:// deep links:
+  // tino:// deep links:
   //  - mcp/install?… → pending MCP install (explicit confirm, never auto-install)
   //  - plugin/install?… (and legacy plugin-agent/plugin-desktop) → plugin install
   //    modal awaiting explicit confirmation. Never auto-installs.
@@ -342,7 +342,7 @@ export function useDesktopIntegrations({
       }
 
       // Not a core action — treat as a plugin-scoped or open/ navigation deep
-      // link (hermes://index-network/intent/1, hermes://open/…). The resolver
+      // link (tino://index-network/intent/1, tino://open/…). The resolver
       // rejects reserved kinds and unsafe paths.
       const path = pathFromHermesDeepLink(payload.kind, payload.name || '', payload.params || {})
 

@@ -101,7 +101,7 @@ class HermesMCPOAuthProvider(HermesProviderMixin, *_SDK_BASES):
     async def _prefetch_oauth_metadata(self) -> None:
         """Fetch PRM + ASM from the well-known endpoints before the first request, via the SDK's own URL
         builders/response handlers so we track whatever the pinned SDK expects."""
-        # The SDK's httpx flavour, not Hermes': `create_oauth_metadata_request` returns *its* (httpx2) Request objects.
+        # The SDK's httpx flavour, not Tino': `create_oauth_metadata_request` returns *its* (httpx2) Request objects.
         from tools.mcp_tool import sdk_httpx
         httpx = sdk_httpx()
         if httpx is None:  # pragma: no cover — SDK import would have failed
@@ -266,7 +266,7 @@ class HermesMCPOAuthProvider(HermesProviderMixin, *_SDK_BASES):
 
 
 # Cached at import time; None when the SDK's OAuth module is unavailable.
-_HERMES_PROVIDER_CLS: Optional[type] = HermesMCPOAuthProvider if _SDK_BASES else None
+_TINO_PROVIDER_CLS: Optional[type] = HermesMCPOAuthProvider if _SDK_BASES else None
 
 
 class MCPOAuthManager:
@@ -304,7 +304,7 @@ class MCPOAuthManager:
 
     def _build_provider(self, server_name: str, entry: _ProviderEntry) -> Optional[Any]:
         """Build a ``HermesMCPOAuthProvider``; None if the SDK's OAuth support is unavailable."""
-        if _HERMES_PROVIDER_CLS is None:
+        if _TINO_PROVIDER_CLS is None:
             logger.warning("MCP OAuth '%s': SDK auth module unavailable", server_name)
             return None
         from tools.mcp_dashboard_oauth import get_dashboard_oauth_flow  # lazy: circular at import time
@@ -317,7 +317,7 @@ class MCPOAuthManager:
             raise OAuthNonInteractiveError(
                 f"MCP OAuth for '{server_name}': non-interactive environment and no cached tokens found. "
                 f"Run `hermes mcp login {server_name}` interactively first to complete initial authorization.")
-        return _HERMES_PROVIDER_CLS(
+        return _TINO_PROVIDER_CLS(
             server_name=server_name, preregistered=bool(cfg.get("client_id")), server_url=entry.server_url,
             **build_provider_kwargs(cfg, storage, ssh_proxy_hint=False))
 

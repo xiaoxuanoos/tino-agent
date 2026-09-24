@@ -30,7 +30,7 @@ import {
   Zap
 } from '@/lib/icons'
 import { runtimeReadinessDisplay, type RuntimeReadinessResult } from '@/lib/runtime-readiness'
-import { cacheHitLabel, contextBarLabel, LiveDuration, tokensPerSecondLabel, usageContextLabel } from '@/lib/statusbar'
+import { cacheHitLabel, contextBarLabel, LiveDuration, sessionPerformanceLabel, tokensPerSecondLabel, usageContextLabel } from '@/lib/statusbar'
 import { useStoreSelector } from '@/lib/use-session-slice'
 import { cn } from '@/lib/utils'
 import { resolveVersionStatus } from '@/lib/version-status'
@@ -104,7 +104,7 @@ export function useStatusbarItems({
   statusSnapshot,
   toggleCommandCenter
 }: StatusbarItemsOptions) {
-  const { t } = useI18n()
+  const { t, locale } = useI18n()
   const copy = t.shell.statusbar
   const freeTierCopy = t.freeTier
   const fileMenu = t.fileMenu
@@ -302,6 +302,7 @@ export function useStatusbarItems({
   // ticks mid-turn, message.complete after) — no extra RPC, no polling.
   const cacheHit = cacheHitLabel(currentUsage)
   const tokensPerSecond = tokensPerSecondLabel(currentUsage)
+  const sessionPerformance = sessionPerformanceLabel(currentUsage, locale === 'zh' || locale === 'zh-hant')
 
   const approvalModeItem = useApprovalModeStatusbarItem(activeGatewayProfile, requestGateway)
   const systemResourcesItem = useSystemResourcesStatusbarItem()
@@ -614,6 +615,14 @@ export function useStatusbarItems({
   const coreRightStatusbarItems = useMemo<readonly StatusbarItem[]>(
     () => [
       {
+        hidden: !sessionPerformance,
+        id: 'session-performance',
+        label: sessionPerformance,
+        title: sessionPerformance,
+        toggleLabel: locale === 'zh' || locale === 'zh-hant' ? '会话性能摘要' : 'Session performance',
+        variant: 'text'
+      },
+      {
         detail: <LiveDuration since={turnStartedAt} />,
         hidden: !busy || !turnStartedAt,
         icon: <Loader2 className="size-3 animate-spin" />,
@@ -698,6 +707,8 @@ export function useStatusbarItems({
       copy,
       gaugeUsage,
       sessionStartedAt,
+      sessionPerformance,
+      locale,
       gatewayState,
       systemResourcesItem,
       terminalShowing,

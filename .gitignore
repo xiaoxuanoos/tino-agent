@@ -1,5 +1,6 @@
 .DS_Store
 /venv/
+/.tino-runtime/
 /venv.old/
 /venv.stale.runtime-*/
 /bin/

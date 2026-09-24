@@ -122,7 +122,7 @@ function throttled(key: string, now: number): boolean {
   return false
 }
 
-// "Backgrounded" = the user isn't on Hermes. `document.hidden` only flips when
+// "Backgrounded" = the user isn't on Tino. `document.hidden` only flips when
 // minimized/occluded; an alt-tabbed window is visible-but-unfocused, so we also
 // check `document.hasFocus()`.
 function isBackgrounded(): boolean {
@@ -209,7 +209,7 @@ export interface NativeNotificationInput {
   icon?: string
   /**
    * Resolved hash-router path to open on body click when there is no
-   * `sessionId` (plugins). Same vocabulary as `hermes://index-network/intent/1`.
+   * `sessionId` (plugins). Same vocabulary as `tino://index-network/intent/1`.
    */
   activate?: string
   /** Renderer-side handle so click/action can invoke registered callbacks. */
@@ -263,7 +263,7 @@ export function dispatchNativeNotification(input: NativeNotificationInput): bool
 export interface PluginNotificationAction {
   id: string
   label: string
-  /** Navigate here on button press (path or `hermes://index-network/intent/1`). */
+  /** Navigate here on button press (path or `tino://index-network/intent/1`). */
   activate?: HermesOpenTarget
   /** Renderer callback — only `id` crosses IPC; this stays in-process. */
   onAction?: () => void
@@ -277,7 +277,7 @@ export interface PluginNativeNotificationInput {
   icon?: string
   /**
    * Where body-click should land. Accepts a plugin deep link
-   * (`hermes://index-network/intent/1`), a hash path (`/index-network/intent/1`),
+   * (`tino://index-network/intent/1`), a hash path (`/index-network/intent/1`),
    * or `{ path, params }` — all resolve through the same helper as OS deep links.
    */
   activate?: HermesOpenTarget
@@ -338,7 +338,7 @@ export function clearPluginNotifyHandlers(notifyId?: string): void {
 /** Native OS notification on behalf of a plugin. One "Plugin notifications"
  *  preference gates all plugins; the plugin id keys throttling/dedupe so two
  *  plugins can't collapse each other's notifications. Fires only while the
- *  user is away from Hermes — the in-app toast (`host.notify`) covers the
+ *  user is away from Tino — the in-app toast (`host.notify`) covers the
  *  foreground case. */
 export function dispatchPluginNativeNotification(pluginId: string, input: PluginNativeNotificationInput): void {
   const activate = resolveHermesOpenPath(input.activate) ?? undefined

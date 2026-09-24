@@ -74,14 +74,19 @@ class _OpenWakeWordEngine(_Engine):
     def _build(self, cfg, sub, ww) -> None:
         import openwakeword
         from openwakeword.model import Model
-        model_ref = str(sub.get("model") or ww._BUNDLED_MODEL_NAME).strip()
+        model_ref = str(sub.get("model") or "").strip()
         framework = self._usable_framework(ww.resolve_inference_framework(cfg))
         self._threshold = ww._sensitivity(cfg)
         self._confirm_needed = ww._confirmation_frames(cfg)
         self._confirm_streak = 0
-        # Default (or explicit "hey_hermes") → the bundled model; built-in names / paths as-is.
-        if model_ref.lower() in ww._BUNDLED_MODEL_ALIASES:
-            model_ref = ww._bundled_wakeword_path(framework)
+        # Explicit model name/path wins; a same-named file under tools/wakewords/ is
+        # preferred over it. No model configured → resolve the configured phrase as
+        # an openWakeWord name (built-ins like hey_jarvis; a custom phrase needs its
+        # own trained model file).
+        if model_ref:
+            model_ref = ww._bundled_model_path(model_ref, framework) or model_ref
+        else:
+            model_ref = (str(ww._get(cfg, "phrase") or "").strip().replace(" ", "_")) or "hey_jarvis"
         # download_models() also fetches the shared feature models (melspectrogram +
         # embedding) needed for ANY model, so a custom path must call it too.
         try:
@@ -131,7 +136,7 @@ class _OpenWakeWordEngine(_Engine):
 
 
 # sherpa-onnx open-vocabulary KWS model: small streaming zipformer transducer (English,
-# GigaSpeech), downloaded once under HERMES_HOME. Keywords are tokenized at RUNTIME.
+# GigaSpeech), downloaded once under TINO_HOME. Keywords are tokenized at RUNTIME.
 _SHERPA_KWS_MODEL_URL = (
     "https://github.com/k2-fsa/sherpa-onnx/releases/download/kws-models/"
     "sherpa-onnx-kws-zipformer-gigaspeech-3.3M-2024-01-01.tar.bz2"
@@ -182,7 +187,7 @@ class _SherpaKwsEngine(_Engine):
 
         # Phrase set: this profile's phrase plus — with profile routing on — every other
         # wake-enabled profile's phrase, so ONE listener can wake any profile.
-        phrase = str(ww._get(cfg, "phrase") or "hey hermes").strip()
+        phrase = str(ww._get(cfg, "phrase") or "hey tino").strip()
         phrase_map: Dict[str, str] = {phrase: ww._active_profile_name()}
         if bool(cfg.get("profile_routing", True)):
             for prof, p in ww.enrolled_profile_phrases().items():

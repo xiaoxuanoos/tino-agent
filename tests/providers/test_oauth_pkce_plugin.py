@@ -24,7 +24,7 @@ PROVIDER = "example-pkce"
 
 @pytest.fixture
 def idp(monkeypatch, tmp_path):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "hermes"))
+    monkeypatch.setenv("TINO_HOME", str(tmp_path / "hermes"))
     server = FakeIdP().start()
     yield server
     server.stop()

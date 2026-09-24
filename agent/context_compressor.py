@@ -1421,7 +1421,7 @@ def evict_stale_outbound_tool_images(api_messages: List[Dict[str, Any]]) -> int:
 _COMPRESSION_MARKER_PREFIX = "⟪HERMES-CONTEXT-COMPRESSION:"
 _COMPRESSION_MARKER_TEMPLATE = (
     _COMPRESSION_MARKER_PREFIX
-    + " {omitted:,} of {total:,} chars omitted here by Hermes's context compressor. "
+    + " {omitted:,} of {total:,} chars omitted here by Tino's context compressor. "
     "This is NOT part of the original tool call and must never be reproduced in new "
     "output — always write full, untruncated content.⟫"
 )

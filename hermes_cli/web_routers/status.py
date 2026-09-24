@@ -72,7 +72,7 @@ def _safe_call(mod, fn_name: str, default):
 
 def _count_status_active_sessions() -> int:
     """Best-effort status garnish. Opens read-only (via the shared stale-schema heal) so
-    /api/status never routinely writes to state.db while another Hermes process uses it."""
+    /api/status never routinely writes to state.db while another Tino process uses it."""
     from hermes_state import _default_db_path
     # The heal helper bootstraps a missing store; this garnish must not — on a fresh install
     # /api/status polls would otherwise create state.db before the user's first session.
@@ -212,7 +212,7 @@ def _merge_profile_gateway_platforms(gateway_platforms: dict, profile_platforms:
 # endpoint and /api/messaging/platforms can never disagree about whether the gateway is up (they used to:
 # sidebar "running" while the Channels page rendered "The gateway is not running"). When ?profile=<name> was
 # given, scope PID and state reads to that profile's directory — gateway identity files (PID, lock, runtime
-# status) are written to the per-profile home, not the process-level HERMES_HOME (see issue #69143). Plain
+# status) are written to the per-profile home, not the process-level TINO_HOME (see issue #69143). Plain
 # /api/status keeps the exact zero-arg call so its behavior (and cache signature) is unchanged. The
 # module-level probe references are handed to the resolver so the long-standing
 # `monkeypatch.setattr(gateway.status, "get_running_pid_cached", ...)` seam used across the test-suite still
@@ -506,7 +506,7 @@ async def get_status(profile: Optional[str] = None):
                              else "degraded")
         await _advisory_pressure(status, profile_dir if profile_dir else get_hermes_home())
 
-        # Profile NAMES and ``gateway_mode`` are low-sensitivity product surface (Hermes Cloud
+        # Profile NAMES and ``gateway_mode`` are low-sensitivity product surface (Tino Cloud
         # renders the profile list over a gated bind) so they survive the auth gate; the
         # per-gateway ``gateways[]`` carries host ports and stays gated below.
         status["profiles"] = topology["profiles"]
@@ -746,6 +746,8 @@ async def run_debug_share_endpoint(body: DebugShareRequest | None = None):
     """Upload a redacted debug report + full logs and return the paste URLs. Synchronous,
     unlike the other diagnostics actions: the point is the shareable URLs, returned as a
     structured payload the dashboard renders as copyable links."""
+    if os.environ.get("TINO_AGENT_BRANDED") == "1":
+        raise HTTPException(status_code=403, detail="Tino Agent does not upload diagnostic logs to an external paste service")
     from hermes_cli.debug import build_debug_share
     req = body or DebugShareRequest()
     try:

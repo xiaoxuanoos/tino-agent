@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Live test harness for Hermes Agent's Tool Search feature.
+"""Live test harness for Tino Agent's Tool Search feature.
 
 Spins up a real AIAgent against a real model, registers ~20 fake "MCP" tools
 with realistic shapes (github-like, slack-like, calendar-like, search-like),
@@ -36,7 +36,7 @@ from typing import Any, Dict, List, Tuple
 FIXTURE_NOTES = Path(tempfile.gettempdir()) / "livetest" / "notes.txt"
 
 # Force-isolate the test environment BEFORE any hermes imports.
-ORIGINAL_HOME = os.environ.get("HERMES_HOME")
+ORIGINAL_HOME = os.environ.get("TINO_HOME")
 ORIGINAL_AUTH = Path.home() / ".hermes" / "auth.json"
 
 _THIS_DIR = Path(__file__).resolve().parent
@@ -348,7 +348,7 @@ def register_fake_tools() -> int:
 
 
 def reset_module_state():
-    """Drop cached modules so the new HERMES_HOME takes effect."""
+    """Drop cached modules so the new TINO_HOME takes effect."""
     keys = [k for k in sys.modules.keys()
             if k.startswith(("tools.", "model_tools", "toolsets",
                              "hermes_cli", "agent.", "run_agent"))]
@@ -360,7 +360,7 @@ def run_one_scenario(scenario: Dict[str, Any], enabled: bool, out_dir: Path) -> 
     """Run one (scenario, enabled) combination. Returns the recorded transcript."""
     reset_module_state()
     home = setup_isolated_home(enabled=enabled)
-    os.environ["HERMES_HOME"] = str(home)
+    os.environ["TINO_HOME"] = str(home)
 
     # Pre-create the test file used by scenario D.
     FIXTURE_NOTES.parent.mkdir(parents=True, exist_ok=True)
@@ -545,11 +545,11 @@ def main():
     summary_path.write_text(json.dumps(summary, indent=2), encoding="utf-8")
     print(f"\nSummary saved to: {summary_path}")
 
-    # Restore original HERMES_HOME
+    # Restore original TINO_HOME
     if ORIGINAL_HOME is not None:
-        os.environ["HERMES_HOME"] = ORIGINAL_HOME
+        os.environ["TINO_HOME"] = ORIGINAL_HOME
     else:
-        os.environ.pop("HERMES_HOME", None)
+        os.environ.pop("TINO_HOME", None)
 
 
 if __name__ == "__main__":

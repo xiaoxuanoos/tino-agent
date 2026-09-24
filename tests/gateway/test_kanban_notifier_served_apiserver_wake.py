@@ -105,8 +105,8 @@ def served(tmp_path, monkeypatch):
     (root / "profiles" / "builder" / "config.yaml").write_text("{}\n", encoding="utf-8")
     # A route-only profile owns no API-server credential of its own.
     (root / "profiles" / "builder" / ".env").write_text("", encoding="utf-8")
-    monkeypatch.setenv("HERMES_HOME", str(root))
-    monkeypatch.setenv("HERMES_KANBAN_DB", str(tmp_path / "board.db"))
+    monkeypatch.setenv("TINO_HOME", str(root))
+    monkeypatch.setenv("TINO_KANBAN_DB", str(tmp_path / "board.db"))
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
     monkeypatch.setattr("hermes_constants.get_default_hermes_root", lambda: root)
     return SimpleNamespace(root=root, builder=root / "profiles" / "builder", atlas=root / "profiles" / "atlas")
@@ -217,7 +217,7 @@ def test_served_profile_wake_runs_in_process_only_for_the_session_it_owns(served
     task = _subscription(chat_id="default-origin", profile="default")
     asyncio.run(_run_one_notifier_tick(monkeypatch, runner))
     assert default_adapter.turns == []
-    assert [c["headers"]["X-Hermes-Session-Id"] for c in _FakeHttpSession.calls] == ["default-origin"]
+    assert [c["headers"]["X-Tino-Session-Id"] for c in _FakeHttpSession.calls] == ["default-origin"]
     assert _FakeHttpSession.calls[0]["url"].endswith("/v1/chat/completions")
     assert _unseen(task, chat_id="default-origin") == []
 

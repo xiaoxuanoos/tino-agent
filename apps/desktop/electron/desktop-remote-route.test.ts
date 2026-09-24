@@ -59,7 +59,7 @@ test('environment URL without its token keeps the existing error', () => {
         env: { url: 'https://env.test' },
         registry: registry('local', [])
       }),
-    /HERMES_DESKTOP_REMOTE_TOKEN is not/
+    /TINO_DESKTOP_REMOTE_TOKEN is not/
   )
 })
 
@@ -378,7 +378,7 @@ test('falls back to a CLOUD registry primary when the v1 mode is local', () => {
       {
         id: 'cloud-1',
         kind: 'cloud',
-        label: 'Hermes Cloud',
+        label: 'Tino Cloud',
         url: 'https://agent.hermes.cloud',
         authMode: 'oauth',
         org: 'nous'

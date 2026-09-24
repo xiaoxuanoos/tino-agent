@@ -71,8 +71,8 @@ def _account_state() -> dict:
 
 @pytest.fixture
 def isolated_store(monkeypatch, tmp_path):
-    monkeypatch.setenv("HERMES_SHARED_AUTH_DIR", str(tmp_path / "shared-store"))
-    monkeypatch.setenv("HERMES_GUEST_ONBOARDING", "1")
+    monkeypatch.setenv("TINO_SHARED_AUTH_DIR", str(tmp_path / "shared-store"))
+    monkeypatch.setenv("TINO_GUEST_ONBOARDING", "1")
     for var in ("OPENROUTER_API_KEY", "OPENAI_API_KEY", "ANTHROPIC_API_KEY", "NOUS_API_KEY"):
         monkeypatch.delenv(var, raising=False)
     # No network: the account lookup is derived from the JWT the store already holds.
@@ -176,9 +176,9 @@ def test_every_in_chat_free_tier_string_names_the_slash_command(monkeypatch):
     )
     assert all("/login" in text for text in command_copy)
     for text in (*command_copy, *refusal_copy):
-        # The ruled refusal uses Hermes as the grammatical subject; only that exact product-name
+        # The ruled refusal uses Tino as the grammatical subject; only that exact product-name
         # phrase is exempt from the broad top-level-command gate.
-        assert "hermes " not in text.replace("this Hermes can", "this product can").lower()
+        assert "hermes " not in text.replace("this Tino can", "this product can").lower()
 
 
 def test_no_chat_copy_of_any_sign_in_state_leaks_a_terminal_verb_or_a_forbidden_word():

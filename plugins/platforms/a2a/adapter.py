@@ -38,7 +38,7 @@ _DEFAULT_PORT = 9900
 _MIN_ORPHAN_TIMEOUT, _MAX_ORPHAN_TIMEOUT, _WATCHDOG_INTERVAL = 300, 86400, 60
 _MAX_BODY = 1_048_576  # 1MB max request body — prevents DoS via memory exhaustion
 _SSE_KEEPALIVE = 5  # seconds between SSE keepalive comments
-_DEFAULT_DESCRIPTION = "Hermes Agent — a general-purpose agent reachable over A2A."
+_DEFAULT_DESCRIPTION = "Tino Agent — a general-purpose agent reachable over A2A."
 
 _ok = protocol.jsonrpc_result
 _err = protocol.jsonrpc_error
@@ -106,7 +106,7 @@ def _active_profile_name() -> str:
         from hermes_cli.profiles import get_active_profile_name
         return get_active_profile_name() or "default"
     except Exception:
-        return os.getenv("HERMES_PROFILE", "default") or "default"
+        return os.getenv("TINO_PROFILE", "default") or "default"
 
 
 def _profile_home(profile: str) -> Optional[str]:
@@ -413,8 +413,8 @@ class A2AAdapter(BasePlatformAdapter):
             agents[slug] = {
                 "slug": slug, "path": "/" + path_segment, "tenant": tenant, "profile": profile or slug,
                 "local": bool(val.get("local")) or profile in ("", "default", self._active_profile),
-                "name": str(val.get("name") or f"Hermes {slug}"),
-                "description": str(val.get("description") or f"Hermes profile '{profile or slug}' exposed over A2A."),
+                "name": str(val.get("name") or f"Tino {slug}"),
+                "description": str(val.get("description") or f"Tino profile '{profile or slug}' exposed over A2A."),
                 "advertised_toolsets": list(toolsets or []),
                 "timeout": int(val.get("timeout") or _reply_timeout()),
             }
@@ -589,7 +589,7 @@ class A2AAdapter(BasePlatformAdapter):
             # TERMINAL_* residue dropped, the target's own secrets overlaid), not the gateway's raw environ.
             from tools.environments.local import served_profile_child_env
             env = served_profile_child_env(target_home=_profile_home(profile), inherit_credentials=True)
-            env["HERMES_A2A_PEER"] = peer
+            env["TINO_A2A_PEER"] = peer
             start = time.time()
             try:
                 proc = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace",

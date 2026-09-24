@@ -86,7 +86,7 @@ def test_explicit_config_key_overrides_matching_env_value(monkeypatch):
 
 
 def test_ssh_config_preserves_remote_tilde_cwd(monkeypatch):
-    """SSH ``~`` belongs to the remote user, not the Hermes host/container."""
+    """SSH ``~`` belongs to the remote user, not the Tino host/container."""
     _write_config("terminal:\n  backend: ssh\n  cwd: '~'\n")
     monkeypatch.setenv("HOME", "/opt/data/home")
     monkeypatch.setenv("USERPROFILE", r"C:\opt\data\home")
@@ -179,7 +179,7 @@ def test_secondary_home_override_does_not_latch_ambient_env(tmp_path, monkeypatc
         '    - /bee/vol:/data\n',
         encoding="utf-8",
     )
-    monkeypatch.setenv("HERMES_HOME", str(launch_home))
+    monkeypatch.setenv("TINO_HOME", str(launch_home))
     # Clean ambient — the dashboard process starts without TERMINAL_ENV.
     for name in (
         "TERMINAL_ENV",

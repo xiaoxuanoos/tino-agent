@@ -1,5 +1,5 @@
 /**
- * Shared E2E fixtures for the Hermes desktop Playwright suite.
+ * Shared E2E fixtures for the Tino desktop Playwright suite.
  *
  * Two fixture modes:
  *
@@ -235,12 +235,12 @@ function writeEmptyConfig(hermesHome: string): void {
  * Build the environment for the Electron app process.
  *
  * Key env vars:
- *  - HERMES_HOME → sandbox hermes-home (isolated config/sessions)
- *  - HERMES_DESKTOP_USER_DATA_DIR → sandbox electron-user-data
- *  - HERMES_DESKTOP_IGNORE_EXISTING=1 → don't pick up `hermes` from PATH
+ *  - TINO_HOME → sandbox hermes-home (isolated config/sessions)
+ *  - TINO_DESKTOP_USER_DATA_DIR → sandbox electron-user-data
+ *  - TINO_DESKTOP_IGNORE_EXISTING=1 → don't pick up `hermes` from PATH
  *    (we want the dev checkout at REPO_ROOT)
- *  - HERMES_DESKTOP_HERMES_ROOT → REPO_ROOT (dev checkout resolution)
- *  - HERMES_DESKTOP_APP_NAME → unique-ish per test (avoids single-instance lock)
+ *  - TINO_DESKTOP_ROOT → REPO_ROOT (dev checkout resolution)
+ *  - TINO_DESKTOP_APP_NAME → unique-ish per test (avoids single-instance lock)
  *  - XDG_RUNTIME_DIR → ensure Electron has a writable runtime dir on Linux
  */
 export function buildAppEnv(sandbox: Sandbox, extra: Record<string, string> = {}): Record<string, string> {
@@ -259,15 +259,15 @@ export function buildAppEnv(sandbox: Sandbox, extra: Record<string, string> = {}
 
   return {
     ...clean,
-    HERMES_HOME: sandbox.hermesHome,
-    HERMES_DESKTOP_USER_DATA_DIR: sandbox.userDataDir,
-    HERMES_DESKTOP_IGNORE_EXISTING: '1',
-    HERMES_DESKTOP_HERMES_ROOT: REPO_ROOT,
-    HERMES_DESKTOP_APP_NAME: `HermesE2E-${Date.now()}`,
+    TINO_HOME: sandbox.hermesHome,
+    TINO_DESKTOP_USER_DATA_DIR: sandbox.userDataDir,
+    TINO_DESKTOP_IGNORE_EXISTING: '1',
+    TINO_DESKTOP_ROOT: REPO_ROOT,
+    TINO_DESKTOP_APP_NAME: `HermesE2E-${Date.now()}`,
     // `app.close()` in teardown must exit even when a spec leaves a turn
     // mid-flight — otherwise the quit confirmation waits on a click that no
     // one is there to make, and the worker dies on a teardown timeout.
-    HERMES_DESKTOP_SKIP_QUIT_CONFIRM: '1',
+    TINO_DESKTOP_SKIP_QUIT_CONFIRM: '1',
     // Clear dev-server override — we want the built dist/, not a vite server.
     // The dev-server check in main.ts looks for this env var; if it's set,
     // it loads from the vite URL instead of the local file.
@@ -321,8 +321,8 @@ export function findElectron(): string {
 /**
  * Launch the desktop app in dev mode.
  *
- * @param sandbox  - isolated HERMES_HOME + userData
- * @param env      - the process environment (already has HERMES_HOME etc.)
+ * @param sandbox  - isolated TINO_HOME + userData
+ * @param env      - the process environment (already has TINO_HOME etc.)
  * @returns the ElectronApplication + first Page
  */
 export async function launchDesktop(
@@ -460,7 +460,7 @@ export interface DeadBackendFixture {
 
 export interface DeadBackendOptions {
   /**
-   * When true, inject a fake boot error via HERMES_DESKTOP_BOOT_FAKE_ERROR
+   * When true, inject a fake boot error via TINO_DESKTOP_BOOT_FAKE_ERROR
    * so the backend resolution itself "fails" with a controlled error message.
    * This is the only reliable way to trigger BootFailureOverlay in dev mode
    * (the real backend always resolves via SOURCE_REPO_ROOT).
@@ -498,7 +498,7 @@ providers:
   )
   writeEnvFile(sandbox.hermesHome)
 
-  const env = buildAppEnv(sandbox, options.fakeError ? { HERMES_DESKTOP_BOOT_FAKE_ERROR: 'Failed to connect to Hermes backend: connection refused' } : {})
+  const env = buildAppEnv(sandbox, options.fakeError ? { TINO_DESKTOP_BOOT_FAKE_ERROR: 'Failed to connect to Tino backend: connection refused' } : {})
   const { app, page } = await launchDesktop(env)
 
   return {
@@ -520,13 +520,13 @@ providers:
  */
 function resolvePackagedBinaryPath(): string {
   if (process.platform === 'win32') {
-    return path.join(RELEASE_ROOT, 'win-unpacked', 'Hermes.exe')
+    return path.join(RELEASE_ROOT, 'win-unpacked', 'Tino.exe')
   }
 
   if (process.platform === 'darwin') {
     const arch = process.arch === 'arm64' ? 'arm64' : 'x64'
 
-    return path.join(RELEASE_ROOT, `mac-${arch}`, 'Hermes.app', 'Contents', 'MacOS', 'Hermes')
+    return path.join(RELEASE_ROOT, `mac-${arch}`, 'Tino.app', 'Contents', 'MacOS', 'Tino')
   }
 
   return path.join(RELEASE_ROOT, 'linux-unpacked', 'hermes')
@@ -548,10 +548,10 @@ export interface PackagedAppFixture {
 /**
  * Launch the *packaged* Electron binary (from `npm run pack` →
  * `electron-builder --dir`) with `BOOT_FAKE=1` so it simulates boot
- * progress without spawning a real Hermes backend.
+ * progress without spawning a real Tino backend.
  *
  * Uses the same sandbox isolation (credential stripping, isolated
- * HERMES_HOME + userData, unique app name) as the dev-mode fixtures.
+ * TINO_HOME + userData, unique app name) as the dev-mode fixtures.
  *
  * Skips if the packaged binary doesn't exist — run `npm run pack` first.
  */
@@ -568,15 +568,15 @@ export async function setupPackagedApp(): Promise<PackagedAppFixture> {
   // packaged-binary-specific overrides.
   const env = buildAppEnv(sandbox, {
     // Fake boot: simulates progress steps without spawning the real backend.
-    HERMES_DESKTOP_BOOT_FAKE: '1',
-    HERMES_DESKTOP_BOOT_FAKE_STEP_MS: '120',
+    TINO_DESKTOP_BOOT_FAKE: '1',
+    TINO_DESKTOP_BOOT_FAKE_STEP_MS: '120',
   })
 
   // Clear dev-server + hermes-root overrides — the packaged binary
   // should use its own bundled renderer, not the dev checkout.
-  delete (env as Record<string, string | undefined>).HERMES_DESKTOP_DEV_SERVER
-  delete (env as Record<string, string | undefined>).HERMES_DESKTOP_HERMES
-  delete (env as Record<string, string | undefined>).HERMES_DESKTOP_HERMES_ROOT
+  delete (env as Record<string, string | undefined>).TINO_DESKTOP_DEV_SERVER
+  delete (env as Record<string, string | undefined>).TINO_DESKTOP_HERMES
+  delete (env as Record<string, string | undefined>).TINO_DESKTOP_ROOT
 
   const app = await _electron.launch({
     executablePath: PACKAGED_BINARY_PATH,

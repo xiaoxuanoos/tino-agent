@@ -86,7 +86,7 @@ async function until(description: string, predicate: () => boolean | Promise<boo
 async function http(entry: Resident, route: string, body?: Record<string, string>, token = entry.token) {
   const response = await fetch(`http://127.0.0.1:${entry.port}${route}`, {
     method: body ? 'POST' : 'GET', headers: {
-      'Content-Type': 'application/json', ...(token ? { 'X-Hermes-Session-Token': token } : {}),
+      'Content-Type': 'application/json', ...(token ? { 'X-Tino-Session-Token': token } : {}),
     }, ...(body ? { body: JSON.stringify(body) } : {}), signal: AbortSignal.timeout(5000),
   })
 
@@ -95,7 +95,7 @@ async function http(entry: Resident, route: string, body?: Record<string, string
 
 const client = createPoolRetirementClient(async (url, token, options) => {
   const response = await fetch(url, { method: options.method,
-    headers: { 'X-Hermes-Session-Token': token, 'Content-Type': 'application/json' },
+    headers: { 'X-Tino-Session-Token': token, 'Content-Type': 'application/json' },
     body: JSON.stringify(options.body), signal: AbortSignal.timeout(options.timeoutMs) })
 
   const reply = await response.json() as Record<string, unknown>
@@ -114,8 +114,8 @@ async function spawnResident(key: string, release: () => void): Promise<Resident
 
   const child = spawn(python, ['-u', join(fixture, 'serve.py'), repo, key], {
     cwd: join(root, key), detached: true, stdio: 'pipe',
-    env: { ...process.env, HOME: join(root, key), USERPROFILE: join(root, key), HERMES_HOME: home,
-      HERMES_DESKTOP: '1', HERMES_SERVE_HEADLESS: '1', HERMES_DASHBOARD_SESSION_TOKEN: token,
+    env: { ...process.env, HOME: join(root, key), USERPROFILE: join(root, key), TINO_HOME: home,
+      TINO_DESKTOP: '1', TINO_SERVE_HEADLESS: '1', TINO_DASHBOARD_SESSION_TOKEN: token,
       PYTHONUNBUFFERED: '1', PYTHONDONTWRITEBYTECODE: '1', PYTHONNOUSERSITE: '1',
       // Environment contains only the launch allowlist and fixture values.
     },
@@ -147,9 +147,9 @@ async function spawnResident(key: string, release: () => void): Promise<Resident
   maxLiveServeChildren = Math.max(maxLiveServeChildren, live.size)
   record('spawn', key, { pid: child.pid })
   assert.ok(live.size <= coordinator.limit, 'Live OS children exceeded the pool cap')
-  await until(`${key} HERMES_BACKEND_READY`, () => {
+  await until(`${key} TINO_BACKEND_READY`, () => {
     if (child.exitCode !== null || child.signalCode !== null) {throw new Error(`${key} exited before ready:\n${entry.output}`)}
-    const match = entry.output.match(/HERMES_BACKEND_READY[^\n]*port=(\d+)/)
+    const match = entry.output.match(/TINO_BACKEND_READY[^\n]*port=(\d+)/)
 
     if (match) {entry.port = Number(match[1])}
 

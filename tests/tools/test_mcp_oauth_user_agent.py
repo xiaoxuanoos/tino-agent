@@ -4,7 +4,7 @@ Some authorization servers and WAFs reject httpx's default User-Agent on the
 token endpoint (#75576). The header is opt-in, per-server, and applied ONLY to
 the two token-endpoint requests (authorization-code exchange and refresh) —
 never to MCP traffic or discovery. With no ``oauth.user_agent`` configured the
-shared ``Hermes-Agent/<version>`` default is stamped instead: those requests
+shared ``Tino-Agent/<version>`` default is stamped instead: those requests
 are hand-built and sent with ``client.send()``, which never merges the client's
 default headers, so an unset UA used to mean NO ``User-Agent`` on the wire at
 all and a WAF-fronted authorization server answered 403 (#115329).
@@ -104,7 +104,7 @@ def _ready_for_token_requests(provider):
 
 
 def _build_provider_via(builder, monkeypatch, tmp_path, cfg):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("TINO_HOME", str(tmp_path))
     _set_interactive_stdin(monkeypatch)
     return builder("srv", "https://mcp.example.com/mcp", cfg)
 
@@ -145,7 +145,7 @@ def test_token_requests_carry_the_configured_user_agent(
 def test_unconfigured_user_agent_falls_back_to_the_hermes_default(
     builder, tmp_path, monkeypatch
 ):
-    """No config → the shared ``Hermes-Agent/<version>`` default, never a header-less request.
+    """No config → the shared ``Tino-Agent/<version>`` default, never a header-less request.
 
     A bare ``httpx.Request`` carries no User-Agent and ``client.send()`` never merges the
     client's default headers, so an unset ``oauth.user_agent`` used to put these POSTs on
@@ -190,7 +190,7 @@ def test_user_agent_does_not_disturb_token_auth_preparation(tmp_path, monkeypatc
 
 
 # ---------------------------------------------------------------------------
-# Device flow: the token poll is sent by Hermes itself, so watch the socket
+# Device flow: the token poll is sent by Tino itself, so watch the socket
 # ---------------------------------------------------------------------------
 
 
@@ -255,7 +255,7 @@ def test_device_flow_token_poll_carries_a_user_agent_on_the_wire(
     from tools.mcp_tool import sdk_httpx
 
     base, seen = device_authorization_server
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("TINO_HOME", str(tmp_path))
     # Exactly how `login_device` builds it for an unconfigured (`oauth.user_agent` absent) server.
     cfg, storage = prepare_oauth_config("srv", f"{base}/mcp", {})
     cfg["_resolved_port"] = cfg.get("redirect_port", 8420)
@@ -282,6 +282,6 @@ def test_device_flow_token_poll_carries_a_user_agent_on_the_wire(
 
     assert [path for path, _ in seen] == ["/device", "/token", "/token"]
     agents = [headers.get("user-agent") for _, headers in seen]
-    assert all(agents), seen  # nothing leaves Hermes header-less
+    assert all(agents), seen  # nothing leaves Tino header-less
     polls = [headers.get("user-agent") for path, headers in seen if path == "/token"]
     assert polls == [DEFAULT_AUTH_REQUEST_USER_AGENT] * len(polls)

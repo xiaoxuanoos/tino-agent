@@ -32,12 +32,12 @@ def _sqlite_upgrade_hint(install_method: str | None = None) -> str:
     method = install_method or detect_install_method(PROJECT_ROOT)
     cmd = recommended_update_command_for_method(method)
     action = cmd if is_nix_install_method(method) else {  # nix: prose guidance, not a shell command
-        "docker": f"run `{cmd}`, then recreate all Hermes containers", "apt": f"run `{cmd}`"}.get(method, "run `hermes update`")
+        "docker": f"run `{cmd}`, then recreate all Tino containers", "apt": f"run `{cmd}`"}.get(method, "run `hermes update`")
     return f"({action}; fixed versions: 3.51.3+ / 3.50.7 / 3.44.6 — see https://sqlite.org/wal.html#walresetbug)"
 
 
 def _hermes_database_paths(hermes_home: Path) -> list[tuple[str, Path]]:
-    """(display name, path) pairs for Hermes-managed SQLite databases: backup.py's per-profile store list + per-board kanban.db."""
+    """(display name, path) pairs for Tino-managed SQLite databases: backup.py's per-profile store list + per-board kanban.db."""
     from hermes_cli.backup import _QUICK_STATE_FILES
     entries = [(name, hermes_home / name) for name in _QUICK_STATE_FILES if name.endswith(".db")]
     for board_db in sorted((hermes_home / "kanban" / "boards").glob("*/kanban.db")):
@@ -116,16 +116,16 @@ def _report_database_holders(name: str, db_path: Path) -> None:
 def _report_database_journal_modes(hermes_home: Path | None = None, version_info: tuple[int, ...] | None = None) -> None:
     """List each database's journal mode; warn on WAL under a vulnerable SQLite, and on a configured
     ``database.journal_mode: delete`` that never took effect."""
-    from hermes_cli.doctor import HERMES_HOME
+    from hermes_cli.doctor import TINO_HOME
     from hermes_state_wal import (
         _path_on_cross_vm_fs, _wal_reset_repair_hint, is_sqlite_wal_reset_vulnerable, resolve_journal_mode,
     )
     vulnerable = is_sqlite_wal_reset_vulnerable(version_info)
     configured = resolve_journal_mode()
     try:
-        databases = _hermes_database_paths(hermes_home if hermes_home is not None else HERMES_HOME)
+        databases = _hermes_database_paths(hermes_home if hermes_home is not None else TINO_HOME)
     except Exception as exc:
-        check_warn(f"Could not list Hermes databases: {exc}")
+        check_warn(f"Could not list Tino databases: {exc}")
         return
     exposed = []
     for name, path in databases:
@@ -144,7 +144,7 @@ def _report_database_journal_modes(hermes_home: Path | None = None, version_info
             check_warn(f"{name} is in WAL mode ({size}) despite database.journal_mode=delete",
                        "(the setting never applied: an existing WAL database is never live-downgraded"
                        + ("; also exposed to the WAL-reset bug" if vulnerable else "")
-                       + ". Stop every Hermes process for this profile, then run a one-time offline "
+                       + ". Stop every Tino process for this profile, then run a one-time offline "
                        "'PRAGMA journal_mode=DELETE' on the file)")
             _report_database_holders(name, path)
         elif error is not None:
@@ -159,7 +159,7 @@ def _report_database_journal_modes(hermes_home: Path | None = None, version_info
             if vulnerable:
                 exposed.append(name)
             check_warn(f"{name} is in WAL mode on a cross-VM filesystem (virtiofs/9p, {size})",
-                       "(WAL can silently corrupt across the VM boundary; stop every Hermes process and run a one-time "
+                       "(WAL can silently corrupt across the VM boundary; stop every Tino process and run a one-time "
                        "offline 'PRAGMA journal_mode=DELETE' on the file, then set `database.journal_mode: delete` — "
                        "or move the database onto a native/named volume)")
         elif mode == "wal" and vulnerable:
@@ -326,17 +326,17 @@ def check_macos_tcc_grants() -> None:
     check_ok("macOS TCC signing identity is stable", _TCC_STABLE_DETAIL["certificate" in dr.lower()])
     check_info("If macOS still re-prompts for permissions (toggle shows ON): the stored grant is stale — run "
                "`tccutil reset ScreenCapture com.nousresearch.hermes` (repeat per affected service), toggle it ON in "
-               "System Settings, then fully quit & relaunch Hermes once.")
+               "System Settings, then fully quit & relaunch Tino once.")
 
 
 def _desktop_app_bundle() -> Path | None:
-    """Locate the locally-built desktop bundle (``apps/desktop/release/mac-<arch>/Hermes.app``), newest first.
+    """Locate the locally-built desktop bundle (``apps/desktop/release/mac-<arch>/Tino.app``), newest first.
 
-    The only layout whose ad-hoc re-signed bundle can invalidate TCC grants. ``/Applications/Hermes.app`` is
-    deliberately not probed: it is the separately-signed, certificate-anchored Hermes-Setup launcher.
+    The only layout whose ad-hoc re-signed bundle can invalidate TCC grants. ``/Applications/Tino.app`` is
+    deliberately not probed: it is the separately-signed, certificate-anchored Tino-Setup launcher.
     """
     release_dir = Path(__file__).resolve().parents[1] / "apps" / "desktop" / "release"
-    candidates = [p for p in release_dir.glob("mac*/Hermes.app") if p.is_dir()]
+    candidates = [p for p in release_dir.glob("mac*/Tino.app") if p.is_dir()]
     return max(candidates, key=lambda p: p.stat().st_mtime) if candidates else None
 
 
@@ -386,12 +386,12 @@ def check_macos_full_disk_access() -> None:
     try:
         os.listdir(Path.home() / "Library" / "Application Support" / "com.apple.TCC")
     except PermissionError:
-        check_info("One switch silences all macOS folder prompts: grant your terminal app Full Disk Access and Hermes "
+        check_info("One switch silences all macOS folder prompts: grant your terminal app Full Disk Access and Tino "
                    "will never trip per-folder dialogs (Desktop/Downloads/Documents/...) again. Open: System Settings → "
                    "Privacy & Security → Full Disk Access — or run:\n"
                    "      open \"x-apple.systempreferences:com.apple.preference.security?Privacy_AllFiles\"\n"
-                   "    then enable your terminal (and Hermes.app if you use Desktop), and restart them once. "
-                   "With Hermes' stable signing identities the grant survives every update.")
+                   "    then enable your terminal (and Tino.app if you use Desktop), and restart them once. "
+                   "With Tino's stable signing identities the grant survives every update.")
     except OSError:
         pass  # missing dir / other error: indeterminate, stay silent
     else:
@@ -433,7 +433,7 @@ def _check_python_environment(should_fix: bool, f: Finding) -> None:
         import sqlite3
         from hermes_state_wal import is_sqlite_wal_reset_vulnerable, sqlite_source_id
         src = sqlite_source_id()
-        # Warn-only: Hermes already refuses WAL on fresh DBs and runtime repair is best-effort.
+        # Warn-only: Tino already refuses WAL on fresh DBs and runtime repair is best-effort.
         check_bool(not is_sqlite_wal_reset_vulnerable(), f"SQLite {sqlite3.sqlite_version}",
                    (f"SQLite {sqlite3.sqlite_version} (WAL-reset bug)", _sqlite_upgrade_hint()))
         if src:

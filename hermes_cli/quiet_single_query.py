@@ -3,7 +3,7 @@
 Bot Mode delivers a local DM as ``hermes -p <bot> chat -Q --query-file``. Interactive
 chat binds ``set_current_session_key(self.session_id)`` around the turn; the quiet
 path did not, so a nested ``message_agent`` notify inherited the dispatcher's
-``HERMES_SESSION_KEY`` and never woke the recipient. Quiet also printed and exited
+``TINO_SESSION_KEY`` and never woke the recipient. Quiet also printed and exited
 after one turn, so a nested teammate reply that finished during the one-shot linger
 was never injected as a follow-up.
 """
@@ -30,7 +30,7 @@ KANBAN_WORKER_EXIT_TRAILER = "[kanban-worker-exit] rc="
 
 def exit_single_query(code: int) -> None:
     """``sys.exit(code)`` for a one-shot turn; a Kanban worker first writes the exit trailer to its log."""
-    if os.environ.get("HERMES_KANBAN_TASK"):
+    if os.environ.get("TINO_KANBAN_TASK"):
         with contextlib.suppress(Exception):
             # stderr: stdout may be the ``--stream-json`` record stream, and the worker log
             # captures both streams.
@@ -42,9 +42,9 @@ def exit_single_query(code: int) -> None:
 # path here. The child records the turn's outcome there the moment the turn ends, BEFORE the
 # one-shot exit linger, so the spawner can book the delivery and stop waiting while the linger
 # keeps protecting nested ``notify_on_complete`` replies. Popped before the turn runs (same
-# contract as HERMES_TURN_AUTHOR): nothing the turn spawns inherits it, and a nested one-shot
+# contract as TINO_TURN_AUTHOR): nothing the turn spawns inherits it, and a nested one-shot
 # never writes over its host's report — the record also carries the writer's pid.
-TURN_REPORT_FILE_ENV = "HERMES_QUIET_TURN_REPORT_FILE"
+TURN_REPORT_FILE_ENV = "TINO_QUIET_TURN_REPORT_FILE"
 
 
 def take_turn_report_path(environ: MutableMapping[str, str] = os.environ) -> str | None:

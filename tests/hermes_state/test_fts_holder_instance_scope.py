@@ -1,12 +1,12 @@
 """Instance-scoping of the uninspectable-holder fallback.
 
 Field-verified 2026-09-07 on a production host running TWO independent
-Hermes instances: a main gateway (user ``ubuntu``,
-HERMES_HOME=/home/ubuntu/.hermes) and a demo gateway (user ``demo``,
-HERMES_HOME=/home/demo/.hermes).  The demo gateway runs as another user, so
+Tino instances: a main gateway (user ``ubuntu``,
+TINO_HOME=/home/ubuntu/.hermes) and a demo gateway (user ``demo``,
+TINO_HOME=/home/demo/.hermes).  The demo gateway runs as another user, so
 its ``/proc/<pid>/fd`` table is unreadable from the main instance and the
 holder scan falls back to ``/proc/<pid>/cmdline`` + ``_looks_like_hermes``.
-The demo process's argv matches the Hermes patterns exactly, so the fallback
+The demo process's argv matches the Tino patterns exactly, so the fallback
 flagged it as an uninspectable holder of the MAIN instance's state.db even
 though ``lsof`` proved zero open handles on it.  Consequence: the stale-FTS
 rebuild in ``hermes_state_schema._recover_stale_fts`` was deferred 42 times
@@ -14,11 +14,11 @@ across 6 gateway restarts, the ``fts_stale`` breadcrumb never cleared, and
 FTS self-repair stayed permanently disabled.
 
 PR #92419 fixed substring false positives (journalctl/grep mentioning
-hermes); a genuine second instance with a DIFFERENT HERMES_HOME is still
+hermes); a genuine second instance with a DIFFERENT TINO_HOME is still
 misjudged on current main (issue #92401).
 
 Behavior contract: an uninspectable holder identified only by argv must be
-counted unless its own argv proves it is scoped to a *different* Hermes
+counted unless its own argv proves it is scoped to a *different* Tino
 home / state.db and never references ours.  Ambiguous argv (no absolute
 paths at all) must remain fail-closed, exactly as before — the conservative
 intent of the fallback is preserved.
@@ -38,7 +38,7 @@ _REAL_READLINK = os.readlink
 
 
 # Representative demo-gateway argv on the two-instance host: every absolute
-# token lives under /home/demo/.hermes, the binary name matches the Hermes
+# token lives under /home/demo/.hermes, the binary name matches the Tino
 # patterns, and nothing references the main instance's home or state.db.
 DEMO_HOME_ARGV = [
     "/home/demo/.hermes/hermes-agent/hermes",
@@ -53,7 +53,7 @@ DEMO_VENV_ARGV = [
     "gateway",
 ]
 
-# A Hermes-shaped argv with no absolute paths: cannot disprove that this
+# A Tino-shaped argv with no absolute paths: cannot disprove that this
 # process touches our state.db, so it must stay fail-closed.
 AMBIGUOUS_ARGV = ["hermes", "gateway", "run"]
 
@@ -111,7 +111,7 @@ def _install_fake_argv(monkeypatch, argv_by_pid):
 class TestUninspectableHolderInstanceScope:
     def test_other_instance_argv_is_not_a_holder_of_our_db(self, tmp_path, monkeypatch):
         """RED: fd dir unreadable + argv proves the process belongs to a
-        DIFFERENT Hermes home → not a holder of our state.db."""
+        DIFFERENT Tino home → not a holder of our state.db."""
         db_path = tmp_path / "state.db"
         _install_fake_proc(monkeypatch, tmp_path, unreadable_pids=(222,))
         _install_fake_argv(monkeypatch, {222: DEMO_HOME_ARGV})

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Run a Hermes instance in an isolated sandbox — separate HERMES_HOME,
+# Run a Tino instance in an isolated sandbox — separate TINO_HOME,
 # separate Electron userData, and a distinct Desktop app name so it doesn't compete
 # with your main desktop instance's single-instance lock.
 #
@@ -15,15 +15,15 @@
 #   scripts/dev-sandbox.sh --persistent hermes desktop
 #   scripts/dev-sandbox.sh --persistent -- npm run dev
 #
-# Seed the sandbox HERMES_HOME from an existing directory (e.g. your main
+# Seed the sandbox TINO_HOME from an existing directory (e.g. your main
 # ~/.hermes) so config, sessions, skills, etc. are pre-populated:
 #   scripts/dev-sandbox.sh --from ~/.hermes hermes desktop
 #
 # Override the app name (default: HermesSandbox):
-#   HERMES_DEV_SANDBOX_NAME=Staging scripts/dev-sandbox.sh hermes desktop
+#   TINO_DEV_SANDBOX_NAME=Staging scripts/dev-sandbox.sh hermes desktop
 #
 # Override the persistent sandbox dir name (default: .hermes-sandbox):
-#   HERMES_DEV_SANDBOX_DIR=.staging-sandbox scripts/dev-sandbox.sh --persistent hermes desktop
+#   TINO_DEV_SANDBOX_DIR=.staging-sandbox scripts/dev-sandbox.sh --persistent hermes desktop
 
 set -euo pipefail
 
@@ -33,22 +33,22 @@ print_help() {
   cat <<'EOF'
 Usage: dev-sandbox.sh [--persistent] [--from DIR] [--] <command...>
 
-Run a Hermes instance in an isolated sandbox.
+Run a Tino instance in an isolated sandbox.
 
 Options:
   --persistent    Keep the sandbox dir across restarts (under the worktree
                   git root, in .hermes-sandbox/). Without this flag the
                   sandbox is a temp dir that is removed on exit.
-  --from DIR      Copy DIR into the sandbox HERMES_HOME as the starting
+  --from DIR      Copy DIR into the sandbox TINO_HOME as the starting
                   point (config, sessions, skills, etc.).
-                  Ignored if the sandbox HERMES_HOME already has content
+                  Ignored if the sandbox TINO_HOME already has content
                   (e.g. reusing a --persistent sandbox) to avoid clobbering.
   --delete        Delete the existing persistent sandbox in .hermes-sandbox.
   -h, --help      Show this help message.
 
 Environment:
-  HERMES_DEV_SANDBOX_NAME  Override the app name (default: HermesSandbox)
-  HERMES_DEV_SANDBOX_DIR   Override the persistent dir name (default: .hermes-sandbox)
+  TINO_DEV_SANDBOX_NAME  Override the app name (default: HermesSandbox)
+  TINO_DEV_SANDBOX_DIR   Override the persistent dir name (default: .hermes-sandbox)
 
 Examples:
   dev-sandbox.sh hermes desktop
@@ -117,7 +117,7 @@ if [ "$#" -eq 0 ]; then
 fi
 
 
-SANDBOX_DIR_NAME="${HERMES_DEV_SANDBOX_DIR:-.hermes-sandbox}"
+SANDBOX_DIR_NAME="${TINO_DEV_SANDBOX_DIR:-.hermes-sandbox}"
 GIT_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || echo "$SCRIPT_DIR/..")"
 GIT_ROOT="$(cd "$GIT_ROOT" && pwd)"
 PERSISTENT_SANDBOX_ROOT="$GIT_ROOT/$SANDBOX_DIR_NAME"
@@ -150,7 +150,7 @@ WORKTREE_HASH="$(printf '%s' "$WORKTREE_ROOT" | cksum | cut -d' ' -f1)"
 WORKTREE_NAME="$(basename "$WORKTREE_ROOT")"
 DEFAULT_SANDBOX_NAME="HermesSandbox-${WORKTREE_NAME}-${WORKTREE_HASH}"
 
-SANDBOX_NAME="${HERMES_DEV_SANDBOX_NAME:-$DEFAULT_SANDBOX_NAME}"
+SANDBOX_NAME="${TINO_DEV_SANDBOX_NAME:-$DEFAULT_SANDBOX_NAME}"
 
 if [ "$PERSISTENT" = true ]; then
   SANDBOX_ROOT="$PERSISTENT_SANDBOX_ROOT"
@@ -158,26 +158,26 @@ else
   SANDBOX_ROOT="$(mktemp -d -t hermes-sandbox.XXXXXX)"
 fi
 
-export HERMES_HOME="$SANDBOX_ROOT/hermes-home"
-export HERMES_DESKTOP_USER_DATA_DIR="$SANDBOX_ROOT/user-data"
-export HERMES_DESKTOP_APP_NAME="$SANDBOX_NAME"
+export TINO_HOME="$SANDBOX_ROOT/hermes-home"
+export TINO_DESKTOP_USER_DATA_DIR="$SANDBOX_ROOT/user-data"
+export TINO_DESKTOP_APP_NAME="$SANDBOX_NAME"
 
-mkdir -p "$HERMES_HOME" "$HERMES_DESKTOP_USER_DATA_DIR"
+mkdir -p "$TINO_HOME" "$TINO_DESKTOP_USER_DATA_DIR"
 
 if [ -n "$SEED_DIR" ]; then
-  # Only seed when the sandbox HERMES_HOME is empty — avoids clobbering an
+  # Only seed when the sandbox TINO_HOME is empty — avoids clobbering an
   # existing persistent sandbox on re-run.
-  if [ -z "$(ls -A "$HERMES_HOME" 2>/dev/null)" ]; then
-    echo "[sandbox] seeding HERMES_HOME from $SEED_DIR" >&2
-    cp -a "$SEED_DIR/." "$HERMES_HOME/"
+  if [ -z "$(ls -A "$TINO_HOME" 2>/dev/null)" ]; then
+    echo "[sandbox] seeding TINO_HOME from $SEED_DIR" >&2
+    cp -a "$SEED_DIR/." "$TINO_HOME/"
   else
-    echo "[sandbox] --from ignored: $HERMES_HOME already has content" >&2
+    echo "[sandbox] --from ignored: $TINO_HOME already has content" >&2
   fi
 fi
 
-echo "[sandbox] HERMES_HOME=$HERMES_HOME" >&2
-echo "[sandbox] userData=$HERMES_DESKTOP_USER_DATA_DIR" >&2
-echo "[sandbox] appName=$HERMES_DESKTOP_APP_NAME" >&2
+echo "[sandbox] TINO_HOME=$TINO_HOME" >&2
+echo "[sandbox] userData=$TINO_DESKTOP_USER_DATA_DIR" >&2
+echo "[sandbox] appName=$TINO_DESKTOP_APP_NAME" >&2
 if [ "$PERSISTENT" = true ]; then
   echo "[sandbox] persistent: $SANDBOX_ROOT" >&2
 else

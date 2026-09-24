@@ -44,7 +44,6 @@ import { DocsLink, FlowPanel, Status } from './flow'
 import { FreeTierSetupNotice } from './free-tier-setup-notice'
 import { DecodedLabel } from './glyph'
 import {
-  FeaturedProviderRow,
   FireworksProviderRow,
   LocalModelsProviderRow,
   OpenRouterProviderRow,
@@ -570,7 +569,6 @@ function Header() {
   )
 }
 
-export const FEATURED_ID = 'nous'
 const SHOW_ALL_KEY = 'hermes-onboarding-show-all-v1'
 
 const readShowAll = () => {
@@ -636,14 +634,11 @@ export function Picker({ ctx }: { ctx: OnboardingContext }) {
   }
 
   const select = (p: OAuthProvider) => void startProviderOAuth(p, ctx)
-  const featured = ordered.find(p => p.id === FEATURED_ID) ?? null
-  const rest = featured ? ordered.filter(p => p.id !== FEATURED_ID) : ordered
-  // Collapse the secondary providers behind a disclosure whenever Nous Portal
-  // is present to anchor the choice — otherwise show the full list. The
-  // Fireworks/OpenRouter key rows always live behind the disclosure, so the
-  // toggle is warranted even when there are no other OAuth providers.
-  const collapsible = Boolean(featured)
-  const showRest = !collapsible || showAll
+  // Tino is provider-neutral. Do not funnel setup into another company's
+  // subscription or promote its sign-in over API keys and local inference.
+  const rest = ordered.filter(p => p.id !== 'nous')
+  const collapsible = false
+  const showRest = true
 
   // "Run models locally" leaves the picker for Settings -> Providers ->
   // Local Models, where install/download live. First-run: persist the skip
@@ -663,7 +658,6 @@ export function Picker({ ctx }: { ctx: OnboardingContext }) {
   return (
     <div className="grid gap-2">
       <div className="grid max-h-[60dvh] gap-2 overflow-y-auto p-1">
-        {featured ? <FeaturedProviderRow onSelect={select} provider={featured} /> : null}
         {/* The no-account path: everything runs on this machine. Shipped
             behind the --local launch flag. (Fireworks moved into the
             expanded list on main.) */}

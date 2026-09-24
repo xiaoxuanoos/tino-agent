@@ -28,10 +28,10 @@ logger = logging.getLogger(__name__)
 try:
     import hermes_cli as _hermes_cli
 
-    _HERMES_VERSION = str(_hermes_cli.__version__)
+    _TINO_VERSION = str(_hermes_cli.__version__)
 except Exception:
-    _HERMES_VERSION = "0.0.0"
-_API_CLIENT = f"hermes-agent/{_HERMES_VERSION}"  # client context per Gemini's partner-integration guidance
+    _TINO_VERSION = "0.0.0"
+_API_CLIENT = f"hermes-agent/{_TINO_VERSION}"  # client context per Gemini's partner-integration guidance
 
 DEFAULT_GEMINI_BASE_URL = "https://generativelanguage.googleapis.com/v1beta"
 # Vertex AI express-mode keys (``AQ.…``) only authenticate against aiplatform, which serves the
@@ -45,7 +45,7 @@ GEMINI_DEFAULT_MAX_OUTPUT_TOKENS = 65535
 
 _FREE_TIER_GUIDANCE = (
     "\n\nYour Google API key is on the free tier (a few hundred requests/day for Gemini Flash models). "
-    "Hermes typically makes 3-10 API calls per user turn, so the free tier is exhausted in a handful of "
+    "Tino typically makes 3-10 API calls per user turn, so the free tier is exhausted in a handful of "
     "messages and cannot sustain an agent session. Enable billing on your Google Cloud project and "
     "regenerate the key in a billing-enabled project: https://aistudio.google.com/apikey"
 )
@@ -227,7 +227,7 @@ def is_standard_key_auth_error(
 
 
 class GeminiAPIError(Exception):
-    """Error shape compatible with Hermes retry/error classification."""
+    """Error shape compatible with Tino retry/error classification."""
 
     def __init__(self, message: str, *, code: str = "gemini_api_error", status_code: Optional[int] = None,
                  response: Optional[httpx.Response] = None, retry_after: Optional[float] = None, details: Optional[Dict[str, Any]] = None):
@@ -745,8 +745,8 @@ class GeminiNativeClient:
     """Minimal OpenAI-SDK-compatible facade (``client.chat.completions.create(**kwargs)``) over Gemini's native REST API."""
 
     # For agent/auxiliary_client.py: a complete client, never re-dispatched through a wire adapter.
-    # (No HERMES_SKIP_ASYNC_WRAP — the async path has a real conversion, AsyncGeminiNativeClient.)
-    HERMES_SKIP_TRANSPORT_WRAP = True
+    # (No TINO_SKIP_ASYNC_WRAP — the async path has a real conversion, AsyncGeminiNativeClient.)
+    TINO_SKIP_TRANSPORT_WRAP = True
 
     def __init__(
         self, *, api_key: str, base_url: Optional[str] = None, default_headers: Optional[Dict[str, str]] = None,

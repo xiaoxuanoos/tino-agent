@@ -203,12 +203,12 @@ def _spawn_bash_ls(root: str, ctx: ServerContext) -> Optional[SpawnSpec]:
 
 
 _VUE_REINSTALL = (
-    "delete <HERMES_HOME>/lsp/node_modules/@vue and <HERMES_HOME>/lsp/bin/vue-language-server*, "
+    "delete <TINO_HOME>/lsp/node_modules/@vue and <TINO_HOME>/lsp/bin/vue-language-server*, "
     "then run: hermes lsp install vue-language-server"
 )
 _VUE_TUNNEL_MSG = (
     "vue-language-server: the installed @vue/language-server is 3.x, which only works behind a client-hosted "
-    f"tsserver tunnel Hermes does not run — no diagnostics will arrive. Reinstall the self-hosting 2.x line: {_VUE_REINSTALL}"
+    f"tsserver tunnel Tino does not run — no diagnostics will arrive. Reinstall the self-hosting 2.x line: {_VUE_REINSTALL}"
 )
 _VUE_TSDK_MSG = (
     "vue-language-server: no JavaScript TypeScript SDK (typescript/lib/typescript.js) next to the server or under "
@@ -218,7 +218,7 @@ _VUE_TSDK_MSG = (
 
 def _node_modules_trees(bin_path: str, root: str) -> List[str]:
     """``node_modules`` trees that may hold the Vue server and its TypeScript SDK:
-    the launcher's own tree (symlinks resolved), Hermes staging, then the project's."""
+    the launcher's own tree (symlinks resolved), Tino staging, then the project's."""
     from agent.lsp.install import hermes_lsp_bin_dir
     trees = [str(hermes_lsp_bin_dir().parent / "node_modules"), os.path.join(root, "node_modules")]
     real = os.path.realpath(bin_path)
@@ -266,7 +266,7 @@ def _spawn_vue(root: str, ctx: ServerContext) -> Optional[SpawnSpec]:
 def _find_pses_bundle(ctx: ServerContext) -> Optional[str]:
     """Locate the PowerShellEditorServices bundle dir (release zip, manual install).  Resolution order:
     ``lsp.servers.powershell.command[0]`` when a directory, ``init_overrides["powershell"]["bundlePath"]``,
-    ``PSES_BUNDLE_PATH`` env, then ``<HERMES_HOME>/lsp/PowerShellEditorServices``."""
+    ``PSES_BUNDLE_PATH`` env, then ``<TINO_HOME>/lsp/PowerShellEditorServices``."""
     from hermes_constants import get_hermes_home
     override = ctx.binary_overrides.get("powershell")
     init = ctx.init_overrides.get("powershell", {})
@@ -288,7 +288,7 @@ def _find_pses_bundle(ctx: ServerContext) -> Optional[str]:
 _PSES_MISSING_MSG = (
     "powershell: pwsh found but the PowerShellEditorServices bundle is missing. Download the release zip from "
     "https://github.com/PowerShell/PowerShellEditorServices/releases, extract it, and either set "
-    "lsp.servers.powershell.command to the bundle path or unzip it to <HERMES_HOME>/lsp/PowerShellEditorServices."
+    "lsp.servers.powershell.command to the bundle path or unzip it to <TINO_HOME>/lsp/PowerShellEditorServices."
 )
 
 
@@ -309,7 +309,7 @@ def _spawn_powershell_es(root: str, ctx: ServerContext) -> Optional[SpawnSpec]:
         f"-LogPath '{os.path.join(session_dir, 'pses.log')}' "
         f"-SessionDetailsPath '{os.path.join(session_dir, f'pses-session-{os.getpid()}.json')}' "
         f"-FeatureFlags @() -AdditionalModules @() "
-        f"-HostName Hermes -HostProfileId hermes -HostVersion 1.0.0 -Stdio -LogLevel Normal"
+        f"-HostName Tino -HostProfileId hermes -HostVersion 1.0.0 -Stdio -LogLevel Normal"
     )
     return SpawnSpec(
         [pwsh, "-NoLogo", "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-Command", inner],

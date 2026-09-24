@@ -191,7 +191,7 @@ const BUILTIN_NAV_REST: NavItem[] = [
     label: "Sessions",
     icon: MessageSquare,
   },
-  { path: "/files", label: "Files", icon: FolderOpen },
+  { path: "/files", label: "Files", labelZh: "文件", icon: FolderOpen },
   {
     path: "/analytics",
     labelKey: "analytics",
@@ -209,13 +209,13 @@ const BUILTIN_NAV_REST: NavItem[] = [
   { path: "/skills", labelKey: "skills", label: "Skills", icon: Package },
   { path: "/plugins", labelKey: "plugins", label: "Plugins", icon: Puzzle },
   { path: "/mcp", label: "MCP", icon: Plug },
-  { path: "/channels", label: "Channels", icon: Radio },
-  { path: "/webhooks", label: "Webhooks", icon: Webhook },
-  { path: "/pairing", label: "Pairing", icon: ShieldCheck },
+  { path: "/channels", label: "Channels", labelZh: "消息渠道", icon: Radio },
+  { path: "/webhooks", label: "Webhook", icon: Webhook },
+  { path: "/pairing", label: "Pairing", labelZh: "配对", icon: ShieldCheck },
   { path: "/profiles", labelKey: "profiles", label: "Profiles", icon: Users },
   { path: "/config", labelKey: "config", label: "Config", icon: Settings },
   { path: "/env", labelKey: "keys", label: "Keys", icon: KeyRound },
-  { path: "/system", label: "System", icon: Wrench },
+  { path: "/system", label: "System", labelZh: "系统", icon: Wrench },
   {
     path: "/docs",
     labelKey: "documentation",
@@ -614,8 +614,9 @@ export default function App() {
               >
                 <PluginSlot name="header-left" />
 
+                <img src="/tino-icon.svg" alt="" className="size-9 shrink-0" />
                 <Typography className="font-bold text-[1.125rem] leading-[0.95] tracking-[0.0525rem] text-midground uppercase">
-                  Hermes
+                  Tino
                   <br />
                   Agent
                 </Typography>
@@ -854,13 +855,13 @@ function SidebarNavLink({
   tooltipWarmRef,
   t,
 }: SidebarNavLinkProps) {
-  const { path, label, labelKey, icon: Icon } = item;
+  const { path, label, labelKey, labelZh, icon: Icon } = item;
   const [hovered, setHovered] = useState(false);
   const [tooltipAnchor, setTooltipAnchor] = useState<HTMLElement | null>(null);
 
   const navLabel = labelKey
     ? ((t.app.nav as Record<string, string>)[labelKey] ?? label)
-    : label;
+    : t.app.nav.chat === "对话" ? (labelZh ?? label) : label;
   const showTooltip = (event: MouseEvent<HTMLElement> | FocusEvent<HTMLElement>) => {
     setHovered(true);
     setTooltipAnchor(event.currentTarget);
@@ -983,10 +984,10 @@ function SidebarSystemActions({
     }
     const cmd = updateConfirmInfo?.update_command ?? "hermes update";
     return (
-      t.status.updateHermesConfirmMessage ??
+      t.status.updateTinoConfirmMessage ??
       `This will run 'hermes update' (${cmd}) and restart the gateway when it finishes.`
     );
-  }, [t.status.updateHermesConfirmMessage, updateConfirmInfo]);
+  }, [t.status.updateTinoConfirmMessage, updateConfirmInfo]);
 
   const items: SystemActionItem[] = [
     {
@@ -1001,8 +1002,8 @@ function SidebarSystemActions({
     items.push({
       action: "update",
       icon: Download,
-      label: t.status.updateHermes,
-      runningLabel: t.status.updatingHermes,
+      label: t.status.updateTino,
+      runningLabel: t.status.updatingTino,
       spin: false,
     });
   }
@@ -1084,7 +1085,7 @@ function SidebarSystemActions({
         sharedGateway
           ? sharedGatewayRestartDescription(sharedGateway)
           : (t.status.restartGatewayConfirmMessage ??
-            "This restarts the Hermes gateway process. Connected channels and active sessions will reconnect afterward.")
+            "This restarts the Tino gateway process. Connected channels and active sessions will reconnect afterward.")
       }
       loading={pendingAction === "restart"}
       onCancel={() => setRestartConfirmOpen(false)}
@@ -1099,7 +1100,7 @@ function SidebarSystemActions({
 
     <ConfirmDialog
       cancelLabel={t.common.cancel}
-      confirmLabel={t.status.updateHermesConfirmNow ?? "Update now"}
+      confirmLabel={t.status.updateTinoConfirmNow ?? "Update now"}
       description={
         updateConfirmChecking ? t.common.loading : updateConfirmDescription
       }
@@ -1107,7 +1108,7 @@ function SidebarSystemActions({
       onCancel={() => setUpdateConfirmOpen(false)}
       onConfirm={confirmUpdate}
       open={updateConfirmOpen}
-      title={t.status.updateHermesConfirmTitle ?? `${t.status.updateHermes}?`}
+      title={t.status.updateTinoConfirmTitle ?? `${t.status.updateTino}?`}
     />
     </>
   );
@@ -1354,6 +1355,7 @@ interface NavItem {
   icon: ComponentType<{ className?: string }>;
   label: string;
   labelKey?: string;
+  labelZh?: string;
   path: string;
 }
 

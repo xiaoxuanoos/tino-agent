@@ -1,6 +1,6 @@
 """Regression tests for install.sh browser setup.
 
-Browser automation is optional. The installer should not leave Hermes
+Browser automation is optional. The installer should not leave Tino
 half-installed just because Playwright's managed Chromium download hangs on an
 unsupported distribution.
 """
@@ -241,7 +241,7 @@ def test_ensure_browser_no_longer_references_agent_browser_binary_path() -> None
     there by this function."""
     body = _extract_function_body(INSTALL_SH.read_text(), "ensure_browser")
 
-    assert "$HERMES_HOME/node/bin/agent-browser" not in body
+    assert "$TINO_HOME/node/bin/agent-browser" not in body
 
 
 

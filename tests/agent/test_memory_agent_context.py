@@ -31,7 +31,7 @@ def test_cron_session_disables_supermemory_writes(tmp_path, monkeypatch):
     an interactive session's must leave them on (empty hermes_home → config defaults)."""
     from plugins.memory.supermemory import SupermemoryMemoryProvider
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("TINO_HOME", str(tmp_path))
     monkeypatch.delenv("SUPERMEMORY_API_KEY", raising=False)
     by_platform = {}
     for platform in ("cron", "cli"):

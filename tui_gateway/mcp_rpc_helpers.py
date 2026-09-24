@@ -44,7 +44,7 @@ from typing import Optional  # noqa: F401,E402
 from typing import Tuple  # noqa: F401,E402
 
 def resolve_profile(rid, params, err_fn) -> Tuple[Optional[Any], Optional[dict]]:
-    """Resolve the optional ``profile`` param to a HERMES_HOME override token.
+    """Resolve the optional ``profile`` param to a TINO_HOME override token.
 
     Returns ``(token, error)``: ``token`` is None for the launch profile (no
     override) or an opaque reset token; ``error`` is a JSON-RPC error dict

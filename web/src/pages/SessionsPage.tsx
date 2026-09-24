@@ -155,7 +155,7 @@ function sourceLabel(source: string): string {
     case "tool":
       return "Tool";
     case "hermes_flow":
-      return "Hermes Flow";
+      return "Tino Flow";
     case "vulcan_delegate":
       return "Vulcan delegate";
     case "webhook":
@@ -1494,9 +1494,9 @@ export default function SessionsPage() {
         const res = await fetch(api.exportSessionUrl(id, rowProfile(id)), {
           credentials: "include",
           headers: {
-            "X-Hermes-Session-Token":
-              (window as unknown as { __HERMES_SESSION_TOKEN__?: string })
-                .__HERMES_SESSION_TOKEN__ ?? "",
+            "X-Tino-Session-Token":
+              (window as unknown as { __TINO_SESSION_TOKEN__?: string })
+                .__TINO_SESSION_TOKEN__ ?? "",
           },
         });
         if (!res.ok) {
@@ -1778,7 +1778,7 @@ export default function SessionsPage() {
               <span className="text-xs font-mondwest tracking-[0.12em] truncate">
                 {activeAction === "restart"
                   ? t.status.restartGateway
-                  : t.status.updateHermes}
+                  : t.status.updateTino}
               </span>
 
               <Badge

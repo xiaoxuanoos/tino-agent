@@ -213,7 +213,7 @@ class CLISessionMixin:
         """Show compact startup status line."""
         from cli import get_tool_definitions
         # Avoid pulling the full tool registry into the bare Termux prompt path.
-        if os.environ.get("HERMES_DEFER_AGENT_STARTUP") == "1":
+        if os.environ.get("TINO_DEFER_AGENT_STARTUP") == "1":
             tool_status = "tools deferred"
         else:
             tools = get_tool_definitions(enabled_toolsets=self.enabled_toolsets,
@@ -293,7 +293,7 @@ class CLISessionMixin:
         except Exception:
             ctx_label = None
 
-        lines = ["Hermes CLI Status", "", *status_lines(fields, "session_id", "path", "title", "model")]
+        lines = ["Tino CLI Status", "", *status_lines(fields, "session_id", "path", "title", "model")]
         try:
             from agent.i18n import t
             from hermes_cli.auth import resolve_provider
@@ -413,7 +413,7 @@ class CLISessionMixin:
                 _cli_visible_print(f"    {preview}{suffix}")
                 continue
 
-            _cli_visible_print(f"\n  [Hermes #{visible_index}]{_ts_suffix(msg)}")
+            _cli_visible_print(f"\n  [Tino #{visible_index}]{_ts_suffix(msg)}")
             n_calls = len(msg.get("tool_calls") or [])
             if not content_text:
                 suffix = ""
@@ -559,7 +559,7 @@ class CLISessionMixin:
                     self.agent._session_db_created = False
                     self._session_db.create_session(
                         session_id=self.session_id,
-                        source=os.environ.get("HERMES_SESSION_SOURCE", "cli"),
+                        source=os.environ.get("TINO_SESSION_SOURCE", "cli"),
                         model=self.model,
                         model_config={
                             "max_iterations": self.max_turns, "reasoning_config": self.reasoning_config,
@@ -688,7 +688,7 @@ class CLISessionMixin:
             # #76354 review F5: the worker thread also rebound the session ContextVar inside its own
             # (copied) context, which the caller never sees — and get_session_env() prefers an already-bound
             # ContextVar over os.environ. Rebind in the CALLER's context so post-compression
-            # tools/subprocesses on this thread resolve HERMES_SESSION_ID to the child id after an
+            # tools/subprocesses on this thread resolve TINO_SESSION_ID to the child id after an
             # out-of-place rotation (idempotent when no rotation happened).
             if self.session_id:
                 print(f"       Resume the live session with: hermes --resume {self.session_id}")
@@ -879,7 +879,7 @@ class CLISessionMixin:
         """Toggle per-session YOLO mode (skip dangerous-command approvals).
 
         Mirrors the gateway/TUI ``/yolo`` handlers. Deliberately does NOT touch
-        ``HERMES_YOLO_MODE``: that env var is frozen into ``tools.approval._YOLO_MODE_FROZEN``
+        ``TINO_YOLO_MODE``: that env var is frozen into ``tools.approval._YOLO_MODE_FROZEN``
         at import (so prompt-injected skills can't flip the bypass), making a later set a
         silent no-op. ``run_conversation`` binds ``self.session_id`` as the active approval
         key, so the bypass applies to the very next dangerous command.
@@ -894,7 +894,7 @@ class CLISessionMixin:
         if _YOLO_MODE_FROZEN:
             _cprint(
                 f"  ⚡ YOLO is {_Colors.BOLD}{_Colors.RED}locked ON{_Colors.RESET}"
-                " for this process (started with --yolo / HERMES_YOLO_MODE)."
+                " for this process (started with --yolo / TINO_YOLO_MODE)."
                 " /yolo cannot disable it — restart without the flag to"
                 " re-enable approvals.")
             return
@@ -1154,7 +1154,7 @@ class CLISessionMixin:
 
         print("Resume this session with:")
         # Session IDs are profile-constrained: non-default profiles need `-p <profile>` in
-        # the hint ("default"/"custom" use the standard HERMES_HOME).
+        # the hint ("default"/"custom" use the standard TINO_HOME).
         try:
             from hermes_cli.profiles import get_active_profile_name
             _active_profile = get_active_profile_name()

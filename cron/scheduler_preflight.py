@@ -96,7 +96,7 @@ def _preflight_check_provider_key(job: dict, cfg: dict) -> Optional[str]:
     _cron_cfg = cfg.get("cron") if isinstance(cfg.get("cron"), dict) else {}
     requested = (
         job.get("provider") or str((_cron_cfg or {}).get("model_provider") or "").strip() or None)
-    model = job.get("model") or cron_env_setting("HERMES_MODEL") or ""
+    model = job.get("model") or cron_env_setting("TINO_MODEL") or ""
 
     from hermes_cli.auth import AuthError, is_rate_limited_auth_error
     try:
@@ -122,16 +122,16 @@ def _preflight_check_provider_key(job: dict, cfg: dict) -> Optional[str]:
 
 
 def _credential_store_scope_label() -> str:
-    """``[profile '<name>', HERMES_HOME <path>]`` for the home this preflight read credentials from.
+    """``[profile '<name>', TINO_HOME <path>]`` for the home this preflight read credentials from.
 
     The verdict must name the store it judged: a scheduler process whose home differs from the
-    shell where "the same credential works" (Docker HOME vs HERMES_HOME, a multiplexed satellite
+    shell where "the same credential works" (Docker HOME vs TINO_HOME, a multiplexed satellite
     profile, a gateway launched without the shell's env) otherwise reports a bare "No credentials
     stored" that cannot be told apart from a real login gap (#116213).
     """
     from hermes_cli.profiles import get_active_profile_name
     from hermes_constants import get_hermes_home
-    return f"[profile '{get_active_profile_name() or 'default'}', HERMES_HOME {get_hermes_home()}]"
+    return f"[profile '{get_active_profile_name() or 'default'}', TINO_HOME {get_hermes_home()}]"
 
 
 def _primary_profile_routes_for_current_home() -> list:

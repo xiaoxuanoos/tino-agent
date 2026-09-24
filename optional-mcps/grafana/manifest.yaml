@@ -7,9 +7,9 @@ description: >-
   Query metrics, logs, dashboards, alerts, and incidents from Grafana Cloud.
 source: https://grafana.com/docs/grafana-cloud/ai-tools/mcp-servers/cloud-mcp/
 
-# Grafana Cloud's hosted remote MCP (URL-only — Hermes never spawns a local
+# Grafana Cloud's hosted remote MCP (URL-only — Tino never spawns a local
 # process for this entry). Native OAuth 2.1 + Dynamic Client Registration over
-# Streamable HTTP; Hermes's MCP client + mcp_oauth_manager handle discovery,
+# Streamable HTTP; Tino's MCP client + mcp_oauth_manager handle discovery,
 # PKCE, token exchange, and refresh. OAuth is user-scoped to your Grafana RBAC.
 #
 # Note: this is the *hosted* Grafana Cloud MCP server, not the self-run OSS

@@ -21,7 +21,7 @@
  *
  * Both probes are deliberately fast and forgiving:
  *   - default 15s timeout (5s was too short on cold Windows disks / AV;
- *     issue #61764 death-loop) with HERMES_PROBE_TIMEOUT_MS override
+ *     issue #61764 death-loop) with TINO_PROBE_TIMEOUT_MS override
  *   - one automatic retry after a timeout before declaring the runtime dead
  *   - stdio ignored (we only care about exit code; stdout/stderr are
  *     not surfaced to the user, just to recentHermesLog for forensics
@@ -40,10 +40,10 @@ const DEFAULT_PROBE_TIMEOUT_MS = 15_000
 
 /**
  * Resolve the backend probe timeout (ms).
- * Honours HERMES_PROBE_TIMEOUT_MS when it parses as a positive integer.
+ * Honours TINO_PROBE_TIMEOUT_MS when it parses as a positive integer.
  */
 function resolveProbeTimeoutMs(env: NodeJS.ProcessEnv = process.env): number {
-  const raw = env.HERMES_PROBE_TIMEOUT_MS
+  const raw = env.TINO_PROBE_TIMEOUT_MS
 
   if (raw == null || raw === '') {
     return DEFAULT_PROBE_TIMEOUT_MS
@@ -133,7 +133,7 @@ async function execProbe(
 }
 
 /**
- * Return the Python snippet used to verify Hermes can import far enough to
+ * Return the Python snippet used to verify Tino can import far enough to
  * launch the CLI. Kept exported for tests so dependency regressions are
  * caught without needing a real broken venv fixture.
  *
@@ -144,7 +144,7 @@ function hermesRuntimeImportProbe() {
 }
 
 /**
- * Return true iff the Hermes runtime import probe exits 0.
+ * Return true iff the Tino runtime import probe exits 0.
  *
  * Used to gate the "fallback to system Python with hermes_cli installed"
  * rung of resolveHermesBackend. Without this, a system Python 3.11-3.13
@@ -203,7 +203,7 @@ async function canImportHermesCli(pythonPath: string, opts: { env?: Record<strin
 /**
  * An explicit desktop backend command is a deployment contract, not a PATH
  * discovery candidate. In particular, the Nix desktop wrapper points this at
- * its immutable, matching Hermes package; it must never fall through to the
+ * its immutable, matching Tino package; it must never fall through to the
  * mutable install-script bootstrap path if a best-effort probe is slow.
  */
 function shouldTrustHermesOverride(hermesOverride?: string) {

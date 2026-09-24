@@ -5,14 +5,14 @@ from typing import Any
 from urllib.parse import urlparse
 
 from agent.reasoning_effort import KIMI_K3_EFFORTS, KIMI_K3_OVERRIDES, thinking_toggle_extras
-from hermes_cli import __version__ as _HERMES_VERSION
+from hermes_cli import __version__ as _TINO_VERSION
 from providers import register_provider
 from providers.base import OMIT_TEMPERATURE, ProviderProfile
 
 _HEADERS = {
     "HTTP-Referer": "https://hermes-agent.nousresearch.com",
-    "X-Title": "Hermes Agent",
-    "User-Agent": f"HermesAgent/{_HERMES_VERSION}",
+    "X-Title": "Tino Agent",
+    "User-Agent": f"HermesAgent/{_TINO_VERSION}",
 }
 
 

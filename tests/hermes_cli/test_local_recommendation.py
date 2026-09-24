@@ -53,9 +53,9 @@ def _unified(size_gb: int) -> HardwareBudget:
 #
 #   VRAM | discrete                | unified
 #   -----+-------------------------+------------------------
-#     8  | (no recommendation)      | (none fits)
-#    16  | (no recommendation)      | (none fits)
-#    24  | qwen3.8-27b             | (none fits)
+#     8  | qwen3.5-2b             | qwen3.5-2b
+#    16  | qwen3.5-2b             | qwen3.5-2b
+#    24  | qwen3.8-27b             | qwen3.5-2b
 #    32  | qwen3.8-27b             | qwen3.6-35b-a3b
 #    48  | qwen3.8-27b             | qwen3.6-35b-a3b
 #    96  | qwen3.8-27b             | qwen3.6-35b-a3b
@@ -64,8 +64,8 @@ def _unified(size_gb: int) -> HardwareBudget:
 #   512  | qwen3.8-flash-next      | qwen3.8-flash-next
 #
 # Reading guide for reviewers:
-# - Discrete <=16 GB: nothing runs resident; no automatic recommendation.
-#   Browse remains available for explicit spill choices.
+# - 8-16 GB: Qwen3.5 2B runs resident and supports the agent's 64K minimum.
+#   The 0.8B fallback is faster and smaller; Qwen2.5 32K cannot work here.
 # - Discrete 24-96 GB: the 27B is the flagship experience — dense reads
 #   at ~1 TB/s clear the floor easily, so quality decides.
 # - Discrete/unified where Flash Next fits resident (128 GB discrete,
@@ -75,17 +75,14 @@ def _unified(size_gb: int) -> HardwareBudget:
 # - Unified 32-128 GB — the Spark class, the reason this resolver
 #   exists: the dense 27B predicts ~13 tok/s at UMA bandwidth (below
 #   the pleasant floor), so the 35B-A3B (~60 tok/s) wins.
-# - Unified <=24 GB: no entry passes the physics check inside the UMA
-#   budget (spilling is impossible on UMA by construction — the pool IS
-#   the RAM). The pane's browse flow is the path for those machines
-#   until a small catalog entry lands (revisit when one does).
+# - Unified <=24 GB: the 2B entry fits inside the UMA budget.
 DECISION_TABLE = [
-    (8, "discrete", None, None),
-    (8, "unified", None, None),
-    (16, "discrete", None, None),
-    (16, "unified", None, None),
+    (8, "discrete", "qwen3.5-2b", "best-quality-resident"),
+    (8, "unified", "qwen3.5-2b", "best-quality-resident"),
+    (16, "discrete", "qwen3.5-2b", "best-quality-resident"),
+    (16, "unified", "qwen3.5-2b", "best-quality-resident"),
     (24, "discrete", "qwen3.8-27b", "best-quality-resident"),
-    (24, "unified", None, None),
+    (24, "unified", "qwen3.5-2b", "best-quality-resident"),
     (32, "discrete", "qwen3.8-27b", "best-quality-resident"),
     (32, "unified", "qwen3.6-35b-a3b", "speed-gated-quality"),
     (48, "discrete", "qwen3.8-27b", "best-quality-resident"),

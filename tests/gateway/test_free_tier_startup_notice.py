@@ -47,8 +47,8 @@ def _account_state() -> dict:
 @pytest.fixture
 def nous_runner(tmp_path, monkeypatch):
     monkeypatch.setattr(gateway_run, "_hermes_home", tmp_path)
-    monkeypatch.setenv("HERMES_SHARED_AUTH_DIR", str(tmp_path / "shared-store"))
-    monkeypatch.setenv("HERMES_GUEST_ONBOARDING", "1")
+    monkeypatch.setenv("TINO_SHARED_AUTH_DIR", str(tmp_path / "shared-store"))
+    monkeypatch.setenv("TINO_GUEST_ONBOARDING", "1")
     # Provider precedence gates the line and is answered from persisted state only (no network at boot).
     for var in ("OPENROUTER_API_KEY", "OPENAI_API_KEY", "ANTHROPIC_API_KEY", "NOUS_API_KEY"):
         monkeypatch.delenv(var, raising=False)
@@ -75,7 +75,7 @@ async def test_guest_inference_adds_exactly_one_free_tier_line(nous_runner):
     message = await _startup_message(runner, adapter)
 
     lines = message.splitlines()
-    assert lines[0] == "♻️ Gateway online — Hermes is back and ready."
+    assert lines[0] == "♻️ Gateway online — Tino is back and ready."
     assert lines[1:] == [FREE_TIER_LINE]
     assert "guest" not in message.lower() and "anonymous" not in message.lower()
 
@@ -88,7 +88,7 @@ async def test_signed_in_account_keeps_the_plain_online_notice(nous_runner):
 
     message = await _startup_message(runner, adapter)
 
-    assert message == "♻️ Gateway online — Hermes is back and ready."
+    assert message == "♻️ Gateway online — Tino is back and ready."
 
 
 @pytest.mark.asyncio
@@ -99,4 +99,4 @@ async def test_non_nous_provider_never_mentions_the_free_tier(nous_runner, monke
 
     message = await _startup_message(runner, adapter)
 
-    assert message == "♻️ Gateway online — Hermes is back and ready."
+    assert message == "♻️ Gateway online — Tino is back and ready."

@@ -41,7 +41,7 @@ _UNEXPLAINED_REJECTION_FRACTION = 0.5
 
 _GITHUB_MODELS_HINT = (
     "   💡 GitHub Models free tier (models.inference.ai.azure.com) caps every",
-    "      request at ~8K tokens. Hermes' system prompt + tool schemas baseline",
+    "      request at ~8K tokens. Tino's system prompt + tool schemas baseline",
     "      exceeds that floor, so this endpoint cannot run an agentic loop.",
     "      Use the `copilot` provider with a Copilot subscription token (`hermes",
     "      setup` → GitHub Copilot), or pick any other provider.",
@@ -383,7 +383,7 @@ def _recover_context_length(st: _Recovery, _retry: TurnRetryState, error_msg: st
             notices=(
                 "❌ The provider rejected the request because the requested output length exceeds its "
                 "output cap for this model, and the error did not state the allowed limit.",
-                "   💡 Hermes has no user setting for the output cap — check the endpoint's default max output "
+                "   💡 Tino has no user setting for the output cap — check the endpoint's default max output "
                 "(completion) tokens for this model on the server or proxy. "
                 "(This is an output-cap error, not a context overflow — compression cannot fix it.)",
             ),
@@ -397,7 +397,7 @@ def _recover_context_length(st: _Recovery, _retry: TurnRetryState, error_msg: st
     new_ctx = _adopt_provider_context_limit(st, error_msg, old_ctx)
 
     # A rejection the transcript cannot explain (#114644): the request sits far below the window
-    # Hermes knows for this model (after adopting any limit the server reported), so compressing
+    # Tino knows for this model (after adopting any limit the server reported), so compressing
     # would destroy history for nothing. Single-slot local servers reject like this while ANOTHER
     # request — a background review from an earlier session — holds their context. Name that,
     # keep the turn retryable and transient: no "conversation too long", no gateway auto-reset.

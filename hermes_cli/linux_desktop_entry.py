@@ -27,7 +27,7 @@ DESKTOP_ENTRY_NAME = "hermes.desktop"
 # (updater relaunch) launches. See launched_from_shell().
 SHELL_LAUNCH_ENV_VAR = "DESKTOP_STARTUP_ID"
 # Write end of the reveal pipe handed to Electron; one byte means "main window is on screen".
-READY_FD_ENV_VAR = "HERMES_DESKTOP_READY_FD"
+READY_FD_ENV_VAR = "TINO_DESKTOP_READY_FD"
 REVEAL_BYTE = b"r"  # what linux-launcher-ready.ts writes; anything else is finish()'s wake-up
 
 _SHELL_NAMES = ("bash", "sh", "dash", "zsh", "ksh")
@@ -416,15 +416,15 @@ def render_desktop_entry(exec_command: str, icon: str) -> str:
     return (
         "[Desktop Entry]\n"
         "Type=Application\n"
-        "Name=Hermes\n"
-        "GenericName=Hermes Desktop\n"
-        "Comment=Launch Hermes Desktop\n"
+        "Name=Tino\n"
+        "GenericName=Tino Desktop\n"
+        "Comment=Launch Tino Desktop\n"
         f"Exec={exec_command}\n"
         f"Icon={icon}\n"
         "Terminal=false\n"
         "Categories=Utility;\n"
         "StartupNotify=true\n"
-        "StartupWMClass=Hermes\n"
+        "StartupWMClass=Tino\n"
     )
 
 
@@ -657,7 +657,7 @@ class DeferredDesktopEntryInstall:
     """Install the entry once the desktop window is on screen — never while the shell's
     ShellApp is STARTING.
 
-    The launcher hands Electron the write end of a pipe (``HERMES_DESKTOP_READY_FD``); Electron
+    The launcher hands Electron the write end of a pipe (``TINO_DESKTOP_READY_FD``); Electron
     writes one byte when the main window is revealed and a worker thread then installs the entry.
     An exit without a reveal (boot crash, early quit) does NOT heal: gnome-shell keeps the ShellApp
     in STARTING until the startup-notification sequence completes or times out (mutter, ~15 s),

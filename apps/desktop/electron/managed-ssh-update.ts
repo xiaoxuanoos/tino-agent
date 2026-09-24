@@ -210,7 +210,7 @@ function windowsChildPath(home: string, name: string): string {
  */
 function buildPosixManagedUpdateLaunch(target: RemoteUpdateTarget, correlationId: string): string {
   const correlation = validateCorrelationId(correlationId)
-  const home = validateRemoteValue(target.hermesHome, 'Hermes home')
+  const home = validateRemoteValue(target.hermesHome, 'Tino home')
   const hermesPath = validateRemoteValue(target.hermesPath, 'launcher path')
   const statusPath = posixChildPath(home, `.update_exit_code.${correlation}`)
   const intentPath = posixChildPath(home, `.update_launch_intent.${correlation}`)
@@ -222,11 +222,11 @@ function buildPosixManagedUpdateLaunch(target: RemoteUpdateTarget, correlationId
   const launcherWord = expandRemotePath(hermesPath)
 
   const updateCommand =
-    `env HERMES_HOME=${homeWord} ` +
-    `HERMES_UPDATE_CORRELATION_ID=${shq(correlation)} ` +
-    'HERMES_UPDATE_ORIGIN_PROFILE=default ' +
-    `HERMES_UPDATE_ORIGIN_HOME=${homeWord} ` +
-    `HERMES_UPDATE_OUTPUT_PATH=${outputWord} ` +
+    `env TINO_HOME=${homeWord} ` +
+    `TINO_UPDATE_CORRELATION_ID=${shq(correlation)} ` +
+    'TINO_UPDATE_ORIGIN_PROFILE=default ' +
+    `TINO_UPDATE_ORIGIN_HOME=${homeWord} ` +
+    `TINO_UPDATE_OUTPUT_PATH=${outputWord} ` +
     `${launcherWord} update --yes`
 
   const inner =
@@ -255,7 +255,7 @@ function buildPosixManagedUpdateLaunch(target: RemoteUpdateTarget, correlationId
 /** Windows equivalent of buildPosixManagedUpdateLaunch. */
 function buildWindowsManagedUpdateLaunch(target: RemoteUpdateTarget, correlationId: string): string {
   const correlation = validateCorrelationId(correlationId)
-  const home = validateRemoteValue(target.hermesHome, 'Hermes home')
+  const home = validateRemoteValue(target.hermesHome, 'Tino home')
   const hermesPath = validateRemoteValue(target.hermesPath, 'launcher path')
   const statusPath = windowsChildPath(home, `.update_exit_code.${correlation}`)
   const readyPath = windowsChildPath(home, `.update_coordinator_ready.${correlation}`)
@@ -264,16 +264,16 @@ function buildWindowsManagedUpdateLaunch(target: RemoteUpdateTarget, correlation
 
   const wrapper = [
     '$ErrorActionPreference="Continue"',
-    `$env:HERMES_HOME=${psLiteral(home)}`,
-    `$env:HERMES_UPDATE_CORRELATION_ID=${psLiteral(correlation)}`,
-    '$env:HERMES_UPDATE_ORIGIN_PROFILE="default"',
-    `$env:HERMES_UPDATE_ORIGIN_HOME=${psLiteral(home)}`,
-    `$env:HERMES_UPDATE_OUTPUT_PATH=${psLiteral(outputPath)}`,
+    `$env:TINO_HOME=${psLiteral(home)}`,
+    `$env:TINO_UPDATE_CORRELATION_ID=${psLiteral(correlation)}`,
+    '$env:TINO_UPDATE_ORIGIN_PROFILE="default"',
+    `$env:TINO_UPDATE_ORIGIN_HOME=${psLiteral(home)}`,
+    `$env:TINO_UPDATE_OUTPUT_PATH=${psLiteral(outputPath)}`,
     // The copied Windows coordinator verifies this correlation AND its actual
     // breakaway state before accepting it; the string alone grants nothing.
-    `$env:HERMES_UPDATE_WINDOWS_DETACHED=${psLiteral(correlation)}`,
-    `$env:HERMES_UPDATE_TAURI_OUTCOME_PATH=${psLiteral(statusPath)}`,
-    `$env:HERMES_UPDATE_TAURI_READY_PATH=${psLiteral(readyPath)}`,
+    `$env:TINO_UPDATE_WINDOWS_DETACHED=${psLiteral(correlation)}`,
+    `$env:TINO_UPDATE_TAURI_OUTCOME_PATH=${psLiteral(statusPath)}`,
+    `$env:TINO_UPDATE_TAURI_READY_PATH=${psLiteral(readyPath)}`,
     `$intentTmp=${psLiteral(intentPath)}+"."+$PID+".tmp"`,
     '$intentCreation="windows:"+[string]([Diagnostics.Process]::GetCurrentProcess().StartTime.ToUniversalTime().ToFileTimeUtc())',
     `$intentPayload=[ordered]@{correlation=${psLiteral(correlation)};pid=$PID;creation=$intentCreation}|ConvertTo-Json -Compress`,
@@ -455,7 +455,7 @@ print(json.dumps({'marker':state['state'],'markerPid':state.get('pid'),'launchIn
 
 function buildRemoteUpdateObservationCommand(target: RemoteUpdateTarget, correlationId: string): string {
   const correlation = validateCorrelationId(correlationId)
-  const home = validateRemoteValue(target.hermesHome, 'Hermes home')
+  const home = validateRemoteValue(target.hermesHome, 'Tino home')
 
   if (target.platform === 'Windows') {
     const python = validateRemoteValue(target.pythonPath || '', 'Python path')
@@ -888,7 +888,7 @@ async function runManagedSshUpdate<TScope extends ManagedSshScope>(
     ...(error ? { error } : {}),
     message:
       outcome === 'updated'
-        ? 'Remote Hermes updated and every managed SSH profile is ready.'
+        ? 'Remote Tino updated and every managed SSH profile is ready.'
         : restoreOk
           ? 'The remote update failed, but every managed SSH profile was restored.'
           : 'The remote update transaction could not restore every managed SSH profile.'

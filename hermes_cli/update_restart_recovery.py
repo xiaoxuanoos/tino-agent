@@ -56,8 +56,8 @@ import time
 from collections.abc import Callable, Iterable, Mapping
 from typing import Any
 
-_RECOVERY_ENV = "HERMES_UPDATE_RESTART_RECOVERY"
-_GATEWAY_MARKERS = ("_HERMES_GATEWAY", "HERMES_GATEWAY", "HERMES_GATEWAY_MODE")
+_RECOVERY_ENV = "TINO_UPDATE_RESTART_RECOVERY"
+_GATEWAY_MARKERS = ("_TINO_GATEWAY", "TINO_GATEWAY", "TINO_GATEWAY_MODE")
 _PROFILE_RESTART_TIMEOUT = 90
 _VERIFY_TIMEOUT = 15
 _PROFILE_ID_RE = re.compile(r"^[a-z0-9][a-z0-9_-]{0,63}$")
@@ -90,10 +90,10 @@ def _succeeded(result: Any) -> bool:
 
 
 def _launch_profile() -> str:
-    """Profile this recovery process was launched as: ``<root>/profiles/<name>`` in ``HERMES_HOME`` names it,
+    """Profile this recovery process was launched as: ``<root>/profiles/<name>`` in ``TINO_HOME`` names it,
     anything else is the default profile. Mirrors ``hermes_cli.profiles.profile_root_for_env_home`` without
     importing it — this module stays stdlib-only at import time."""
-    home = os.environ.get("HERMES_HOME", "").strip()
+    home = os.environ.get("TINO_HOME", "").strip()
     if home:
         path = os.path.normpath(home)
         if os.path.basename(os.path.dirname(path)) == "profiles":
@@ -172,7 +172,7 @@ def restart_profiles(
 def _systemctl_scopes() -> list[tuple[str, list[str]]]:
     """``(label, systemctl argv)`` for the user and system scopes (the pair the in-process phase walks), or nothing.
 
-    ``systemctl`` comes from ``shutil.which`` so this module never imports a Hermes platform helper —
+    ``systemctl`` comes from ``shutil.which`` so this module never imports a Tino platform helper —
     importing the freshly pulled tree is exactly what aborted the phase that called us. Scopes carry
     their label because the same unit name in both managers is two different processes.
     """

@@ -14,11 +14,11 @@ from tools.checkpoint_manager import CheckpointManager
 
 @pytest.fixture()
 def profile_env(tmp_path, monkeypatch):
-    """Isolate profile paths and the process-level Hermes root."""
+    """Isolate profile paths and the process-level Tino root."""
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
     default_home = tmp_path / ".hermes"
     default_home.mkdir(exist_ok=True)
-    monkeypatch.setenv("HERMES_HOME", str(default_home))
+    monkeypatch.setenv("TINO_HOME", str(default_home))
     return default_home
 
 

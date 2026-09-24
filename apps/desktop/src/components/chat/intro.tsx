@@ -1,5 +1,6 @@
 import { useState } from 'react'
 
+import { useI18n } from '@/i18n'
 import { capitalize, normalize } from '@/lib/text'
 
 import introCopyJsonl from './intro-copy.jsonl?raw'
@@ -31,7 +32,7 @@ const FALLBACK_COPY: IntroCopy[] = [
     body: "Bring the code, question, or stuck part. I'll read the room before making changes."
   },
   {
-    headline: 'What should Hermes look at?',
+    headline: 'What should Tino look at?',
     body: "Send the task, failing path, or half-formed plan. I'll help turn it into action."
   },
   {
@@ -123,7 +124,7 @@ function fallbackCopyForPersonality(personalityKey: string): IntroCopy[] {
       body: "Send the task, file, or rough idea. I'll use your configured voice and keep the work grounded in this repo."
     },
     {
-      headline: `What does ${label} Hermes need to see?`,
+      headline: `What does ${label} Tino need to see?`,
       body: "Bring the context or the stuck part. I'll adapt to your configured personality."
     },
     {
@@ -131,7 +132,7 @@ function fallbackCopyForPersonality(personalityKey: string): IntroCopy[] {
       body: "Send the problem, file, or idea. I'll follow the personality you've configured."
     },
     {
-      headline: `What should ${label} Hermes tackle?`,
+      headline: `What should ${label} Tino tackle?`,
       body: "Drop the task here. I'll keep the work grounded in the repo."
     },
     {
@@ -145,7 +146,9 @@ function pickCopy(copies: IntroCopy[], seed = 0): IntroCopy {
   return copies[Math.abs(seed) % copies.length] || FALLBACK_COPY[0]
 }
 
-const WORDMARK = 'HERMES AGENT'
+const WORDMARK = 'TINO AGENT'
+
+const assetPath = (path: string) => `${import.meta.env.BASE_URL}${path.replace(/^\/+/, '')}`
 
 function resolveCopy(personality?: string, seed?: number): IntroCopy {
   const personalityKey = normalizeKey(personality)
@@ -158,8 +161,15 @@ function resolveCopy(personality?: string, seed?: number): IntroCopy {
 }
 
 export function Intro({ personality, seed }: IntroProps) {
+  const { locale } = useI18n()
   const [mountSeed] = useState(() => Math.floor(Math.random() * 100000))
-  const copy = resolveCopy(personality, mountSeed + (seed ?? 0))
+  const copy =
+    locale === 'zh' || locale === 'zh-hant'
+      ? {
+          body: '输入任务、问题或代码片段。Tino 会记住会话、标注来源，并在不确定时先向你确认。',
+          headline: 'Tino Agent 已就绪。'
+        }
+      : resolveCopy(personality, mountSeed + (seed ?? 0))
 
   return (
     <div
@@ -167,6 +177,11 @@ export function Intro({ personality, seed }: IntroProps) {
       data-slot="aui_intro"
     >
       <div className="w-full min-w-0">
+        <img
+          alt="Tino Agent"
+          className="mx-auto mb-3 size-20 object-contain drop-shadow-[0_12px_30px_rgba(34,211,238,0.22)] sm:size-24"
+          src={assetPath('tino-agent.png')}
+        />
         <Wordmark className="mb-1" text={WORDMARK} />
 
         <p className="m-0 text-center leading-normal tracking-tight">{copy.body}</p>

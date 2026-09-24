@@ -58,7 +58,7 @@ def test_parent_reexecs_tail_on_pulled_tree_and_relays_exit_code(monkeypatch, tm
     assert spawned["cmd"][:4] == [sys.executable, "-m", "hermes_cli.main", "update"]
     assert spawned["cmd"][4:] == ["--yes", "--no-gateway-restart", "--branch", "main", "--post-swap", spawned["cmd"][-1]]
     env = spawned["env"]
-    assert env[update_handoff.POST_SWAP_ENV] == "1" and env["HERMES_UPDATE_REEXEC"] == "1"
+    assert env[update_handoff.POST_SWAP_ENV] == "1" and env["TINO_UPDATE_REEXEC"] == "1"
     assert env[HANDOFF_PID_ENV] == str(os.getpid())
     payload = spawned["payload"]
     assert payload["receipt"]["steps"][0]["name"] == "pre_update_backup"

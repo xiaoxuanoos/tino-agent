@@ -65,9 +65,9 @@ def test_kanban_guidance_requires_worker_task_at_agent_init(monkeypatch, task_id
     import model_tools
 
     if task_id is None:
-        monkeypatch.delenv("HERMES_KANBAN_TASK", raising=False)
+        monkeypatch.delenv("TINO_KANBAN_TASK", raising=False)
     else:
-        monkeypatch.setenv("HERMES_KANBAN_TASK", task_id)
+        monkeypatch.setenv("TINO_KANBAN_TASK", task_id)
     monkeypatch.setattr("hermes_cli.plugins.discover_plugins", lambda: None)
     monkeypatch.setattr(
         model_tools,
@@ -88,7 +88,7 @@ def test_kanban_guidance_requires_worker_task_at_agent_init(monkeypatch, task_id
 ])
 def test_kanban_guidance_fallback_requires_owned_worker_task(monkeypatch, task_id, owner, expected):
     """Prompt fallback preserves the worker boundary when init was bypassed: tool access
-    is not identity, and an inherited HERMES_KANBAN_TASK is not ownership (#112486)."""
+    is not identity, and an inherited TINO_KANBAN_TASK is not ownership (#112486)."""
     from contextlib import nullcontext
 
     from agent.delegation_context import non_dispatcher_owned_context
@@ -96,9 +96,9 @@ def test_kanban_guidance_fallback_requires_owned_worker_task(monkeypatch, task_i
     from agent.system_prompt import _tool_guidance_block
 
     if task_id is None:
-        monkeypatch.delenv("HERMES_KANBAN_TASK", raising=False)
+        monkeypatch.delenv("TINO_KANBAN_TASK", raising=False)
     else:
-        monkeypatch.setenv("HERMES_KANBAN_TASK", task_id)
+        monkeypatch.setenv("TINO_KANBAN_TASK", task_id)
     agent = _make_agent(valid_tool_names={"kanban_show"})
     delattr(agent, "_kanban_worker_guidance")
 
@@ -264,9 +264,9 @@ def test_stored_prompt_cwd_ignores_project_host_decoys(monkeypatch, tmp_path):
     cwd.mkdir()
     monkeypatch.setenv("TERMINAL_ENV", "local")
     monkeypatch.setenv("TERMINAL_CWD", str(cwd))
-    decoy = "# Hermes runtime environment\n\nHost: Example\nUser home directory: /example\nCurrent working directory: /example\n"
+    decoy = "# Tino runtime environment\n\nHost: Example\nUser home directory: /example\nCurrent working directory: /example\n"
     (cwd / "AGENTS.md").write_text(decoy)
-    monkeypatch.setenv("HERMES_ENVIRONMENT_HINT", decoy + "\nModel: decoy\nProvider: decoy\nPlatform: decoy")
+    monkeypatch.setenv("TINO_ENVIRONMENT_HINT", decoy + "\nModel: decoy\nProvider: decoy\nPlatform: decoy")
     agent = _make_agent(
         platform="cli", model="test-model", provider="test-provider",
         _memory_enabled=True, _user_profile_enabled=False,
@@ -374,7 +374,7 @@ class TestNamedProfileHintIntegration:
     ``_resolve_active_profile_name`` returns a named profile *only* when the
     active home is already ``<root>/profiles/<name>``, which is exactly why
     appending that suffix again doubled it. Drive it with a real
-    ``HERMES_HOME`` and no resolver mocks.
+    ``TINO_HOME`` and no resolver mocks.
     """
 
     def test_real_hermes_home_under_profiles_renders_correct_paths(
@@ -385,7 +385,7 @@ class TestNamedProfileHintIntegration:
         profile_home.mkdir(parents=True)
 
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
-        monkeypatch.setenv("HERMES_HOME", str(profile_home))
+        monkeypatch.setenv("TINO_HOME", str(profile_home))
         monkeypatch.delenv("TERMINAL_CWD", raising=False)
 
         # Sanity-check the real chain before asserting on the prompt.
@@ -400,7 +400,7 @@ class TestNamedProfileHintIntegration:
         with patch("agent.coding_context._coding_mode", return_value="off"):
             prompt = "\n\n".join(_prompt_parts(agent).values())
 
-        assert "Active Hermes profile: coder." in prompt
+        assert "Active Tino profile: coder." in prompt
         assert f"reads and writes {profile_home}/." in prompt
         # The doubled form must not appear anywhere.
         assert f"{profile_home}/profiles/coder" not in prompt
@@ -409,12 +409,12 @@ class TestNamedProfileHintIntegration:
         assert f"{profile_home}/skills/" not in prompt
 
     def test_real_default_home_renders_default_branch(self, tmp_path, monkeypatch):
-        """HERMES_HOME at the root resolves to the default profile, unchanged."""
+        """TINO_HOME at the root resolves to the default profile, unchanged."""
         root = tmp_path / ".hermes"
         root.mkdir(parents=True)
 
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
-        monkeypatch.setenv("HERMES_HOME", str(root))
+        monkeypatch.setenv("TINO_HOME", str(root))
         monkeypatch.delenv("TERMINAL_CWD", raising=False)
 
         from agent.file_safety import _resolve_active_profile_name
@@ -425,7 +425,7 @@ class TestNamedProfileHintIntegration:
         with patch("agent.coding_context._coding_mode", return_value="off"):
             prompt = "\n\n".join(_prompt_parts(agent).values())
 
-        assert "Active Hermes profile: default." in prompt
+        assert "Active Tino profile: default." in prompt
         assert f"under {root}/profiles/<name>/." in prompt
 
 
@@ -451,8 +451,8 @@ def test_coding_prompt_orders_shared_context_before_workspace(monkeypatch):
         _parallel_tool_call_guidance=False,
     )
     monkeypatch.setattr(system_prompt, "DEFAULT_AGENT_IDENTITY", "IDENTITY")
-    monkeypatch.setattr(system_prompt, "HERMES_AGENT_HELP_GUIDANCE", "HELP")
-    monkeypatch.setattr(system_prompt, "HERMES_AGENT_HELP_GUIDANCE_NO_SKILLS", "HELP")
+    monkeypatch.setattr(system_prompt, "TINO_AGENT_HELP_GUIDANCE", "HELP")
+    monkeypatch.setattr(system_prompt, "TINO_AGENT_HELP_GUIDANCE_NO_SKILLS", "HELP")
     monkeypatch.setattr(system_prompt, "STEER_CHANNEL_NOTE", "STEER")
     monkeypatch.setattr(system_prompt, "get_hermes_home", lambda: Path("/hermes"))
 
@@ -461,7 +461,7 @@ def test_coding_prompt_orders_shared_context_before_workspace(monkeypatch):
     # build the expectation the same way instead of hardcoding "/hermes".
     _home_str = str(Path("/hermes"))
     expected_profile = (
-        "Active Hermes profile: default. Other profiles (if any) live "
+        "Active Tino profile: default. Other profiles (if any) live "
         f"under {_home_str}/profiles/<name>/. Each profile has its own skills/, "
         "plugins/, cron/, and memories/ that affect a different session than "
         "this one. Do not modify another profile's skills/plugins/cron/memories "
@@ -577,7 +577,7 @@ class TestTelegramRichMessagesHint:
 
     def test_gateway_rich_messages_integration_via_real_config(self, tmp_path, monkeypatch):
         """End-to-end through the real config-resolution chain: a config.yaml
-        under HERMES_HOME with ``gateway.platforms.telegram.extra.rich_messages``
+        under TINO_HOME with ``gateway.platforms.telegram.extra.rich_messages``
         must activate the rich hint. ``load_config_readonly`` is NOT mocked here,
         so this guards against the exact path-mismatch bug this PR fixes.
         """
@@ -592,7 +592,7 @@ class TestTelegramRichMessagesHint:
         home.mkdir()
         (home / "config.yaml").write_text(config_yaml)
 
-        monkeypatch.setenv("HERMES_HOME", str(home))
+        monkeypatch.setenv("TINO_HOME", str(home))
         # Point config resolution at the temp file without mocking the loader:
         # mirror the pattern used in test_config_env_expansion.py.
         from hermes_cli import config as _cfgmod
@@ -825,8 +825,8 @@ def test_conversation_start_uses_session_start_not_build_time(monkeypatch):
         session_id="20260101_120000_abc123",
     )
     monkeypatch.setattr(system_prompt, "DEFAULT_AGENT_IDENTITY", "IDENTITY")
-    monkeypatch.setattr(system_prompt, "HERMES_AGENT_HELP_GUIDANCE", "HELP")
-    monkeypatch.setattr(system_prompt, "HERMES_AGENT_HELP_GUIDANCE_NO_SKILLS", "HELP")
+    monkeypatch.setattr(system_prompt, "TINO_AGENT_HELP_GUIDANCE", "HELP")
+    monkeypatch.setattr(system_prompt, "TINO_AGENT_HELP_GUIDANCE_NO_SKILLS", "HELP")
     monkeypatch.setattr(system_prompt, "STEER_CHANNEL_NOTE", "STEER")
     monkeypatch.setattr(system_prompt, "get_hermes_home", lambda: Path("/hermes"))
 

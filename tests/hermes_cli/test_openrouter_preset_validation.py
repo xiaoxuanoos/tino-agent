@@ -197,7 +197,7 @@ print(json.dumps(vars(result)))
 """
     env = {
         "HOME": str(tmp_path),
-        "HERMES_HOME": str(tmp_path),
+        "TINO_HOME": str(tmp_path),
         "LANG": "C.UTF-8",
         "OPENROUTER_API_KEY": "key",
         "PATH": os.environ.get("PATH", ""),

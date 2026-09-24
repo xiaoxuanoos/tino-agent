@@ -12,10 +12,10 @@ const repo = fileURLToPath(new URL('../../', import.meta.url))
 const home = mkdtempSync(join(tmpdir(), 'hermes-native-ready-'))
 const token = randomUUID()
 const env = {
-  PATH: process.env.PATH, HOME: home, HERMES_HOME: home,
-  LANG: 'C.UTF-8', PYTHONUNBUFFERED: '1', HERMES_NONINTERACTIVE: '1',
-  HERMES_DASHBOARD_SESSION_TOKEN: token, HERMES_SERVE_HEADLESS: '1',
-  HERMES_PARENT_PID: String(process.pid),
+  PATH: process.env.PATH, HOME: home, TINO_HOME: home,
+  LANG: 'C.UTF-8', PYTHONUNBUFFERED: '1', TINO_NONINTERACTIVE: '1',
+  TINO_DASHBOARD_SESSION_TOKEN: token, TINO_SERVE_HEADLESS: '1',
+  TINO_PARENT_PID: String(process.pid),
 }
 const child = spawn(process.argv[2] || join(repo, '.venv/bin/python'),
   ['-m', 'hermes_cli.main', 'serve', '--host', '127.0.0.1', '--port', '0', '--isolated'],
@@ -37,7 +37,7 @@ try {
   })
   for (let i = 0; i < 20; i++) {
     for (const path of ['/api/status', '/api/profiles']) {
-      const response = await fetch(`http://127.0.0.1:${port}${path}`, { headers: { 'X-Hermes-Session-Token': token } })
+      const response = await fetch(`http://127.0.0.1:${port}${path}`, { headers: { 'X-Tino-Session-Token': token } })
       if (!response.ok) throw new Error(`${path}: HTTP ${response.status}`)
       await response.json()
     }

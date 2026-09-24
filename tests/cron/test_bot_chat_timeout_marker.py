@@ -19,7 +19,7 @@ from cron import scheduler_delivery as delivery
 @pytest.fixture()
 def cli_lane(tmp_path, monkeypatch):
     """Route _deliver_to_bot_chat straight into the CLI fallback lane."""
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("TINO_HOME", str(tmp_path))
     monkeypatch.setattr(
         delivery, "_run_bot_chat_turn",
         Mock(side_effect=subprocess.TimeoutExpired(["hermes"], 600)))

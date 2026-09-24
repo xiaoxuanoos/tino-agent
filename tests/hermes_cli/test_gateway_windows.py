@@ -12,7 +12,7 @@ import hermes_cli.gateway_windows as gateway_windows
 import hermes_cli.setup as setup
 
 
-_BREAKAWAY_MARKER = "_HERMES_GATEWAY_BREAKAWAY"
+_BREAKAWAY_MARKER = "_TINO_GATEWAY_BREAKAWAY"
 
 
 
@@ -93,7 +93,7 @@ def test_spawn_detached_marks_primary_breakaway_success(monkeypatch, tmp_path, c
     monkeypatch.setattr(
         gateway_windows,
         "_build_gateway_argv",
-        lambda home=None: (argv, cwd, {"HERMES_GATEWAY_DETACHED": "1"}),
+        lambda home=None: (argv, cwd, {"TINO_GATEWAY_DETACHED": "1"}),
     )
     monkeypatch.setattr("hermes_cli.config.get_hermes_home", lambda: tmp_path)
     monkeypatch.setattr(gateway_windows.subprocess, "Popen", fake_popen)
@@ -134,7 +134,7 @@ def test_spawn_detached_warns_and_marks_no_breakaway_fallback(
         lambda home=None: (
             argv,
             cwd,
-            {"HERMES_GATEWAY_DETACHED": "1", "SECRET_SENTINEL": "do-not-log"},
+            {"TINO_GATEWAY_DETACHED": "1", "SECRET_SENTINEL": "do-not-log"},
         ),
     )
     monkeypatch.setattr("hermes_cli.config.get_hermes_home", lambda: tmp_path)
@@ -252,7 +252,7 @@ def test_elevated_gateway_command_uses_hidden_console_python(monkeypatch):
         shell32 = FakeShell32()
 
     monkeypatch.setattr(gateway_windows, "_current_profile_cli_args", lambda: ["--profile", "alice"])
-    monkeypatch.setattr(gateway_windows.sys, "executable", r"C:\Hermes\venv\Scripts\python.exe")
+    monkeypatch.setattr(gateway_windows.sys, "executable", r"C:\Tino\venv\Scripts\python.exe")
     monkeypatch.setattr(gateway_windows.ctypes, "windll", FakeWindll(), raising=False)
 
     assert gateway_windows._launch_elevated_gateway_command("install", ["--start-now", "--elevated-handoff"])
@@ -260,7 +260,7 @@ def test_elevated_gateway_command_uses_hidden_console_python(monkeypatch):
     assert len(calls) == 1
     _hwnd, verb, executable, params, cwd, show = calls[0]
     assert verb == "runas"
-    assert executable == r"C:\Hermes\venv\Scripts\python.exe"
+    assert executable == r"C:\Tino\venv\Scripts\python.exe"
     assert "--profile alice gateway install --start-now --elevated-handoff" in params
     assert show == 0
     assert cwd
@@ -324,8 +324,8 @@ def test_gateway_vbs_script_is_console_less(monkeypatch):
     )
     content = gateway_windows._build_gateway_vbs_script(
         r"C:\venv\Scripts\python.exe",
-        r"C:\Hermes",
-        r"C:\Hermes",
+        r"C:\Tino",
+        r"C:\Tino",
         "--profile work",
     )
     assert "cmd.exe" not in content.lower()
@@ -334,7 +334,7 @@ def test_gateway_vbs_script_is_console_less(monkeypatch):
     assert "hermes_cli.main" in content
     assert "gateway run" in content
     assert ", 0, False" in content  # hidden window, detached/async
-    for var in ("HERMES_HOME", "PYTHONIOENCODING", "HERMES_GATEWAY_DETACHED", "VIRTUAL_ENV", "PYTHONPATH"):
+    for var in ("TINO_HOME", "PYTHONIOENCODING", "TINO_GATEWAY_DETACHED", "VIRTUAL_ENV", "PYTHONPATH"):
         assert var in content
     assert "--profile" in content and "work" in content
     assert content.endswith("\r\n")
@@ -484,8 +484,8 @@ def test_reconcile_scheduled_task_reregisters_only_on_drift(monkeypatch, tmp_pat
 def _arrange_uninstalled_start(monkeypatch):
     """start() with no Scheduled Task / Startup entry; returns (install_calls, spawn_count)."""
     installs, spawns = [], []
-    monkeypatch.delenv("HERMES_GATEWAY_INSTALL_START_ON_LOGIN", raising=False)
-    monkeypatch.delenv("HERMES_NONINTERACTIVE", raising=False)
+    monkeypatch.delenv("TINO_GATEWAY_INSTALL_START_ON_LOGIN", raising=False)
+    monkeypatch.delenv("TINO_NONINTERACTIVE", raising=False)
     monkeypatch.setattr(gateway_windows, "_assert_windows", lambda: None)
     monkeypatch.setattr(gateway_windows, "_print_start_attestation_warning", lambda: None)
     monkeypatch.setattr(gateway_windows, "_gateway_pids", lambda: [])
@@ -536,7 +536,7 @@ def test_start_without_tty_starts_the_gateway_but_never_installs_login_persisten
 
 def test_start_on_tty_hands_both_answers_to_install_and_honours_the_env_opt_out(monkeypatch):
     """Yes → one install() carrying start_now+start_on_login (install spawns; start() must not spawn
-    again). HERMES_GATEWAY_INSTALL_START_ON_LOGIN=0 → no question, no install, a plain start."""
+    again). TINO_GATEWAY_INSTALL_START_ON_LOGIN=0 → no question, no install, a plain start."""
     installs, spawns = _arrange_uninstalled_start(monkeypatch)
     monkeypatch.setattr(setup, "is_interactive_stdin", lambda: True)
     monkeypatch.setattr(setup, "prompt_yes_no", lambda *a, **k: True)
@@ -545,7 +545,7 @@ def test_start_on_tty_hands_both_answers_to_install_and_honours_the_env_opt_out(
     assert installs == [{"force": False, "start_now": True, "start_on_login": True}] and spawns == []
 
     installs.clear()
-    monkeypatch.setenv("HERMES_GATEWAY_INSTALL_START_ON_LOGIN", "0")
+    monkeypatch.setenv("TINO_GATEWAY_INSTALL_START_ON_LOGIN", "0")
     monkeypatch.setattr(setup, "prompt_yes_no", lambda *a, **k: pytest.fail("env override must skip the prompt"))
     gateway_windows.start()
     assert installs == [] and spawns == [1]
@@ -585,7 +585,7 @@ def test_start_on_tty_hands_both_answers_to_install_and_honours_the_env_opt_out(
 
 def test_hermes_owns_windows_service_requires_name_or_binary_under_a_hermes_root():
     """Task Scheduler (``Schedule`` in svchost) above a task-launched gateway is never its supervisor;
-    a service is Hermes-owned only by a ``hermes*`` name or a binary under the install (#97208)."""
+    a service is Tino-owned only by a ``hermes*`` name or a binary under the install (#97208)."""
     roots = (
         r"C:\Users\kaize\AppData\Local\hermes\hermes-agent",
         r"C:\Users\kaize\AppData\Local\hermes\hermes-agent\venv\Scripts",

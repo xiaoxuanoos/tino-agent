@@ -29,7 +29,7 @@ logger = logging.getLogger("gateway.run")
 # A failed /update leaves the previous version running; the full pip/git log stays on the host
 # (`hermes update` re-runs it in the terminal) and only a short tail is quoted in chat.
 _UPDATE_FAILED_NOTICE = (
-    "❌ Hermes update failed; the previous version is still running. Run `hermes update` on the "
+    "❌ Tino update failed; the previous version is still running. Run `hermes update` on the "
     "host to see the full error, or try /update again later.")
 
 
@@ -72,7 +72,7 @@ class GatewayNotificationsMixin:
 
     @dataclasses.dataclass
     class _UpdatePaths:
-        """Marker files ``hermes update --gateway`` and its watcher exchange under HERMES_HOME."""
+        """Marker files ``hermes update --gateway`` and its watcher exchange under TINO_HOME."""
 
         pending: Path
         claimed: Path
@@ -611,7 +611,7 @@ class GatewayNotificationsMixin:
                 with _log_suppressed(logging.WARNING, "Update final notification failed: %s"):
                     exit_code = self._update_exit_code(paths)
                     await target.send(
-                        "✅ Hermes update finished." if exit_code == 0 else _UPDATE_FAILED_NOTICE
+                        "✅ Tino update finished." if exit_code == 0 else _UPDATE_FAILED_NOTICE
                     )
                     logger.info("Update finished (exit=%s), notified %s", exit_code, session_key)
                 self._clear_update_markers(paths, session_key)
@@ -638,7 +638,7 @@ class GatewayNotificationsMixin:
             paths.exit_code.write_text("124", encoding="utf-8")
             await _flush_buffer()
             with suppress(Exception):
-                await target.send("❌ Hermes update timed out after 30 minutes.")
+                await target.send("❌ Tino update timed out after 30 minutes.")
             self._clear_update_markers(paths, session_key)
 
     async def _send_update_notification(self) -> bool:
@@ -688,7 +688,7 @@ class GatewayNotificationsMixin:
                 from tools.ansi_strip import strip_ansi
                 output = strip_ansi(output).strip()
                 if exit_code == 0:
-                    msg = "✅ Hermes update finished successfully."
+                    msg = "✅ Tino update finished successfully."
                     if output:
                         msg = f"{msg}\n\n```\n{_update_output_tail(output, 3500)}\n```"
                 else:
@@ -864,7 +864,7 @@ class GatewayNotificationsMixin:
         """
         delivered: set[tuple[str, str, Optional[str]]] = set()
         skipped = skip_targets or set()
-        message = "♻️ Gateway online — Hermes is back and ready."
+        message = "♻️ Gateway online — Tino is back and ready."
         free_tier_line = self._free_tier_startup_line()
         if free_tier_line:
             message = f"{message}\n{free_tier_line}"
@@ -1152,7 +1152,7 @@ class GatewayNotificationsMixin:
         from gateway.wake import WakeNotAccepted, adapter_supports_push, admit_internal_event
         source = await asyncio.to_thread(self._build_process_event_source, evt)
         if not source:
-            # API-server sessions bind the RAW X-Hermes-Session-Id key, not a structured ``agent:...`` key.
+            # API-server sessions bind the RAW X-Tino-Session-Id key, not a structured ``agent:...`` key.
             raw_sid = _raw_process_event_session_id(evt)
             if raw_sid:
                 adapter = self.adapters.get(Platform.API_SERVER)

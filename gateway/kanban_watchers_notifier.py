@@ -247,7 +247,7 @@ class _Collector:
             logger.debug("kanban notifier: no connected adapters; skipping tick")
             return self.deliveries
         # Poll each resolved DB path once: several slugs can map to one DB when
-        # HERMES_KANBAN_DB pins the board path.
+        # TINO_KANBAN_DB pins the board path.
         kb = self.kb
         seen_db_paths: set[str] = set()
         for board_meta in _list_boards(kb):

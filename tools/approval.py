@@ -42,7 +42,7 @@ logger = logging.getLogger(__name__)
 
 # Frozen at import: reading os.environ per call would let any skill running in the process set
 # this and bypass every approval check (prompt-injection escalation path).
-_YOLO_MODE_FROZEN: bool = is_truthy_value(os.getenv("HERMES_YOLO_MODE", ""))
+_YOLO_MODE_FROZEN: bool = is_truthy_value(os.getenv("TINO_YOLO_MODE", ""))
 
 
 # --- Per-session approval state (thread-safe) -----------------------------------------------------------------------
@@ -253,7 +253,7 @@ def approve_session(session_key: str, pattern_key: str):
 
 
 def _release_permission_mode_dependents(session_key: str) -> None:
-    """Drop resources whose immutable mode derives from Hermes YOLO. Lazy import so approval-only
+    """Drop resources whose immutable mode derives from Tino YOLO. Lazy import so approval-only
     sessions never load computer-use; releasing on BOTH edges makes enabling YOLO replace a
     standard backend and disabling it revoke a private unrestricted daemon immediately."""
     try:
@@ -328,7 +328,7 @@ def _yolo_active() -> bool:
 def _permanent_set() -> set:
     """The permanent allowlist that governs the ACTIVE profile. Unscoped (single-profile process,
     or the multiplexer's own launch profile) → the module-level set tests and the CLI seed. A routed
-    profile (HERMES_HOME override) → its own set, lazily loaded from ITS ``command_allowlist``: the
+    profile (TINO_HOME override) → its own set, lazily loaded from ITS ``command_allowlist``: the
     launch profile's "always" approvals must not pre-approve commands for a secondary, nor may a
     secondary's "always" choice be written back into the launch profile's config. Callers hold ``_lock``.
     """
@@ -617,7 +617,7 @@ _CRON_CTX = _Unattended(
 
 def _unattended_contexts() -> list[_Unattended]:
     """Active unattended contexts in evaluation order: single-query first (``hermes chat -q``
-    exports HERMES_INTERACTIVE=1 but nobody answers); cron beats a platform marker because
+    exports TINO_INTERACTIVE=1 but nobody answers); cron beats a platform marker because
     cron binds the platform for delivery routing only."""
     contexts = []
     if _is_single_query_approval_context():
@@ -935,14 +935,14 @@ def _presence(approval_callback=None) -> tuple:
     """``(approval_callback, is_cli, is_gateway, is_ask)`` for the current context.
 
     Single-query ``-q`` and cron clear the presence trio: ``hermes chat -q`` exports
-    HERMES_INTERACTIVE=1 for sudo prompts, and a gateway sets HERMES_EXEC_ASK=1 at startup and
+    TINO_INTERACTIVE=1 for sudo prompts, and a gateway sets TINO_EXEC_ASK=1 at startup and
     passes its environ to every external cron worker (#110932) — in neither can a human answer
     the card, so the gate must resolve from ``approvals.<ctx>_mode`` instead of parking on a
     pending approval. Unattended *platforms* keep ``is_ask``: api_server relies on it for the
     ``/v1/runs`` approval bridge (``approval.request`` → ``POST /v1/runs/{id}/approval``)."""
     approval_callback = _resolve_cli_approval_callback(approval_callback)
     is_cli, is_gateway = _is_interactive_cli(), _is_gateway_approval_context()
-    is_ask = env_var_enabled("HERMES_EXEC_ASK")
+    is_ask = env_var_enabled("TINO_EXEC_ASK")
     if _is_single_query_approval_context() or _is_cron_approval_context():
         is_cli = is_gateway = is_ask = False
     return approval_callback, is_cli, is_gateway, is_ask
@@ -1004,14 +1004,14 @@ def _run_approval_gate(
         else:
             if fail_closed_when_no_human:
                 logger.warning("%s (pattern: %s): %s — no interactive user/gateway present; "
-                               "BLOCKED (fail-closed). Set HERMES_INTERACTIVE or "
-                               "HERMES_GATEWAY_SESSION to answer the prompt.", *log_args)
+                               "BLOCKED (fail-closed). Set TINO_INTERACTIVE or "
+                               "TINO_GATEWAY_SESSION to answer the prompt.", *log_args)
                 return _blocked(no_human_block_message or (
                     f"BLOCKED: approval required ({description}) but no "
                     "interactive user or gateway is present to approve it."),
                     pattern_key=pattern_key, description=description)
-        logger.warning("%s (pattern: %s): %s — set HERMES_INTERACTIVE or "
-                       "HERMES_GATEWAY_SESSION to require approval.", *log_args)
+        logger.warning("%s (pattern: %s): %s — set TINO_INTERACTIVE or "
+                       "TINO_GATEWAY_SESSION to require approval.", *log_args)
         return _approved()
 
     return _human_decision(

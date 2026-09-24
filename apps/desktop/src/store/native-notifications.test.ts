@@ -181,8 +181,8 @@ describe('dispatchNativeNotification session context', () => {
       expect(notify).toHaveBeenCalledWith(expect.objectContaining({ title: 'Approval needed — #123456' }))
 
       setActiveSessionId('named-chat')
-      dispatchNativeNotification({ kind: 'turnDone', sessionId: 'named-chat', title: 'Hermes finished' })
-      expect(notify).toHaveBeenCalledWith(expect.objectContaining({ title: 'Hermes finished' }))
+      dispatchNativeNotification({ kind: 'turnDone', sessionId: 'named-chat', title: 'Tino finished' })
+      expect(notify).toHaveBeenCalledWith(expect.objectContaining({ title: 'Tino finished' }))
     } finally {
       setSessions([])
     }
@@ -273,10 +273,10 @@ describe('dispatchPluginNativeNotification', () => {
     // Unique tag (throttle is per plugin id); activate still uses the plugin deep link.
     dispatchPluginNativeNotification('index-network-alerts', {
       actions: [
-        { id: 'open', label: 'Open', activate: 'hermes://index-network/intent/1' },
+        { id: 'open', label: 'Open', activate: 'tino://index-network/intent/1' },
         { id: 'dismiss', label: 'Dismiss', onAction: () => undefined }
       ],
-      activate: 'hermes://index-network/intent/1',
+      activate: 'tino://index-network/intent/1',
       body: 'New match',
       icon: '/tmp/index-network.png',
       title: 'Opportunity'
@@ -303,7 +303,7 @@ describe('dispatchPluginNativeNotification', () => {
     const onAction = vi.fn()
 
     dispatchPluginNativeNotification('handlers-plugin', {
-      activate: 'hermes://index-network/intent/1',
+      activate: 'tino://index-network/intent/1',
       onActivate,
       actions: [{ id: 'dismiss', label: 'Dismiss', onAction }],
       title: 'Opportunity'
@@ -332,7 +332,7 @@ describe('sendTestNativeNotification', () => {
   it('fires regardless of focus or active session', () => {
     setWindowState({ focused: true, hidden: false })
     setActiveSessionId('on-screen')
-    sendTestNativeNotification('Hermes', 'works')
+    sendTestNativeNotification('Tino', 'works')
     expect(notify).toHaveBeenCalledTimes(1)
   })
 })

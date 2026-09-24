@@ -131,7 +131,7 @@ class TestApply:
 
 
     def test_enable_triggers_mcp_migration(self):
-        """Enabling codex_app_server should auto-migrate Hermes mcp_servers
+        """Enabling codex_app_server should auto-migrate Tino mcp_servers
         to ~/.codex/config.toml so the spawned subprocess sees them."""
         cfg = {
             "mcp_servers": {
@@ -156,7 +156,7 @@ class TestApply:
         assert "filesystem" in r.message
         # Permissions default surfaces
         assert "Default sandbox: :workspace" in r.message
-        # Hermes tool callback announcement
+        # Tino tool callback announcement
         assert "via MCP" in r.message
 
     def test_disable_does_not_trigger_migration(self):

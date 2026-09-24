@@ -21,7 +21,7 @@ from tests.hermes_cli.test_anon_upgrade import (
     EMAIL, FREE_PICK, INFERENCE, PORTAL, WELCOME, _model_config, _write_model_config, free_account, portal)
 
 client = TestClient(app)
-HEADERS = {"X-Hermes-Session-Token": _SESSION_TOKEN}
+HEADERS = {"X-Tino-Session-Token": _SESSION_TOKEN}
 
 __all__ = ["free_account", "portal"]  # fixtures imported from the CLI test module
 

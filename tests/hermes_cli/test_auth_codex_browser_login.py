@@ -82,7 +82,7 @@ def fake_openai():
 
 
 def test_browser_flag_runs_loopback_pkce_and_stores_loopback_source(tmp_path, monkeypatch, fake_openai):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "hermes"))
+    monkeypatch.setenv("TINO_HOME", str(tmp_path / "hermes"))
     (tmp_path / "hermes").mkdir()
     (tmp_path / "hermes" / "auth.json").write_text(json.dumps({"version": 1, "providers": {}}))
     from hermes_cli import auth_codex_browser as browser_mod
@@ -115,7 +115,7 @@ def test_browser_flag_runs_loopback_pkce_and_stores_loopback_source(tmp_path, mo
 
 
 def test_default_is_device_code_and_busy_callback_port_falls_back(tmp_path, monkeypatch, capsys):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "hermes"))
+    monkeypatch.setenv("TINO_HOME", str(tmp_path / "hermes"))
     (tmp_path / "hermes").mkdir()
     (tmp_path / "hermes" / "auth.json").write_text(json.dumps({"version": 1, "providers": {}}))
     from hermes_cli import auth_codex_browser as browser_mod

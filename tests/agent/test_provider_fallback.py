@@ -516,7 +516,7 @@ class TestFallbackExtraBodyReResolution:
 
 
 def _write_moa_home(tmp_path, monkeypatch):
-    """Real config.yaml with a MoA preset under a temp HERMES_HOME (genuine preset resolution)."""
+    """Real config.yaml with a MoA preset under a temp TINO_HOME (genuine preset resolution)."""
     import yaml
 
     home = tmp_path / ".hermes"
@@ -528,7 +528,7 @@ def _write_moa_home(tmp_path, monkeypatch):
             "aggregator": {"provider": "xai", "model": "grok-4.6"},
         }}},
     }))
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("TINO_HOME", str(home))
     return home
 
 

@@ -1,4 +1,4 @@
-"""ACP agent server — exposes Hermes Agent via the Agent Client Protocol."""
+"""ACP agent server — exposes Tino Agent via the Agent Client Protocol."""
 
 from __future__ import annotations
 
@@ -25,7 +25,7 @@ from acp.schema import (
 )
 
 from acp_adapter.auth import TERMINAL_SETUP_AUTH_METHOD_ID, build_auth_methods, detect_provider
-from acp_adapter.commands import HERMES_VERSION, SlashCommandsMixin, _estimate_tokens
+from acp_adapter.commands import TINO_VERSION, SlashCommandsMixin, _estimate_tokens
 from acp_adapter.content import PromptBlock, _content_blocks_to_openai_user_content, _extract_text
 from acp_adapter.events import (
     AssistantMessageIdAllocator, _build_plan_update_from_todo_result, _send_update, flush_open_tool_calls,
@@ -231,7 +231,7 @@ class _TurnCallbacks:
 
 
 class HermesACPAgent(SlashCommandsMixin, acp.Agent):
-    """ACP Agent implementation wrapping Hermes AIAgent."""
+    """ACP Agent implementation wrapping Tino AIAgent."""
 
     _EDIT_APPROVAL_POLICY_CONFIG_ID = "edit_approval_policy"
     _EDIT_APPROVAL_POLICY_DEFAULT = "ask"
@@ -296,7 +296,7 @@ class HermesACPAgent(SlashCommandsMixin, acp.Agent):
         return policy, state.cwd
 
     def _build_model_state(self, state: SessionState) -> SessionModelState | None:
-        """Authenticated providers + models, from the shared Hermes inventory (same substrate
+        """Authenticated providers + models, from the shared Tino inventory (same substrate
         as ``hermes model``/TUI/dashboard) so the selector isn't just the current curated list."""
         model = str(state.model or getattr(state.agent, "model", "") or "").strip()
         provider = getattr(state.agent, "provider", None) or detect_provider() or "openrouter"
@@ -532,7 +532,7 @@ class HermesACPAgent(SlashCommandsMixin, acp.Agent):
 
         return InitializeResponse(
             protocol_version=acp.PROTOCOL_VERSION,
-            agent_info=Implementation(name="hermes-agent", version=HERMES_VERSION),
+            agent_info=Implementation(name="hermes-agent", version=TINO_VERSION),
             agent_capabilities=AgentCapabilities(
                 load_session=True,
                 prompt_capabilities=PromptCapabilities(image=True),
@@ -751,16 +751,16 @@ class HermesACPAgent(SlashCommandsMixin, acp.Agent):
         ContextVar writes are isolated from concurrent sessions.
 
         Approval routing is thread-local, so it MUST be bound here, not on the loop thread.
-        Interactive routing is a ``tools.approval`` contextvar, not ``HERMES_INTERACTIVE`` in
+        Interactive routing is a ``tools.approval`` contextvar, not ``TINO_INTERACTIVE`` in
         os.environ, so concurrent workers can't race a global flag onto the non-interactive
         auto-approve path (GHSA-96vc-wcxf-jjff)."""
         agent = state.agent
         with contextlib.ExitStack() as stack:
-            # HERMES_SESSION_KEY scopes per-session caches (interactive sudo password) to this
+            # TINO_SESSION_KEY scopes per-session caches (interactive sudo password) to this
             # session, not the reused thread. ``cwd`` pins what the system prompt reports as the
-            # working directory — otherwise it advertises the Hermes workspace while tools are
+            # working directory — otherwise it advertises the Tino workspace while tools are
             # rooted at the client's project and edits land outside it. ``cron_session=""`` masks
-            # any leaked process-global HERMES_CRON_SESSION.
+            # any leaked process-global TINO_CRON_SESSION.
             def _session_context() -> Callable[[], None]:
                 from gateway.session_context import clear_session_vars, set_session_vars
 
@@ -789,8 +789,8 @@ class HermesACPAgent(SlashCommandsMixin, acp.Agent):
                 _bind_guarded(stack, "edit approval requester", _edit_approval)
             stack.callback(reset_hermes_interactive_context, set_hermes_interactive_context(True))
             # Tools tag side-effects with the ACP session (``kanban_create``); save/restore it.
-            stack.callback(_restore_env, "HERMES_SESSION_ID", os.environ.get("HERMES_SESSION_ID"))
-            os.environ["HERMES_SESSION_ID"] = session_id
+            stack.callback(_restore_env, "TINO_SESSION_ID", os.environ.get("TINO_SESSION_ID"))
+            os.environ["TINO_SESSION_ID"] = session_id
 
             # Auto-titling fires in the turn prologue; push the title now as a session-info update.
             def _notify_title_update(_title: str, _source: str) -> None:
@@ -808,7 +808,7 @@ class HermesACPAgent(SlashCommandsMixin, acp.Agent):
                 return {"final_response": f"Error: {e}", "messages": state.history}
 
     async def prompt(self, prompt: list[PromptBlock], session_id: str, **kwargs: Any) -> PromptResponse:
-        """Run Hermes on the user's prompt and stream events back to the editor."""
+        """Run Tino on the user's prompt and stream events back to the editor."""
         state = await asyncio.to_thread(self.session_manager.get_session, session_id)
         if state is None:
             logger.error("prompt: session %s not found", session_id)
@@ -1013,7 +1013,7 @@ class HermesACPAgent(SlashCommandsMixin, acp.Agent):
                     self._switch_model, state, model_id, keep_endpoint=True)
             except ModelRejected as exc:
                 # A model no provider can serve is a bad ``modelId`` param (-32602), not an agent
-                # internal error (-32603): the client attributes it to the request, not to Hermes (#72439).
+                # internal error (-32603): the client attributes it to the request, not to Tino (#72439).
                 # Only the switch_model rejection maps here; a ValueError from the rebuild itself
                 # (disabled provider, context window below the floor) stays on the -32603 path.
                 from acp.exceptions import RequestError
@@ -1042,7 +1042,7 @@ class HermesACPAgent(SlashCommandsMixin, acp.Agent):
     async def set_config_option(
         self, config_id: str, session_id: str, value: str, **kwargs: Any
     ) -> SetSessionConfigOptionResponse | None:
-        """Accept ACP config option updates even when Hermes has no typed ACP config surface yet."""
+        """Accept ACP config option updates even when Tino has no typed ACP config surface yet."""
         state = await asyncio.to_thread(self.session_manager.get_session, session_id)
         if state is None:
             logger.warning("Session %s: config update requested for missing session", session_id)

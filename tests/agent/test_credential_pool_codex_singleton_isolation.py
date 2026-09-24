@@ -48,7 +48,7 @@ def _write_store(home, singleton_tokens: dict, singleton_last_refresh: str, manu
 @pytest.fixture
 def home(tmp_path, monkeypatch):
     home = tmp_path / "hermes"
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("TINO_HOME", str(home))
     return home
 
 

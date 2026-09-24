@@ -290,7 +290,7 @@ def detect_audio_environment() -> dict:
         report("Running over SSH with a reachable PulseAudio/PipeWire sound server",
                "Running over SSH -- no audio devices available.\n"
                "  If a sound server (PulseAudio/PipeWire) is running on this host,\n"
-               "  point Hermes at it, e.g.:\n"
+               "  point Tino at it, e.g.:\n"
                "    export XDG_RUNTIME_DIR=/run/user/$(id -u)\n"
                "    # or: export PULSE_SERVER=unix:$XDG_RUNTIME_DIR/pulse/native")
 
@@ -1279,9 +1279,9 @@ DEFAULT_BARGE_MULTIPLIER = 3.0  # over the quiet floor: 300 * 3 = 900 vs 3000+ s
 
 
 def _vad_log(msg: str) -> None:
-    """VAD diagnostic: logger.debug, plus stderr when HERMES_VOICE_DEBUG=1 (live tuning)."""
+    """VAD diagnostic: logger.debug, plus stderr when TINO_VOICE_DEBUG=1 (live tuning)."""
     logger.debug(msg)
-    if os.environ.get("HERMES_VOICE_DEBUG", "").strip() == "1":
+    if os.environ.get("TINO_VOICE_DEBUG", "").strip() == "1":
         with suppress(Exception):
             print(f"[voice-vad] {msg}", file=sys.stderr, flush=True)
 

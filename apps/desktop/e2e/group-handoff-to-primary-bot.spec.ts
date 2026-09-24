@@ -9,7 +9,7 @@ import { expect, test } from './test'
 // `@hermes → @code-farmer` already does. The live roster stamps the primary
 // row's handle as the bare profile id ("default"), and the mention parser let
 // that stamped handle shadow the `@hermes` alias — so the room settled with
-// Hermes never driven. The mock inference server scripts each member's line
+// Tino never driven. The mock inference server scripts each member's line
 // from the user's send (`E2E_SAY(<handle>)[…]`), so the assertion is on the
 // persisted room log: an entry authored by `default` saying "B".
 
@@ -67,7 +67,7 @@ test.afterEach(async ({}, info) => {
   }
 
   await info.attach('room-log', {
-    body: JSON.stringify(await roomLog(fixture.page, 'Hermes, Code Farmer'), null, 2),
+    body: JSON.stringify(await roomLog(fixture.page, 'Tino, Code Farmer'), null, 2),
     contentType: 'application/json'
   })
   await info.attach('native-window', { body: await fixture.page.screenshot(), contentType: 'image/png' })
@@ -76,8 +76,8 @@ test.afterEach(async ({}, info) => {
       await fixture.app.evaluate(() => ({
         cwd: process.cwd(),
         argv: process.argv,
-        root: process.env.HERMES_DESKTOP_HERMES_ROOT,
-        home: process.env.HERMES_HOME
+        root: process.env.TINO_DESKTOP_ROOT,
+        home: process.env.TINO_HOME
       })),
       null,
       2
@@ -98,7 +98,7 @@ test.afterAll(async () => {
 test('a teammate handing off with @hermes drives the primary profile', async () => {
   test.setTimeout(420_000)
   const page = fixture!.page
-  const group = 'Hermes, Code Farmer'
+  const group = 'Tino, Code Farmer'
 
   await openBots(page)
   await createAgent(page, 'code-farmer', 'Code Farmer')
@@ -108,7 +108,7 @@ test('a teammate handing off with @hermes drives the primary profile', async () 
 
   const dialog = page.getByRole('dialog', { name: 'New Group Chat' })
 
-  for (const title of ['Hermes', 'Code Farmer']) {
+  for (const title of ['Tino', 'Code Farmer']) {
     await dialog.getByText(title, { exact: true }).locator('xpath=ancestor::label').getByRole('checkbox').click()
   }
 
@@ -119,8 +119,8 @@ test('a teammate handing off with @hermes drives the primary profile', async () 
   await expect(composer).toBeVisible({ timeout: 20_000 })
 
   // Only Code Farmer is addressed by the user. Its scripted reply hands off
-  // to @hermes; Hermes' scripted reply is "B". Neither script token carries
-  // a literal `@`, so the user send itself never mentions Hermes.
+  // to @hermes; Tino' scripted reply is "B". Neither script token carries
+  // a literal `@`, so the user send itself never mentions Tino.
   await composer.fill(
     '@code-farmer Please reply with one line only. ' +
       'E2E_SAY(code-farmer)[{at}hermes Please reply with the letter B.] E2E_SAY(hermes)[B]'
@@ -128,7 +128,7 @@ test('a teammate handing off with @hermes drives the primary profile', async () 
   await composer.press('Enter')
 
   // Code Farmer's handoff line lands first (the reverse direction is not in
-  // question); then the room must NOT settle without Hermes' turn.
+  // question); then the room must NOT settle without Tino' turn.
   await expect
     .poll(
       async () =>

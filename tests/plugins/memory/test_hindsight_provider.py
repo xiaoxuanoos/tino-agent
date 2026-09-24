@@ -298,7 +298,7 @@ class TestConfig:
         assert provider._recall_types == ["observation"]
         assert provider._bank_mission == ""
         assert provider._bank_retain_mission is None
-        assert provider._retain_context == "conversation between Hermes Agent and the User"
+        assert provider._retain_context == "conversation between Tino Agent and the User"
 
     def test_recall_types_default_is_observation_only(self, provider):
         """Auto-recall must filter to observation by default."""
@@ -953,7 +953,7 @@ class TestSyncTurn:
         assert call_kwargs["retain_async"] is True
         assert len(call_kwargs["items"]) == 1
         item = call_kwargs["items"][0]
-        assert item["context"] == "conversation between Hermes Agent and the User"
+        assert item["context"] == "conversation between Tino Agent and the User"
         assert item["tags"] == ["conv", "session1", "session:session-1"]
         content = json.loads(item["content"])
         assert len(content) == 1
@@ -1570,12 +1570,12 @@ def test_save_config_sets_owner_only_permissions(tmp_path):
 
 
 def test_load_config_corrupt_profile_file_falls_through_to_env(tmp_path, monkeypatch):
-    """A corrupt $HERMES_HOME/hindsight/config.json is not the config: the loader falls through
+    """A corrupt $TINO_HOME/hindsight/config.json is not the config: the loader falls through
     (legacy file, then env) instead of returning an empty, silently-unconfigured mapping."""
     home = tmp_path / "home"
     (home / "hindsight").mkdir(parents=True)
     (home / "hindsight" / "config.json").write_text("{not json", encoding="utf-8")
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("TINO_HOME", str(home))
     monkeypatch.setattr(Path, "home", lambda: tmp_path / "nohome")
     monkeypatch.setenv("HINDSIGHT_MODE", "local")
     monkeypatch.setenv("HINDSIGHT_BANK_ID", "from-env")

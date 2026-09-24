@@ -238,12 +238,12 @@ beforeEach(() => {
     configurable: true,
     value: { addEventListener() {}, removeEventListener() {}, width: 1280 },
   });
-  Object.defineProperty(window, "__HERMES_SESSION_TOKEN__", {
+  Object.defineProperty(window, "__TINO_SESSION_TOKEN__", {
     configurable: true,
     value: "stale-token",
     writable: true,
   });
-  Object.defineProperty(window, "__HERMES_AUTH_REQUIRED__", {
+  Object.defineProperty(window, "__TINO_AUTH_REQUIRED__", {
     configurable: true,
     value: false,
     writable: true,
@@ -476,7 +476,7 @@ describe("ChatPage", () => {
       }
 
       expect(container.textContent).not.toMatch(/code 1006/);
-      expect(container.textContent).toMatch(/Lost connection to the Hermes dashboard server/);
+      expect(container.textContent).toMatch(/Lost connection to the Tino dashboard server/);
       expect(container.textContent).toContain("hermes dashboard");
       const labels = Array.from(container.querySelectorAll("button")).map((b) => b.textContent?.trim());
       expect(labels).toContain("Reconnect now");

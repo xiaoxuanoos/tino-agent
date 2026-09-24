@@ -162,7 +162,7 @@ class CLIInfoMixin:
         # Tool discovery is deferred on the Termux bare prompt path (warnings show once tools
         # init). On the snapshot fast path the check walks every check_fn (~180ms) — run it in
         # the background and let its output land above the prompt (patch_stdout-safe).
-        if os.environ.get("HERMES_DEFER_AGENT_STARTUP") != "1":
+        if os.environ.get("TINO_DEFER_AGENT_STARTUP") != "1":
             if getattr(self, "_defer_tool_warnings", False):
                 threading.Thread(
                     target=self._show_tool_availability_warnings,
@@ -180,7 +180,7 @@ class CLIInfoMixin:
                 f"[yellow]⚠️  Context length is only {ctx_len:,} tokens — "
                 f"this is likely too low for agent use with tools.[/]")
             self._console_print(
-                f"[dim]   Hermes needs at least {MINIMUM_CONTEXT_LENGTH:,} tokens. Tool schemas + system prompt use a large fixed prefix.[/]"
+                f"[dim]   Tino needs at least {MINIMUM_CONTEXT_LENGTH:,} tokens. Tool schemas + system prompt use a large fixed prefix.[/]"
             )
             base_url = getattr(self, "base_url", "") or ""
             from urllib.parse import urlparse as _urlparse
@@ -204,8 +204,8 @@ class CLIInfoMixin:
         if is_nous_hermes_non_agentic(getattr(self, "model", "") or ""):
             self._console_print()
             self._console_print(
-                "[bold yellow]⚠  Nous Research Hermes 3 & 4 models are NOT agentic and are not "
-                "designed for use with Hermes Agent.[/]")
+                "[bold yellow]⚠  Nous Research Tino 3 & 4 models are NOT agentic and are not "
+                "designed for use with Tino Agent.[/]")
             self._console_print(
                 "[dim]   They lack tool-calling capabilities required for agent workflows. "
                 "Consider using an agentic model (Claude, GPT, Gemini, DeepSeek, etc.).[/]")

@@ -1,1 +1,1 @@
-# Hermes plugins package
+# Tino plugins package

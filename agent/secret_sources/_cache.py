@@ -4,7 +4,7 @@ Two-layer fetch cache (in-process + on-disk); the disk half writes atomically
 with ``0600`` permissions and honours a TTL, so that logic is audited in exactly
 one place. Each backend supplies only its cache-key shape and a serializer.
 The disk layer is strictly best-effort: a miss just triggers a refetch, because
-a cache problem must never block Hermes startup.
+a cache problem must never block Tino startup.
 """
 
 from __future__ import annotations
@@ -47,7 +47,7 @@ class CachedFetch:
 
 
 def resolve_cache_home(home_path: Optional[Path] = None) -> Path:
-    """``home_path`` as resolved by ``load_hermes_dotenv()``, else ``$HERMES_HOME``/``~/.hermes``."""
+    """``home_path`` as resolved by ``load_hermes_dotenv()``, else ``$TINO_HOME``/``~/.hermes``."""
     if home_path is None:
         from hermes_constants import get_hermes_home
 

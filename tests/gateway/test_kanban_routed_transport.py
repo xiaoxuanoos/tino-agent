@@ -27,8 +27,8 @@ class RecordingAdapter:
 def setup_runner(tmp_path, monkeypatch):
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
     home = tmp_path / ".hermes"
-    monkeypatch.setenv("HERMES_HOME", str(home))
-    monkeypatch.setenv("HERMES_KANBAN_DB", str(home / "kanban.db"))
+    monkeypatch.setenv("TINO_HOME", str(home))
+    monkeypatch.setenv("TINO_KANBAN_DB", str(home / "kanban.db"))
     for name in ("yuki", "other"):
         profile = home / "profiles" / name
         profile.mkdir(parents=True)
@@ -155,7 +155,7 @@ def test_route_denials_leave_events_retryable_at_claim_and_send(tmp_path, monkey
 
     # Equal-specificity rules retain configuration order: an unknown parent
     # cannot skip an earlier rule, but a known conflicting parent rules it out.
-    monkeypatch.setenv("HERMES_KANBAN_DB", str(tmp_path / "tied-routes.db"))
+    monkeypatch.setenv("TINO_KANBAN_DB", str(tmp_path / "tied-routes.db"))
     runner.config.profile_routes = parse_profile_routes([
         dict(platform="discord", guild_id="guild", chat_id="parent", profile="other"),
         dict(platform="discord", guild_id="guild", chat_id="post", profile="yuki"),
@@ -263,7 +263,7 @@ def test_credential_gate_denials_warn_once_instead_of_silent_rewind(tmp_path, mo
     # re-enables the first sub, which is the documented workaround, and its backlog must
     # not pollute this claim.)
     runner._profile_adapters["yuki"] = {}
-    monkeypatch.setenv("HERMES_KANBAN_DB", str(tmp_path / "stamped-owner.db"))
+    monkeypatch.setenv("TINO_KANBAN_DB", str(tmp_path / "stamped-owner.db"))
     stamped = completion(profile="default")
     with caplog.at_level(logging.WARNING, logger=notifier.logger.name):
         assert not collect(runner)

@@ -286,7 +286,7 @@ def _parse_manifest(path: Path) -> CatalogEntry:
     if mv != _MANIFEST_VERSION:
         raise CatalogError(
             f"{path}: manifest_version {mv!r} unsupported "
-            f"(this Hermes understands version {_MANIFEST_VERSION})"
+            f"(this Tino understands version {_MANIFEST_VERSION})"
         )
     name = data.get("name") or ""
     if not name or not re.match(r"^[A-Za-z0-9_-]+$", name):
@@ -317,7 +317,7 @@ def list_catalog() -> List[CatalogEntry]:
     """Return all valid catalog entries, sorted by name.
 
     Invalid manifests are skipped silently (CI catches them); future ``manifest_version`` ones are
-    skipped too but surfaced via :func:`catalog_diagnostics` so UIs can say "update Hermes".
+    skipped too but surfaced via :func:`catalog_diagnostics` so UIs can say "update Tino".
     """
     root = _catalog_root()
     if not root.exists():
@@ -339,7 +339,7 @@ def list_catalog() -> List[CatalogEntry]:
 
 def catalog_diagnostics() -> List[tuple]:
     """``(entry_name, kind, message)`` tuples from the most recent :func:`list_catalog` call;
-    ``kind`` is ``future_manifest`` (newer than this Hermes) or ``invalid`` (malformed)."""
+    ``kind`` is ``future_manifest`` (newer than this Tino) or ``invalid`` (malformed)."""
     return list(_CATALOG_DIAGNOSTICS)
 
 
@@ -710,7 +710,7 @@ def install_entry(entry: CatalogEntry, *, enable: bool = True) -> None:
     _say(
         f"  ✓ Installed '{entry.name}' "
         f"({'enabled' if enable else 'disabled'}). "
-        f"Start a new Hermes session to load its tools."
+        f"Start a new Tino session to load its tools."
     )
     if entry.post_install:
         print()

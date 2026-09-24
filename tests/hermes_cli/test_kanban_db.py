@@ -25,10 +25,10 @@ from hermes_cli import kanban_db_workspace as kbw
 
 @pytest.fixture
 def kanban_home(tmp_path, monkeypatch):
-    """Isolated HERMES_HOME with an empty kanban DB."""
+    """Isolated TINO_HOME with an empty kanban DB."""
     home = tmp_path / ".hermes"
     home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("TINO_HOME", str(home))
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
     kb.init_db()
     return home
@@ -334,7 +334,7 @@ def test_rate_limit_exit_requeues_without_counting_failure(
     from hermes_cli import kanban_db_dispatch as _kbd
 
     monkeypatch.setattr(_kb, "_pid_alive", lambda _pid: False)
-    monkeypatch.setenv("HERMES_KANBAN_CRASH_GRACE_SECONDS", "0")
+    monkeypatch.setenv("TINO_KANBAN_CRASH_GRACE_SECONDS", "0")
 
     with kbc.connect() as conn:
         host = _kb._claimer_id().split(":", 1)[0]
@@ -397,7 +397,7 @@ def test_terminal_provider_exit_blocks_after_one_attempt_in_either_lane(kanban_h
     from hermes_cli import kanban_db_dispatch as _kbd
 
     monkeypatch.setattr(_kb, "_pid_alive", lambda _pid: False)
-    monkeypatch.setenv("HERMES_KANBAN_CRASH_GRACE_SECONDS", "0")
+    monkeypatch.setenv("TINO_KANBAN_CRASH_GRACE_SECONDS", "0")
 
     with kbc.connect() as conn:
         host = _kb._claimer_id().split(":", 1)[0]
@@ -441,7 +441,7 @@ def test_respawn_guard_defers_rate_limited_within_cooldown(
     fall into ``blocker_auth`` (which would defer forever)."""
     import hermes_cli.kanban_db as _kb
 
-    monkeypatch.setenv("HERMES_KANBAN_RATE_LIMIT_COOLDOWN_SECONDS", "300")
+    monkeypatch.setenv("TINO_KANBAN_RATE_LIMIT_COOLDOWN_SECONDS", "300")
     now = 5_000_000
 
     with kbc.connect() as conn:
@@ -486,7 +486,7 @@ def test_infrastructure_spawn_refusal_never_charges_the_card(
     monkeypatch.setattr(process_registry, "_is_supervised_gateway_process", lambda: True)
     monkeypatch.setenv("INVOCATION_ID", "managed-gateway")
     monkeypatch.setattr(process_registry, "_systemd_run_user_scope_available", lambda: False)
-    monkeypatch.setenv("HERMES_KANBAN_RATE_LIMIT_COOLDOWN_SECONDS", "0")
+    monkeypatch.setenv("TINO_KANBAN_RATE_LIMIT_COOLDOWN_SECONDS", "0")
 
     def spawn_via_real_boundary(task, workspace, board=None):
         kbd._restart_safe_worker_argv(task, ["hermes", "chat"])  # raises: real probe verdict, real _degrade()
@@ -508,11 +508,11 @@ def test_infrastructure_spawn_refusal_never_charges_the_card(
         assert [r["outcome"] for r in runs] == ["spawn_failed"] * 3
         assert all(json.loads(r["metadata"])["infrastructure"] is True for r in runs)
 
-        monkeypatch.setenv("HERMES_KANBAN_RATE_LIMIT_COOLDOWN_SECONDS", "300")
+        monkeypatch.setenv("TINO_KANBAN_RATE_LIMIT_COOLDOWN_SECONDS", "300")
         assert kbd.check_respawn_guard(conn, tid) == "infrastructure_cooldown"
 
         # Control: an ordinary spawn failure on the same card still spends budget.
-        monkeypatch.setenv("HERMES_KANBAN_RATE_LIMIT_COOLDOWN_SECONDS", "0")
+        monkeypatch.setenv("TINO_KANBAN_RATE_LIMIT_COOLDOWN_SECONDS", "0")
 
         def spawn_broken(task, workspace, board=None):
             raise RuntimeError("profile launcher exploded")
@@ -866,13 +866,13 @@ def test_dir_child_completion_unblocks_deferred_scratch_parent(kanban_home, tmp_
 
 
 def test_is_managed_scratch_path_rejects_kanban_metadata_subtrees(kanban_home):
-    """Hermes' own DB/metadata/log subtrees under ``<kanban_home>/kanban`` are NOT managed.
+    """Tino' own DB/metadata/log subtrees under ``<kanban_home>/kanban`` are NOT managed.
 
     Regression guard for the Copilot finding on #28819: a scratch task whose
     ``workspace_path`` was mis-set to the kanban home, the logs dir, or a
     board's metadata dir (i.e. the board root itself, not its ``workspaces/``
     child) must be refused. Without this, the containment check would happily
-    ``shutil.rmtree`` Hermes' DB/metadata/logs on task completion.
+    ``shutil.rmtree`` Tino' DB/metadata/logs on task completion.
     """
     kanban_root = kanban_home / "kanban"
     kanban_root.mkdir(parents=True, exist_ok=True)
@@ -934,17 +934,17 @@ def test_is_managed_scratch_path_rejects_kanban_metadata_subtrees(kanban_home):
 # spawned with `hermes -p <profile>` must read/write the same kanban.db
 # as the dispatcher that claimed the task. These tests exercise the
 # path-resolution layer directly and would have caught the regression
-# where `kanban_db_path()` resolved to the active profile's HERMES_HOME.
+# where `kanban_db_path()` resolved to the active profile's TINO_HOME.
 # ---------------------------------------------------------------------------
 
 class TestSharedBoardPaths:
     """`kanban_home`/`kanban_db_path`/`workspaces_root`/`worker_log_path`
-    must anchor at the **shared root**, not the active profile's HERMES_HOME."""
+    must anchor at the **shared root**, not the active profile's TINO_HOME."""
 
     def _set_home(self, monkeypatch, tmp_path, hermes_home):
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
-        monkeypatch.delenv("HERMES_KANBAN_HOME", raising=False)
+        monkeypatch.setenv("TINO_HOME", str(hermes_home))
+        monkeypatch.delenv("TINO_KANBAN_HOME", raising=False)
 
 
     def test_profile_worker_resolves_to_shared_root(
@@ -961,7 +961,7 @@ class TestSharedBoardPaths:
         self._set_home(monkeypatch, tmp_path, profile_home)
 
         # All four resolvers must anchor at the shared root, not the
-        # profile-local HERMES_HOME.
+        # profile-local TINO_HOME.
         assert kb.kanban_home() == default_home
         assert kb.kanban_db_path() == default_home / "kanban.db"
         assert kb.workspaces_root() == default_home / "kanban" / "workspaces"
@@ -983,7 +983,7 @@ class TestSharedBoardPaths:
         self, tmp_path, monkeypatch
     ):
         # Belt-and-suspenders: round-trip a task across the two
-        # HERMES_HOME perspectives via a real SQLite file. Without the
+        # TINO_HOME perspectives via a real SQLite file. Without the
         # fix the worker would open a different file and see no rows.
         default_home = tmp_path / ".hermes"
         default_home.mkdir()
@@ -996,8 +996,8 @@ class TestSharedBoardPaths:
         with kbc.connect() as conn:
             task_id = kb.create_task(conn, title="cross-profile")
 
-        # Worker switches to the profile HERMES_HOME and reads.
-        monkeypatch.setenv("HERMES_HOME", str(profile_home))
+        # Worker switches to the profile TINO_HOME and reads.
+        monkeypatch.setenv("TINO_HOME", str(profile_home))
         with kbc.connect() as conn:
             task = kb.get_task(conn, task_id)
         assert task is not None
@@ -1010,8 +1010,8 @@ class TestSharedBoardPaths:
         self, tmp_path, monkeypatch
     ):
         # The dispatcher must pin board paths while stripping any unrelated
-        # HERMES_SESSION_* identity inherited from the long-lived gateway.
-        # The one exception is HERMES_SESSION_SOURCE, which the dispatcher
+        # TINO_SESSION_* identity inherited from the long-lived gateway.
+        # The one exception is TINO_SESSION_SOURCE, which the dispatcher
         # re-sets to its own `kanban` tag AFTER the strip — a value it owns,
         # never one inherited from whatever the gateway last routed.
         default_home = tmp_path / ".hermes"
@@ -1057,14 +1057,14 @@ class TestSharedBoardPaths:
         kbd._default_spawn(task, str(tmp_path / "ws"))
 
         env = captured["env"]
-        assert env["HERMES_KANBAN_DB"] == str(default_home / "kanban.db")
-        assert env["HERMES_KANBAN_WORKSPACES_ROOT"] == str(
+        assert env["TINO_KANBAN_DB"] == str(default_home / "kanban.db")
+        assert env["TINO_KANBAN_WORKSPACES_ROOT"] == str(
             default_home / "kanban" / "workspaces"
         )
-        assert env["HERMES_KANBAN_TASK"] == "t_dispatch_env"
-        assert env["HERMES_KANBAN_BRANCH"] == "wt/t_dispatch_env"
+        assert env["TINO_KANBAN_TASK"] == "t_dispatch_env"
+        assert env["TINO_KANBAN_BRANCH"] == "wt/t_dispatch_env"
         for key in sc._VAR_MAP:
-            if key == "HERMES_SESSION_SOURCE":
+            if key == "TINO_SESSION_SOURCE":
                 # Re-set by the dispatcher, so what matters is that it carries
                 # the worker's own tag rather than the inherited routing value.
                 assert env[key] == "kanban"
@@ -1109,7 +1109,7 @@ def test_connect_falls_back_to_delete_on_locking_protocol(tmp_path, monkeypatch,
 
     home = tmp_path / ".hermes"
     home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("TINO_HOME", str(home))
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
 
     # These tests exercise the WAL-attempt path; assume a fixed SQLite so the
@@ -1170,7 +1170,7 @@ def test_connect_works_when_wal_is_silently_refused(tmp_path, monkeypatch, caplo
 
     home = tmp_path / ".hermes"
     home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("TINO_HOME", str(home))
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
 
     kb._INITIALIZED_PATHS.clear()
@@ -1523,17 +1523,17 @@ def test_connect_heals_reduced_tasks_schema_seeded_by_external_harness(kanban_ho
 def test_resolve_hermes_argv_prefers_module_form_over_path_shim(monkeypatch):
     """A `hermes` on PATH must not shadow the running install (#111569):
     the module argv wins whenever ``hermes_cli`` is importable; only an
-    explicit ``$HERMES_BIN`` overrides it."""
+    explicit ``$TINO_BIN`` overrides it."""
     import shutil
     import sys
     from hermes_cli import kanban_db_dispatch as kbd
 
-    monkeypatch.delenv("HERMES_BIN", raising=False)
+    monkeypatch.delenv("TINO_BIN", raising=False)
     monkeypatch.setattr(shutil, "which", lambda name: "/tmp/planted/hermes")
     monkeypatch.setattr(kbd, "_safe_which_no_cwd", lambda name: "/tmp/planted/hermes")
     assert kbd._resolve_hermes_argv() == [sys.executable, "-m", "hermes_cli.main"]
 
-    monkeypatch.setenv("HERMES_BIN", "/opt/hermes/bin/hermes")
+    monkeypatch.setenv("TINO_BIN", "/opt/hermes/bin/hermes")
     assert kbd._resolve_hermes_argv() == ["/opt/hermes/bin/hermes"]
 
 
@@ -1550,7 +1550,7 @@ def test_resolve_hermes_argv_falls_back_to_module_form_when_no_path_shim(monkeyp
     import hermes_cli.kanban_db as kb
     from hermes_cli import kanban_db_dispatch as kbd
 
-    monkeypatch.delenv("HERMES_BIN", raising=False)
+    monkeypatch.delenv("TINO_BIN", raising=False)
     monkeypatch.setattr(shutil, "which", lambda name: None)
     argv = kbd._resolve_hermes_argv()
     assert argv == [sys.executable, "-m", "hermes_cli.main"]
@@ -1572,7 +1572,7 @@ def test_resolve_hermes_argv_module_actually_runs():
     import unittest.mock as mock
 
     with mock.patch.dict(os.environ, {}, clear=False):
-        os.environ.pop("HERMES_BIN", None)
+        os.environ.pop("TINO_BIN", None)
         with mock.patch.object(shutil, "which", return_value=None):
             argv = kbd._resolve_hermes_argv()
     r = subprocess.run(argv + ["--version"], capture_output=True, text=True, timeout=30)
@@ -1580,7 +1580,7 @@ def test_resolve_hermes_argv_module_actually_runs():
         f"`{' '.join(argv)} --version` failed (rc={r.returncode}); "
         f"stderr={r.stderr[:200]!r}"
     )
-    assert "Hermes Agent" in r.stdout, f"unexpected output: {r.stdout[:200]!r}"
+    assert "Tino Agent" in r.stdout, f"unexpected output: {r.stdout[:200]!r}"
 
 
 # ---------------------------------------------------------------------------

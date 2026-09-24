@@ -26,7 +26,7 @@ def portal(monkeypatch, tmp_path):
 
 
 def _write_config(monkeypatch, **nous):
-    home = Path(os.environ["HERMES_HOME"])
+    home = Path(os.environ["TINO_HOME"])
     (home / "config.yaml").write_text("nous:\n" + "".join(f"  {k}: {str(v).lower()}\n" for k, v in nous.items()))
     from hermes_cli import config as cfg_mod
     for attr in ("_config_cache", "_cached_config"):
@@ -58,7 +58,7 @@ class TestIdentityLifecycle:
         first = anon_auth.ensure_portal_identity(explicit=True)
         other_home = tmp_path / "profiles" / "two"
         other_home.mkdir(parents=True)
-        monkeypatch.setenv("HERMES_HOME", str(other_home))
+        monkeypatch.setenv("TINO_HOME", str(other_home))
         before = len(portal.calls)
         second = anon_auth.ensure_portal_identity(explicit=True)
         assert second["anon_token"] == first["anon_token"]
@@ -85,18 +85,18 @@ class TestIdentityLifecycle:
             resolve_provider("auto")
 
     def test_launch_gate_off_means_no_free_tier_at_all(self, portal, monkeypatch):
-        """Without ``HERMES_GUEST_ONBOARDING=1`` the free tier does not exist: no mint, no portal
+        """Without ``TINO_GUEST_ONBOARDING=1`` the free tier does not exist: no mint, no portal
         traffic, ``nous.guest``'s default is never consulted, and an identity already on disk is
         not treated as enabled. The env var is the only lever; ``0``/``true``/anything but ``1`` is off."""
         monkeypatch.setattr("agent.bedrock_adapter.has_aws_credentials", lambda: False)
         for raw in ("", "0", "true", "yes", "new"):
-            monkeypatch.setenv("HERMES_GUEST_ONBOARDING", raw)
+            monkeypatch.setenv("TINO_GUEST_ONBOARDING", raw)
             assert anon_auth.guest_enabled() is False
             assert anon_auth.ensure_portal_identity(explicit=True) is None
         assert portal.calls == []
         with pytest.raises(anon_auth.AuthError):
             resolve_provider("auto")
-        monkeypatch.setenv("HERMES_GUEST_ONBOARDING", "1")
+        monkeypatch.setenv("TINO_GUEST_ONBOARDING", "1")
         assert anon_auth.guest_enabled() is True
 
 
@@ -118,7 +118,7 @@ class TestExplicitProvision:
         # A sibling profile adopts the same identity implicitly; no second create call.
         sibling = tmp_path / "sibling-profile"
         sibling.mkdir()
-        monkeypatch.setenv("HERMES_HOME", str(sibling))
+        monkeypatch.setenv("TINO_HOME", str(sibling))
         adopted = anon_auth.ensure_portal_identity(explicit=True)
         assert adopted and adopted["anon_token"] == token
         assert portal.minted == 1

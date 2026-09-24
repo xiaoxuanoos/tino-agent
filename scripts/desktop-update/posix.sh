@@ -6,11 +6,11 @@
 # quits; because it lives in the checkout, every update refreshes the code
 # that drives the next one. Replaces the in-app updater
 # (applyUpdatesPosixInApp) -- with the app gone before the update starts,
-# the HERMES_DESKTOP_CHILD_PID reaper-exclusion dance dies with it.
+# the TINO_DESKTOP_CHILD_PID reaper-exclusion dance dies with it.
 #
 # CONTRACT (keep in sync with apps/desktop/electron/main.ts):
 #   bash scripts/desktop-update/posix.sh
-#     --install-root <path>    repo checkout (HERMES_HOME/hermes-agent)
+#     --install-root <path>    repo checkout (TINO_HOME/hermes-agent)
 #     --branch <ref>           branch to update against
 #     --desktop-pid <pid>      the Electron main process to wait out
 #     [--relaunch-target <p>]  mac: running .app to swap+reopen;
@@ -40,6 +40,7 @@ INSTALL_ROOT="" BRANCH="main" DESKTOP_PID=0 RELAUNCH_TARGET=""
 RELAUNCH_CWD="" SANDBOX_FALLBACK=0 RELAUNCH_ARGS=()
 NO_UI=0 NO_MARKER_CLEANUP=0 SELF_TEST_UI=0 SELF_TEST_GATE=0 SELF_TEST_MARKER=0
 SELF_TEST_TCC_HEAL=0
+SELF_TEST_VENV_RESOLVER=0
 HANDOFF_DAEMONIZED=0
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -54,6 +55,7 @@ while [ $# -gt 0 ]; do
     --self-test-ui) SELF_TEST_UI=1; shift ;;
     --self-test-gate) SELF_TEST_GATE=1; shift ;;
     --self-test-tcc-heal) SELF_TEST_TCC_HEAL=1; shift ;;
+    --self-test-venv-resolver) SELF_TEST_VENV_RESOLVER=1; NO_UI=1; NO_MARKER_CLEANUP=1; shift ;;
     --daemonized) HANDOFF_DAEMONIZED=1; shift ;;
     --self-test-marker) SELF_TEST_MARKER=1; NO_UI=1; NO_MARKER_CLEANUP=1; shift ;;
     --) shift; RELAUNCH_ARGS=("$@"); shift $# ;;
@@ -63,12 +65,16 @@ done
 [ "$SELF_TEST_UI" -eq 1 ] || [ -n "$INSTALL_ROOT" ] || { echo "--install-root is required" >&2; exit 64; }
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-HERMES_HOME="${INSTALL_ROOT:+$(dirname "$INSTALL_ROOT")}"
-HERMES_HOME="${HERMES_HOME:-${TMPDIR:-/tmp}}"
-MARKER="$HERMES_HOME/.hermes-update-in-progress"
-LOG_DIR="$HERMES_HOME/logs"; mkdir -p "$LOG_DIR" 2>/dev/null || true
+# Electron pins an isolated home in the hand-off environment. The marker must
+# live there too: using the checkout's parent made a second Desktop launch miss
+# the first updater and start another update over the same tree.
+TINO_HOME="${TINO_HOME:-${INSTALL_ROOT:+$(dirname "$INSTALL_ROOT")}}"
+TINO_HOME="${TINO_HOME:-${TMPDIR:-/tmp}}"
+export TINO_HOME
+MARKER="$TINO_HOME/.hermes-update-in-progress"
+LOG_DIR="$TINO_HOME/logs"; mkdir -p "$LOG_DIR" 2>/dev/null || true
 LOG="$LOG_DIR/desktop-update-handoff.log"
-RESULT="$HERMES_HOME/.hermes-update-result.json"
+RESULT="$TINO_HOME/.hermes-update-result.json"
 STATUS="${TMPDIR:-/tmp}/hermes-update-status.$$"
 STARTED_AT="$(date +%s)"  # the shim's elapsed clock; see serve-ui.py
 
@@ -130,20 +136,20 @@ notify_fallback() { # status message — renderer-free recovery surface.
   # boot surfaces it in a dialog (handoff-result.ts + main.ts).
   case "$1" in manual|error) ;; *) return 0 ;; esac
   if [ "$(uname)" = "Darwin" ]; then
-    /usr/bin/osascript -e "display notification \"$(printf '%s' "$2" | sed 's/"/\\"/g')\" with title \"Hermes update\"" 2>/dev/null && return 0
+    /usr/bin/osascript -e "display notification \"$(printf '%s' "$2" | sed 's/"/\\"/g')\" with title \"Tino update\"" 2>/dev/null && return 0
   else
     if command -v notify-send >/dev/null 2>&1; then
-      notify-send -u critical "Hermes update" "$2" 2>/dev/null && return 0
+      notify-send -u critical "Tino update" "$2" 2>/dev/null && return 0
     fi
     local p
     if command -v zenity >/dev/null 2>&1; then
-      zenity --warning --title="Hermes update" --text="$2" 2>/dev/null &
+      zenity --warning --title="Tino update" --text="$2" 2>/dev/null &
       p=$!; sleep 1
       kill -0 "$p" 2>/dev/null && return 0
       wait "$p" 2>/dev/null
     fi
     if command -v kdialog >/dev/null 2>&1; then
-      kdialog --title "Hermes update" --sorry "$2" 2>/dev/null &
+      kdialog --title "Tino update" --sorry "$2" 2>/dev/null &
       p=$!; sleep 1
       kill -0 "$p" 2>/dev/null && return 0
       wait "$p" 2>/dev/null
@@ -176,7 +182,7 @@ find_browser() {
   # No Microsoft Edge and no Brave, on purpose. Edge's OS-level
   # Microsoft-account integration signs a fresh throwaway profile into the
   # user's MSA and renders its own "syncing your data" notification — MSA
-  # email included — inside this window that is titled "Hermes" (#88410).
+  # email included — inside this window that is titled "Tino" (#88410).
   # Brave paints its own P3A privacy-notice bar over the progress page in
   # the same window — cramped to unreadability at the shim's small size
   # (#88682). The throwaway --user-data-dir below cannot block either; the
@@ -286,7 +292,7 @@ stop_ui() { # error/manual outcomes keep the window up briefly so a watching
   # before this, each aborted update left another orphan browser window on
   # screen until the user closed it by hand.
   if [ "${1:-}" = "leave-window" ]; then
-    sleep "${HERMES_UPDATE_SHIM_GRACE_SECONDS:-15}"
+    sleep "${TINO_UPDATE_SHIM_GRACE_SECONDS:-15}"
   fi
   if [ -n "$UI_SERVER_PID" ]; then
     # The server ignores TERM/HUP (see start_ui) — KILL is its off switch.
@@ -348,15 +354,23 @@ linux_gate() {
     [ "$arg" = "--no-sandbox" ] && { GATE=relaunch; return; }
   done
 
-  GATE=manual GATE_MSG="Update complete, but the rebuilt app can't relaunch itself (its sandbox helper needs root ownership). Reopen Hermes to finish."
+  GATE=manual GATE_MSG="Update complete, but the rebuilt app can't relaunch itself (its sandbox helper needs root ownership). Reopen Tino to finish."
 }
 
 mac_swap() {
   local rebuilt="" c
-  for c in "$INSTALL_ROOT/apps/desktop/release/mac-arm64/Hermes.app" \
-           "$INSTALL_ROOT/apps/desktop/release/mac/Hermes.app"; do
+  for c in "$INSTALL_ROOT/apps/desktop/release/mac-arm64/Tino Agent.app" \
+           "$INSTALL_ROOT/apps/desktop/release/mac/Tino Agent.app" \
+           "$INSTALL_ROOT/apps/desktop/release/mac-arm64/Tino.app" \
+           "$INSTALL_ROOT/apps/desktop/release/mac/Tino.app"; do
     [ -d "$c" ] && { rebuilt="$c"; break; }
   done
+
+  if [ "$FINAL_CODE" -eq 0 ] && [ -n "$RELAUNCH_TARGET" ] && [ -z "$rebuilt" ]; then
+    DONE_NOTE="Code updated, but the rebuilt Tino Agent app was not found. The previous app was kept; rebuild the Desktop before retrying."
+    log "WARNING: rebuilt Tino Agent bundle missing; keeping existing app"
+    return
+  fi
 
   # Transactional swap: stage a full copy, move the old bundle aside, move
   # the copy in. Every step checked; a failed final move ROLLS BACK so the
@@ -378,7 +392,7 @@ mac_swap() {
         DONE_NOTE="Update complete, but the new app could not be installed; the previous version was restored. Run the update again."
         log "WARNING: bundle install failed; rolled back to the previous app"
       else
-        FINAL_CODE=7 FINAL_MSG="The update finished but installing the new app failed and the previous app could not be restored. Reinstall Hermes (the rebuilt app is at $rebuilt)."
+        FINAL_CODE=7 FINAL_MSG="The update finished but installing the new app failed and the previous app could not be restored. Reinstall Tino (the rebuilt app is at $rebuilt)."
         log "ERROR: bundle install failed AND rollback failed"
       fi
     else
@@ -473,7 +487,7 @@ finish() {
       if ! launch_app; then
         # Even the kept bundle didn't come back: the durable message must
         # carry BOTH facts (update ok, previous app not reopened).
-        FINAL_MSG="$DONE_NOTE Hermes also could not reopen itself - open it manually."
+        FINAL_MSG="$DONE_NOTE Tino also could not reopen itself - open it manually."
         write_result
       fi
     fi
@@ -483,7 +497,7 @@ finish() {
   else
     # Launch was due and did not land. Downgrade: truthful result for the
     # next boot, manual state held on screen now.
-    FINAL_MSG="Update complete. Reopen Hermes to finish (it could not restart itself)."
+    FINAL_MSG="Update complete. Reopen Tino to finish (it could not restart itself)."
     MANUAL=1
     write_result
     publish "manual" "$FINAL_MSG"; stop_ui leave-window
@@ -516,6 +530,17 @@ tcc_probe_python() { # interpreter path → 0 iff it boots a real stdlib.
   [ -x "$1" ] || return 1
   env -u PYTHONHOME -u PYTHONPATH -u PYTHONSTARTUP -u __PYVENV_LAUNCHER__ \
     "$1" -c 'import encodings' >/dev/null 2>&1
+}
+
+resolve_update_venv() { # checkout root → selected venv directory
+  # Source/developer installs use `.venv`; managed installs historically use
+  # `venv`. Prefer the managed layout when both are present, but never reject
+  # a healthy source install merely because it has the other canonical name.
+  local root="$1" candidate
+  for candidate in "$root/venv" "$root/.venv"; do
+    [ -x "$candidate/bin/hermes" ] && { printf '%s\n' "$candidate"; return 0; }
+  done
+  return 1
 }
 
 TCC_HEAL_STATE="not-run"
@@ -627,6 +652,12 @@ tcc_pick_update_invoke() { # sets UPDATE_INVOKE; safety net past a failed heal
 }
 
 # ── self-tests: no update, touch nothing ────────────────────────────────────
+if [ "$SELF_TEST_VENV_RESOLVER" -eq 1 ]; then
+  trap - EXIT
+  resolve_update_venv "$INSTALL_ROOT" || exit 1
+  exit 0
+fi
+
 if [ "$SELF_TEST_TCC_HEAL" -eq 1 ]; then
   # Runs the REAL heal + invoke selection against --install-root and reports;
   # tests/scripts/desktop_update/test_desktop_update_tcc_heal.py drives the state matrix through it.
@@ -649,9 +680,9 @@ fi
 if [ "$SELF_TEST_UI" -eq 1 ]; then
   start_ui
   log "SELF-TEST: shim simulation (no update will run)"
-  sleep "${HERMES_SELFTEST_HOLD_SECONDS:-6}"
+  sleep "${TINO_SELFTEST_HOLD_SECONDS:-6}"
   RELAUNCH_TARGET=""
-  if [ -n "${HERMES_SELFTEST_FAIL:-}" ]; then FINAL_MSG="self-test error state"
+  if [ -n "${TINO_SELFTEST_FAIL:-}" ]; then FINAL_MSG="self-test error state"
   else FINAL_CODE=0 FINAL_MSG="self-test complete"; fi
   exit "$FINAL_CODE"
 fi
@@ -666,7 +697,7 @@ fi
 # teardown, while retaining the same marker/result protocol.
 if [ "$HANDOFF_DAEMONIZED" -ne 1 ]; then
   # This launcher is disposable. In particular it must not run finish() on
-  # EXIT: that would publish a false failure and relaunch Hermes while the
+  # EXIT: that would publish a false failure and relaunch Tino while the
   # re-parented orchestrator is only just starting.
   trap - EXIT HUP INT QUIT TERM
   # --daemonized must precede ORIGINAL_ARGS, not follow it: ORIGINAL_ARGS may
@@ -698,7 +729,7 @@ rm -f "$RESULT" 2>/dev/null || true
 # update_lock.py (the `hermes update` child adopts it via process ancestry).
 # The Desktop supplies one acquisition time for the whole ownership chain.
 NOW="$(date +%s)"
-STARTED_AT="${HERMES_UPDATE_STARTED_AT:-$NOW}"
+STARTED_AT="${TINO_UPDATE_STARTED_AT:-$NOW}"
 case "$STARTED_AT" in ''|*[!0-9]*) STARTED_AT="$NOW" ;; esac
 MIN_STARTED_AT=$((NOW - 1200))
 # Compare the validated decimal strings before doing arithmetic. Shell integer
@@ -718,7 +749,7 @@ fi
 if [ "$DESKTOP_PID" -gt 0 ] 2>/dev/null; then
   for _ in $(seq 1 100); do kill -0 "$DESKTOP_PID" 2>/dev/null || break; sleep 0.3; done
   if kill -0 "$DESKTOP_PID" 2>/dev/null; then
-    FINAL_CODE=4 FINAL_MSG="Update aborted: the Hermes window (pid $DESKTOP_PID) did not exit within 30s. Nothing was changed. Close Hermes fully and try again."
+    FINAL_CODE=4 FINAL_MSG="Update aborted: the Tino window (pid $DESKTOP_PID) did not exit within 30s. Nothing was changed. Close Tino fully and try again."
     log "$FINAL_MSG"; exit "$FINAL_CODE"
   fi
 fi
@@ -730,14 +761,18 @@ fi
 sleep 1
 start_ui
 
-HERMES_BIN="$INSTALL_ROOT/venv/bin/hermes"
-[ -x "$HERMES_BIN" ] || { FINAL_CODE=3 FINAL_MSG="Update aborted: $HERMES_BIN is missing. The install needs repair (run the Hermes installer or hermes doctor)."; log "$FINAL_MSG"; exit 3; }
+UPDATE_VENV="$(resolve_update_venv "$INSTALL_ROOT")" || {
+  FINAL_CODE=3
+  FINAL_MSG="Update aborted: neither $INSTALL_ROOT/venv/bin/hermes nor $INSTALL_ROOT/.venv/bin/hermes is available. The install needs repair (run the Tino installer or hermes doctor)."
+  log "$FINAL_MSG"; exit 3
+}
+TINO_BIN="$UPDATE_VENV/bin/hermes"
 
 # Heal a venv the reverted TCC anchor left bricked BEFORE invoking the CLI:
 # venv/bin/hermes execs venv/bin/python3, so a dead alias kills every attempt
 # and its retry identically (#95759). macOS-only artifact; probe is cheap.
 if [ "$(uname)" = "Darwin" ]; then
-  if tcc_anchor_heal "$INSTALL_ROOT/venv/bin"; then
+  if tcc_anchor_heal "$UPDATE_VENV/bin"; then
     case "$TCC_HEAL_STATE" in
       healed-*) log "TCC anchor self-heal repaired the venv interpreter ($TCC_HEAL_STATE)" ;;
     esac
@@ -745,9 +780,9 @@ if [ "$(uname)" = "Darwin" ]; then
     log "TCC anchor self-heal could not repair the venv ($TCC_HEAL_STATE)"
   fi
 fi
-tcc_pick_update_invoke "$INSTALL_ROOT/venv/bin"
-if [ "${UPDATE_INVOKE[0]}" != "$HERMES_BIN" ]; then
-  log "venv/bin/python3 still unbootable; invoking the update via ${UPDATE_INVOKE[*]}"
+tcc_pick_update_invoke "$UPDATE_VENV/bin"
+if [ "${UPDATE_INVOKE[0]}" != "$TINO_BIN" ]; then
+  log "${UPDATE_VENV##*/}/bin/python3 still unbootable; invoking the update via ${UPDATE_INVOKE[*]}"
 fi
 
 # Run FROM the install root: `hermes update` resolves the tree it mutates
@@ -761,10 +796,15 @@ cd "$INSTALL_ROOT" || {
   log "$FINAL_MSG"; exit 3
 }
 export PYTHONUNBUFFERED=1
+# A source checkout may intentionally share a venv outside INSTALL_ROOT. Its
+# generated `hermes` entrypoint then cannot import this checkout unless the
+# checkout root is on sys.path. Managed installs are unaffected (same source
+# root, merely made explicit); source installs stop failing before argparse.
+export PYTHONPATH="$INSTALL_ROOT${PYTHONPATH:+:$PYTHONPATH}"
 # --keep-stash: never re-apply local source edits after the update (they stay
 # parked in git stash). Probe --help first: older installed backends don't
 # know the flag and argparse would abort with exit 2, which collides with the
-# "close all Hermes windows" sentinel.
+# "close all Tino windows" sentinel.
 KEEP_STASH=""
 if "${UPDATE_INVOKE[@]}" update --help 2>/dev/null | grep -q -- '--keep-stash'; then
   KEEP_STASH="--keep-stash"
@@ -773,13 +813,14 @@ else
 fi
 log "running: ${UPDATE_INVOKE[*]} update --yes --gateway $KEEP_STASH --branch $BRANCH"
 publish_stage "Updating code and dependencies"
+PRE_UPDATE_HEAD="$(git rev-parse HEAD 2>/dev/null || true)"
 OUT="$("${UPDATE_INVOKE[@]}" update --yes --gateway $KEEP_STASH --branch "$BRANCH" 2>&1)"; CODE=$?
 printf '%s\n' "$OUT" >> "$LOG" 2>/dev/null
 log "hermes update exit code: $CODE"
 
 if [ "$CODE" -ne 0 ] && [ "$CODE" -ne 2 ]; then
   # Retry once: update-boundary class (fresh code on disk, stale in memory).
-  # Exit 2 ("close all Hermes windows") is not retryable.
+  # Exit 2 ("close all Tino windows") is not retryable.
   #
   # A parked-branch SKIP (checkout on a feature branch with unmerged
   # commits) is also deterministic — the retry would hit the exact same
@@ -793,11 +834,19 @@ if [ "$CODE" -ne 0 ] && [ "$CODE" -ne 2 ]; then
     FINAL_MSG="Update skipped: the git checkout is on a branch that isn't fully merged into $BRANCH. Switch to the target branch and update again (see the terminal output for the exact commands)."
     exit 8
   fi
-  log "retrying once (freshly pulled fix loads on the second run)"
-  publish_stage "Retrying update"
-  OUT="$("${UPDATE_INVOKE[@]}" update --yes --gateway $KEEP_STASH --branch "$BRANCH" 2>&1)"; CODE=$?
-  printf '%s\n' "$OUT" >> "$LOG" 2>/dev/null
-  log "retry exit code: $CODE"
+  POST_UPDATE_HEAD="$(git rev-parse HEAD 2>/dev/null || true)"
+  if [ -n "$PRE_UPDATE_HEAD" ] && [ "$PRE_UPDATE_HEAD" != "$POST_UPDATE_HEAD" ]; then
+    # A retry is useful only after the first run installed new updater code.
+    # Network failures leave HEAD unchanged; repeating their full timeout only
+    # makes the progress window appear stuck for several more minutes.
+    log "retrying once (the first run installed new updater code)"
+    publish_stage "Retrying update"
+    OUT="$("${UPDATE_INVOKE[@]}" update --yes --gateway $KEEP_STASH --branch "$BRANCH" 2>&1)"; CODE=$?
+    printf '%s\n' "$OUT" >> "$LOG" 2>/dev/null
+    log "retry exit code: $CODE"
+  else
+    log "not retrying: checkout HEAD did not change"
+  fi
 fi
 trap 'on_signal TERM' TERM
 
@@ -819,9 +868,9 @@ else
   # The bricked-venv class is fixable and must not read as a generic exit 1:
   # a dead interpreter with a failed/impossible heal means retrying can never
   # succeed — tell the user what is actually wrong (#95759).
-  if ! tcc_probe_python "$INSTALL_ROOT/venv/bin/python3" \
-      && ! tcc_probe_python "$INSTALL_ROOT/venv/bin/python"; then
-    FINAL_MSG="Update failed: the Python interpreter inside $INSTALL_ROOT/venv cannot start (heal state: $TCC_HEAL_STATE). Reinstall the runtime with the Hermes installer, or run hermes doctor --fix from a terminal if any hermes command still works."
+  if ! tcc_probe_python "$UPDATE_VENV/bin/python3" \
+      && ! tcc_probe_python "$UPDATE_VENV/bin/python"; then
+    FINAL_MSG="Update failed: the Python interpreter inside $UPDATE_VENV cannot start (heal state: $TCC_HEAL_STATE). Reinstall the runtime with the Tino installer, or run hermes doctor --fix from a terminal if any hermes command still works."
   fi
 fi
 exit "$FINAL_CODE"

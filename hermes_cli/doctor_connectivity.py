@@ -16,7 +16,7 @@ from typing import NamedTuple
 from urllib.parse import urlsplit
 
 from hermes_cli.colors import Colors, color
-from hermes_cli.models import _HERMES_USER_AGENT
+from hermes_cli.models import _TINO_USER_AGENT
 from hermes_constants import OPENROUTER_MODELS_URL
 from utils import base_url_host_matches
 
@@ -211,7 +211,7 @@ def _anthropic_messages_probe(base: str, key: str):
     from agent.anthropic_endpoints import _requires_bearer_auth
     normalized, kwargs = _base_client_kwargs(base, None)
     auth = {"Authorization": f"Bearer {key}"} if _requires_bearer_auth(normalized) else {"x-api-key": key}
-    headers = {"anthropic-version": "2023-06-01", "User-Agent": _HERMES_USER_AGENT, **auth}
+    headers = {"anthropic-version": "2023-06-01", "User-Agent": _TINO_USER_AGENT, **auth}
     model = str(_model_cfg().get("default") or "").strip() or "claude-sonnet-4-5"
     body = {"model": model, "max_tokens": 1, "messages": [{"role": "user", "content": "ping"}]}
     return httpx.post(normalized + "/v1/messages", headers=headers, params=kwargs.get("default_query"), json=body, timeout=10)
@@ -242,7 +242,7 @@ def _apikey_request(key: str, base_env, default_url) -> tuple:
     if base_url_host_matches(base, "api.kimi.com") and base.rstrip("/").endswith("/coding"):
         base = base.rstrip("/") + "/v1"
     url = (base.rstrip("/") + "/models") if base else default_url
-    headers = {"Authorization": f"Bearer {key}", "User-Agent": _HERMES_USER_AGENT}
+    headers = {"Authorization": f"Bearer {key}", "User-Agent": _TINO_USER_AGENT}
     if base_url_host_matches(base, "api.kimi.com"):
         headers["User-Agent"] = "claude-code/0.1.0"
     # Google's Generative Language API rejects ``Authorization: Bearer <api-key>`` with 401

@@ -50,12 +50,12 @@ def has_xai_credentials() -> bool:
 
 
 def hermes_xai_user_agent() -> str:
-    """Return a stable Hermes-specific User-Agent for xAI HTTP calls."""
+    """Return a stable Tino-specific User-Agent for xAI HTTP calls."""
     try:
         from hermes_cli import __version__
     except Exception:
         __version__ = "unknown"
-    return f"Hermes-Agent/{__version__}"
+    return f"Tino-Agent/{__version__}"
 
 
 def hermes_xai_default_headers() -> Dict[str, str]:
@@ -141,7 +141,7 @@ def xai_storage_notice_text(section_name: str) -> str:
 
 
 def maybe_mark_xai_storage_notice_seen(section_name: str) -> Optional[str]:
-    """Return the storage notice once per Hermes home, then mark it seen."""
+    """Return the storage notice once per Tino home, then mark it seen."""
     notice = xai_storage_notice_text(section_name)
     if not notice:
         return None
@@ -169,9 +169,9 @@ def _resolve_explicit_xai_api_key() -> str:
 
 
 def _xai_base_url_override() -> str:
-    """``HERMES_XAI_BASE_URL`` then ``XAI_BASE_URL``, stripped; '' when unset."""
+    """``TINO_XAI_BASE_URL`` then ``XAI_BASE_URL``, stripped; '' when unset."""
     from hermes_cli.config import get_env_value
-    return str(get_env_value("HERMES_XAI_BASE_URL") or get_env_value("XAI_BASE_URL") or "").strip().rstrip("/")
+    return str(get_env_value("TINO_XAI_BASE_URL") or get_env_value("XAI_BASE_URL") or "").strip().rstrip("/")
 
 
 def resolve_xai_http_credentials(
@@ -179,21 +179,21 @@ def resolve_xai_http_credentials(
 ) -> Dict[str, str]:
     """Resolve bearer credentials for direct xAI HTTP endpoints.
 
-    Default order: Hermes-managed xAI OAuth, then ``XAI_API_KEY`` (via ``get_env_value`` so
+    Default order: Tino-managed xAI OAuth, then ``XAI_API_KEY`` (via ``get_env_value`` so
     ``~/.hermes/.env`` keys count). ``prefer_api_key=True`` inverts that for API-metered
     endpoints where the subscription OAuth bearer authorizes but misbehaves (x_search answers
-    without citations, TTS 403s). Both branches honor ``HERMES_XAI_BASE_URL``/``XAI_BASE_URL``
+    without citations, TTS 403s). Both branches honor ``TINO_XAI_BASE_URL``/``XAI_BASE_URL``
     behind the same origin-pinning validation. ``force_refresh=True`` forces an OAuth refresh;
     pass the rejected bearer as ``api_key_hint`` so a multi-account pool refreshes the issuing
     entry, not whichever its strategy selects first.
 
-    Prefers Hermes-managed xAI OAuth credentials when available, then falls back to ``XAI_API_KEY`` resolved
-    via ``hermes_cli.config.get_env_value`` so keys stored in ``~/.hermes/.env`` (the standard Hermes
+    Prefers Tino-managed xAI OAuth credentials when available, then falls back to ``XAI_API_KEY`` resolved
+    via ``hermes_cli.config.get_env_value`` so keys stored in ``~/.hermes/.env`` (the standard Tino
     location) are honored — not just ones already exported into ``os.environ``. This keeps direct xAI
     endpoints (images, TTS, STT, etc.) aligned with the main runtime auth model and preserves the regression
     contract from PR #17140 / #17163.
     The key is read through :func:`tools.tool_backend_helpers.resolve_provider_secret` so profile secret
-    scoping is identical to the fallback branch, and the base URL honors ``HERMES_XAI_BASE_URL`` /
+    scoping is identical to the fallback branch, and the base URL honors ``TINO_XAI_BASE_URL`` /
     ``XAI_BASE_URL`` behind the same origin-pinning validation as the OAuth branch. See #87045, #88040.
     """
     import hermes_cli.auth as auth_mod

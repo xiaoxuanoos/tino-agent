@@ -51,7 +51,7 @@ def two_homes(tmp_path, monkeypatch):
     _profile(a, "https://a.example/v1")
     _profile(b, "https://b.example/v1")
     monkeypatch.setattr(Path, "home", classmethod(lambda cls: fake_home))
-    monkeypatch.setenv("HERMES_HOME", str(a))
+    monkeypatch.setenv("TINO_HOME", str(a))
     monkeypatch.delenv("NOUS_INFERENCE_BASE_URL", raising=False)
     return a, b
 

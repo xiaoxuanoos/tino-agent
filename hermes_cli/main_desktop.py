@@ -42,7 +42,7 @@ def _compute_desktop_content_hash(project_root: Path) -> str:
 
 
 def _desktop_stamp_path() -> Path:
-    """Path of the desktop build stamp under $HERMES_HOME."""
+    """Path of the desktop build stamp under $TINO_HOME."""
     from hermes_constants import get_hermes_home
     return get_hermes_home() / "desktop-build-stamp.json"
 
@@ -57,7 +57,7 @@ def _renderer_bundle_dir(desktop_dir: Path, *, source_mode: bool) -> Optional[Pa
     if executable is None:
         return None
 
-    # macOS: …/Hermes.app/Contents/MacOS/Hermes → …/Contents/Resources
+    # macOS: …/Tino.app/Contents/MacOS/Tino → …/Contents/Resources
     resources = (
         executable.parent.parent / "Resources" if sys.platform == "darwin" else executable.parent / "resources"
     )
@@ -135,14 +135,14 @@ def _desktop_packaged_executable_in(release_dir: Path) -> Optional[Path]:
     stage-and-swap staging dir (#86443).
     """
     if sys.platform == "darwin":
-        candidates = list(release_dir.glob("mac*/Hermes.app/Contents/MacOS/Hermes"))
+        candidates = list(release_dir.glob("mac*/Tino.app/Contents/MacOS/Tino"))
     elif sys.platform == "win32":
         candidates = [
-            release_dir / d / "Hermes.exe" for d in ("win-unpacked", "win-ia32-unpacked", "win-arm64-unpacked")
+            release_dir / d / "Tino.exe" for d in ("win-unpacked", "win-ia32-unpacked", "win-arm64-unpacked")
         ]
     else:
         candidates = [
-            release_dir / d / n for d in ("linux-unpacked", "linux-arm64-unpacked") for n in ("hermes", "Hermes")
+            release_dir / d / n for d in ("linux-unpacked", "linux-arm64-unpacked") for n in ("hermes", "Tino")
         ]
 
     existing = [p for p in candidates if p.exists()]
@@ -150,11 +150,11 @@ def _desktop_packaged_executable_in(release_dir: Path) -> Optional[Path]:
         return None
     if sys.platform == "win32" and len(existing) > 1:
         # A stale win-arm64-unpacked next to the real win-unpacked: picking by
-        # mtime can hand a wrong-architecture Hermes.exe to the launcher. Prefer
+        # mtime can hand a wrong-architecture Tino.exe to the launcher. Prefer
         # candidates whose PE machine matches the host; mtime when none parse.
         # Multiple unpacked trees can coexist (e.g. a stale win-arm64-unpacked left behind by a cross-arch
         # experiment next to the real win-unpacked). Picking purely by mtime can then hand a
-        # wrong-architecture Hermes.exe to the launcher, which Windows rejects with "This app can't run on
+        # wrong-architecture Tino.exe to the launcher, which Windows rejects with "This app can't run on
         # your computer" (#69179).
         expected = _expected_windows_pe_machines()
         matching = [p for p in existing if _pe_machine_or_none(p) in expected]
@@ -164,7 +164,7 @@ def _desktop_packaged_executable_in(release_dir: Path) -> Optional[Path]:
 
 
 # ─── Desktop stage-and-swap pack (#86443) ─────────────────────────────────── electron-builder packs IN
-# PLACE: before-pack.mjs wipes ``release/<platform>- unpacked`` (or the mac ``Hermes.app``) and the Electron
+# PLACE: before-pack.mjs wipes ``release/<platform>- unpacked`` (or the mac ``Tino.app``) and the Electron
 # unpack + asar + rename then rebuild it. Any failure after that wipe — corrupt cached zip, blocked
 # download, missing dep, disk full — leaves the user with NO app, and ``hermes update`` used to report
 # "partially complete" over an empty release/. Fix the class, not the predicate: build into a STAGING output
@@ -257,12 +257,12 @@ def _discard_desktop_staging(staging_dir: Path) -> None:
 
 # ─── Desktop exe integrity gate (#69179) ──────────────────────────────────── The desktop self-update chain
 # (Desktop → hermes-setup --update → `hermes update` → `hermes desktop --build-only` → relaunch) rebuilds
-# Hermes.exe on the end user's machine and used to verify only that the file EXISTS before declaring
+# Tino.exe on the end user's machine and used to verify only that the file EXISTS before declaring
 # success. A corrupt cached Electron zip whose extraction produced a truncated electron.exe, an interrupted
 # rcedit resource rewrite, a disk-full pack, or a wrong-arch unpacked tree therefore shipped a broken binary
 # that Windows refuses to load ("This app can't run on your computer" / 此应用无法在你的电脑上运行). These helpers parse
 # the PE header — no signature infrastructure required — so a structurally broken or wrong-architecture
-# Hermes.exe is caught BEFORE the updater replaces the working app, and the previous build can be restored
+# Tino.exe is caught BEFORE the updater replaces the working app, and the previous build can be restored
 # from the .bak tree that apps/desktop/scripts/before-pack.mjs now preserves.
 _PE_MACHINE_I386 = 0x014C
 _PE_MACHINE_AMD64 = 0x8664
@@ -292,7 +292,7 @@ def _windows_native_machine_from_iswow64() -> Optional[str]:
     ``(HANDLE)-1`` is truncated to ``0xFFFFFFFF`` and zero-extended into a 64-bit invalid handle. On Win64
     that makes ``IsWow64Process2`` fail with ``ERROR_INVALID_HANDLE`` (6), which is exactly the residual
     Windows-on-ARM failure after #71218: the gate fell through to ``PROCESSOR_ARCHITECTURE=AMD64`` (the
-    emulated process arch) and rejected a correctly-built ARM64 ``Hermes.exe``. Binding
+    emulated process arch) and rejected a correctly-built ARM64 ``Tino.exe``. Binding
     ``restype``/``argtypes`` to ``wintypes.HANDLE`` keeps the full ``0xFFFFFFFFFFFFFFFF`` pseudo-handle.
     """
     import ctypes
@@ -487,7 +487,7 @@ def _ensure_desktop_exe_launchable(desktop_dir: Path, packaged_executable: Optio
     if error is None:
         return packaged_executable, False
 
-    print(f"✗ The built Hermes.exe failed its integrity check: {error}\n    at: {packaged_executable}")
+    print(f"✗ The built Tino.exe failed its integrity check: {error}\n    at: {packaged_executable}")
 
     # Only the exe's OWN output dir is purged (a staging dir), never the live
     # release/ tree that still holds the last working app.
@@ -500,13 +500,13 @@ def _ensure_desktop_exe_launchable(desktop_dir: Path, packaged_executable: Optio
 
     restored = _rollback_desktop_from_backup(packaged_executable)
     if restored is not None:
-        print("  ↩ Update aborted — restored the previous working Hermes.exe from backup.")
+        print("  ↩ Update aborted — restored the previous working Tino.exe from backup.")
         print("    Your existing version was kept and still works. Run `hermes desktop`")
         print("    (or the in-app update) again to retry with a fresh Electron download.")
         return restored, True
 
     print("  ✗ No usable backup was found to restore.")
-    print("    Run `hermes desktop --force-build` to rebuild, or re-run the Hermes")
+    print("    Run `hermes desktop --force-build` to rebuild, or re-run the Tino")
     print("    installer to repair the install.")
     return None, False
 
@@ -805,7 +805,7 @@ def _desktop_macos_local_codesign(app: Path, *, desktop_dir: Path, identity: str
 
     # 1) Standalone Mach-O files (native modules, dylibs, crashpad handler),
     #    compared relative to the app root — the absolute path always contains
-    #    the outer Hermes.app component.
+    #    the outer Tino.app component.
     contents = app / "Contents"
     standalone: list[Path] = []
     for root, _dirs, files in os.walk(contents):
@@ -870,7 +870,7 @@ def _desktop_macos_relaunchable_fixup(
     """Re-sign a locally-built macOS app so in-place self-update doesn't reset TCC grants.
 
     A rebuilt ad-hoc bundle (new cdhash, no stable Designated Requirement) reports
-    "Hermes is damaged" and loses every grant. Clear quarantine xattrs, then sign
+    "Tino is damaged" and loses every grant. Clear quarantine xattrs, then sign
     with ``desktop.macos_signing_identity`` or identifier-pinned ad-hoc, keeping
     entitlements; legacy deep ad-hoc as fallback. No-op with a publisher identity
     (CSC_LINK / APPLE_SIGNING_IDENTITY; callers may pass the decision so a later
@@ -889,7 +889,7 @@ def _desktop_macos_relaunchable_fixup(
     exe = _desktop_packaged_executable_in(release_dir or (desktop_dir / "release"))
     if exe is None:
         return True
-    # exe = .../Hermes.app/Contents/MacOS/Hermes  ->  app bundle = .../Hermes.app
+    # exe = .../Tino.app/Contents/MacOS/Tino  ->  app bundle = .../Tino.app
     app = exe.parents[2]
     if not str(app).endswith(".app") or not app.is_dir():
         return True
@@ -1004,7 +1004,7 @@ def _macos_create_signing_identity(
         shutil.rmtree(tmp_dir, ignore_errors=True)
 
 
-def _desktop_macos_setup_tcc_identity(identity: str = "Hermes Local Signing") -> bool:
+def _desktop_macos_setup_tcc_identity(identity: str = "Tino Local Signing") -> bool:
     """``--setup-tcc-identity``: create/import a self-signed code-signing cert, point
     ``desktop.macos_signing_identity`` at it and re-sign the packaged app. TCC grants follow the
     signing identity, so a certificate-anchored one is stable across rebuilds (the yabai/skhd
@@ -1117,14 +1117,14 @@ def _swap_in_new_macos_bundle(tmp: Path, target: Path, old: Path) -> None:
 
 
 def _running_macos_app_bundles() -> set[Path]:
-    """``.app`` bundles of every live Hermes Desktop process. A running bundle is never swapped
+    """``.app`` bundles of every live Tino Desktop process. A running bundle is never swapped
     under: Electron loads ``app.asar`` chunks and helper apps lazily, so renaming its bundle away
     and deleting the old tree crashes the live app (the detached updater waits for it to exit)."""
     import psutil  # noqa: PLC0415
     bundles: set[Path] = set()
     for proc in psutil.process_iter(["exe"]):
         exe = proc.info.get("exe") or ""
-        if exe.endswith("/Contents/MacOS/Hermes"):
+        if exe.endswith("/Contents/MacOS/Tino"):
             bundles.add(Path(exe).resolve().parents[2])
     return bundles
 
@@ -1136,7 +1136,7 @@ def _stage_macos_bundle_copy(src: Path, dst: Path) -> None:
 
 
 def _install_rebuilt_desktop_app(desktop_dir: Path) -> tuple[list[Path], list[str]]:
-    """Copy the rebuilt macOS bundle over every stale installed ``Hermes.app`` (#52339).
+    """Copy the rebuilt macOS bundle over every stale installed ``Tino.app`` (#52339).
 
     ``hermes desktop --build-only`` (what ``hermes update`` runs) packages into
     ``apps/desktop/release/`` only. Finder, the Dock and Spotlight launch the copy in
@@ -1155,7 +1155,7 @@ def _install_rebuilt_desktop_app(desktop_dir: Path) -> tuple[list[Path], list[st
     if rebuilt_exe is None:
         return [], []
     from hermes_cli.gui_uninstall import packaged_gui_app_paths  # noqa: PLC0415
-    # .../Hermes.app/Contents/MacOS/Hermes -> .../Hermes.app
+    # .../Tino.app/Contents/MacOS/Tino -> .../Tino.app
     return _install_rebuilt_macos_bundles(
         rebuilt_exe.parents[2], packaged_gui_app_paths(), running=_running_macos_app_bundles())
 
@@ -1176,7 +1176,7 @@ def _install_rebuilt_macos_bundles(
             continue
         if app.resolve() in running:
             problems.append(
-                f"{app} is running and was not refreshed; quit Hermes Desktop and run "
+                f"{app} is running and was not refreshed; quit Tino Desktop and run "
                 "`hermes update` again (or update from inside the app)")
             continue
         tmp = app.parent / f"{app.name}.hermes-update-new"
@@ -1271,7 +1271,7 @@ def _desktop_linux_sandbox_fixup(packaged_executable: Path) -> bool:
 
     sandbox, st = _sandbox_helper_lstat(packaged_executable)
     if not sandbox.exists():
-        print(f"✗ Hermes Desktop is missing Electron's Linux sandbox helper: {sandbox}")
+        print(f"✗ Tino Desktop is missing Electron's Linux sandbox helper: {sandbox}")
         return False
     # Reject symlinks — chown/chmod must not follow an attacker-controlled link.
     if st is None:
@@ -1290,7 +1290,7 @@ def _desktop_linux_sandbox_fixup(packaged_executable: Path) -> bool:
 
     sudo = shutil.which("sudo")
     if not sudo:
-        print("✗ Hermes Desktop requires sudo to configure Electron's Linux sandbox helper.")
+        print("✗ Tino Desktop requires sudo to configure Electron's Linux sandbox helper.")
         return False
 
     print("→ Configuring Electron Linux sandbox helper (sudo required)...")
@@ -1375,7 +1375,7 @@ def _desktop_launch_options() -> tuple[list[str], str, str, str]:
 
 
 def _register_linux_desktop_entry(defer: bool = False):
-    """Install the XDG desktop entry for Hermes Desktop (Linux only, best-effort).
+    """Install the XDG desktop entry for Tino Desktop (Linux only, best-effort).
 
     ``Exec`` and ``Icon`` are absolute so the entry works outside a login shell.
     ``hermes uninstall --gui`` removes it.
@@ -1492,7 +1492,7 @@ def _run_desktop_pack_with_recovery(
             print("  ⚠ Desktop build failed; refreshed the Electron download and retrying once...")
             for p in purged:
                 print(f"    - {p}")
-            # The purge can't remove a win-unpacked tree whose Hermes.exe is
+            # The purge can't remove a win-unpacked tree whose Tino.exe is
             # still locked by a running instance; stop it before retry.
             _stop_desktop_processes_locking_build(desktop_dir)
             build_result = _pack(npm_build_env)
@@ -1521,7 +1521,7 @@ def _promote_staged_desktop_app(desktop_dir: Path, staging_dir: Path) -> Path:
     _desktop_macos_relaunchable_fixup(desktop_dir, release_dir=staging_dir)
 
     # Windows integrity gate: never declare the rebuild a success on a
-    # Hermes.exe Windows cannot load. Verified on the STAGED exe, so a failure
+    # Tino.exe Windows cannot load. Verified on the STAGED exe, so a failure
     # simply discards staging and fails loudly for the updater's retry-once.
     verified_executable, rolled_back = _ensure_desktop_exe_launchable(desktop_dir, staged_executable)
     if staged_executable is None or rolled_back or verified_executable is None:
@@ -1561,7 +1561,7 @@ def _build_desktop_app(desktop_dir: Path, *, source_mode: bool, npm: str, env: d
     if not source_mode:
         staging_dir = _desktop_staging_dir(desktop_dir)
         build_cmd += ["--", f"-c.directories.output={staging_dir}"]
-        # A running desktop instance holds Hermes.exe locked on Windows, so the
+        # A running desktop instance holds Tino.exe locked on Windows, so the
         # pack can't replace it ("Access is denied"). Stop it first.
         stopped = _stop_desktop_processes_locking_build(desktop_dir)
         if stopped:
@@ -1576,8 +1576,8 @@ def _build_desktop_app(desktop_dir: Path, *, source_mode: bool, npm: str, env: d
                 print(_PREVIOUS_APP_KEPT)
         print(f"  Run manually:  cd apps/desktop && npm run {build_script}")
         if sys.platform == "win32":
-            print("  If this says \"Access is denied\" on Hermes.exe, close any")
-            print("  running Hermes desktop window and retry.")
+            print("  If this says \"Access is denied\" on Tino.exe, close any")
+            print("  running Tino desktop window and retry.")
         print("  If the log shows Electron download retries, rebuild via a mirror:")
         print("    ELECTRON_MIRROR=<mirror-base-url> hermes desktop --force-build")
         sys.exit(build_result.returncode or 1)
@@ -1621,29 +1621,29 @@ def _desktop_launch_env(args: argparse.Namespace) -> tuple[dict, list[str]]:
     env = with_hermes_node_path()
     _prefer_wsl_d3d12(env)
     for attr, key in (
-        ("fake_boot", "HERMES_DESKTOP_BOOT_FAKE"), ("ignore_existing", "HERMES_DESKTOP_IGNORE_EXISTING")):
+        ("fake_boot", "TINO_DESKTOP_BOOT_FAKE"), ("ignore_existing", "TINO_DESKTOP_IGNORE_EXISTING")):
         if getattr(args, attr, False):
             env[key] = "1"
     if getattr(args, "hermes_root", None):
-        env["HERMES_DESKTOP_HERMES_ROOT"] = str(Path(args.hermes_root).expanduser().resolve())
+        env["TINO_DESKTOP_ROOT"] = str(Path(args.hermes_root).expanduser().resolve())
     cwd = getattr(args, "cwd", None)
-    env["HERMES_DESKTOP_CWD"] = str(Path(cwd).expanduser().resolve()) if cwd else os.getcwd()
+    env["TINO_DESKTOP_CWD"] = str(Path(cwd).expanduser().resolve()) if cwd else os.getcwd()
 
     config_electron_flags, config_disable_gpu, config_password_store, config_ozone_hint = (
         _desktop_launch_options())
-    if config_disable_gpu != "auto" and "HERMES_DESKTOP_DISABLE_GPU" not in os.environ:
-        env["HERMES_DESKTOP_DISABLE_GPU"] = config_disable_gpu
+    if config_disable_gpu != "auto" and "TINO_DESKTOP_DISABLE_GPU" not in os.environ:
+        env["TINO_DESKTOP_DISABLE_GPU"] = config_disable_gpu
     if config_ozone_hint != "auto" and "ELECTRON_OZONE_PLATFORM_HINT" not in os.environ:
         env["ELECTRON_OZONE_PLATFORM_HINT"] = config_ozone_hint
 
     # Without --password-store safeStorage.isEncryptionAvailable() is often
     # false and the desktop app refuses to persist remote gateway tokens.
-    if sys.platform == "linux" and "HERMES_DESKTOP_PASSWORD_STORE" not in os.environ:
+    if sys.platform == "linux" and "TINO_DESKTOP_PASSWORD_STORE" not in os.environ:
         password_store = (
             config_password_store if config_password_store != "auto" else _detect_linux_password_store()
         )
         if password_store:
-            env["HERMES_DESKTOP_PASSWORD_STORE"] = password_store
+            env["TINO_DESKTOP_PASSWORD_STORE"] = password_store
     return env, config_electron_flags
 
 
@@ -1708,7 +1708,7 @@ def cmd_gui(args: argparse.Namespace):
     # macOS-only one-shot: create a self-signed code-signing identity so TCC
     # grants survive rebuilds, then exit without building/launching.
     if getattr(args, "setup_tcc_identity", False):
-        identity = getattr(args, "identity", None) or "Hermes Local Signing"
+        identity = getattr(args, "identity", None) or "Tino Local Signing"
         sys.exit(0 if _desktop_macos_setup_tcc_identity(identity) else 1)
 
     packaged_executable = _desktop_packaged_executable(desktop_dir)
@@ -1765,7 +1765,7 @@ def cmd_gui(args: argparse.Namespace):
         return
 
     if source_mode:
-        print("→ Launching Hermes Desktop from source build...")
+        print("→ Launching Tino Desktop from source build...")
         launch_command = [npm, "exec", "--", "electron", "."]
     else:
         if packaged_executable is None:
@@ -1777,7 +1777,7 @@ def cmd_gui(args: argparse.Namespace):
     if getattr(args, "local", False):
         launch_command.append("--local")
     if not source_mode:
-        desktop_launch_notice(f"→ Launching packaged Hermes Desktop: {' '.join(launch_command)}")
+        desktop_launch_notice(f"→ Launching packaged Tino Desktop: {' '.join(launch_command)}")
     pass_fds: tuple[int, ...] = ()
     if deferred_entry is not None:
         env = deferred_entry.child_env(env)

@@ -63,7 +63,7 @@ class TestDesktopLinuxSandboxFixup:
         """Unpacked-app layout with a non-root, non-setuid chrome-sandbox."""
         unpacked = tmp_path / "linux-unpacked"
         unpacked.mkdir()
-        exe = unpacked / "Hermes"
+        exe = unpacked / "Tino"
         exe.write_text("", encoding="utf-8")
         sandbox = unpacked / "chrome-sandbox"
         sandbox.write_text("", encoding="utf-8")
@@ -120,7 +120,7 @@ class TestDesktopLinuxNeedsDisableSetuidSandbox:
     def _fake_packaged_app(self, tmp_path):
         unpacked = tmp_path / "linux-unpacked"
         unpacked.mkdir()
-        exe = unpacked / "Hermes"
+        exe = unpacked / "Tino"
         exe.write_text("", encoding="utf-8")
         sandbox = unpacked / "chrome-sandbox"
         sandbox.write_text("", encoding="utf-8")
@@ -158,6 +158,6 @@ class TestDesktopLinuxNeedsDisableSetuidSandbox:
         monkeypatch.setattr(sys, "platform", "linux")
         unpacked = tmp_path / "linux-unpacked"
         unpacked.mkdir()
-        exe = unpacked / "Hermes"
+        exe = unpacked / "Tino"
         exe.write_text("", encoding="utf-8")
         assert main_desktop._desktop_linux_needs_disable_setuid_sandbox(exe) is False

@@ -760,7 +760,7 @@ def test_worker_delivery_queue_is_keyed_by_the_delivering_jobs_own_execution(
     # First call the standalone (non-queue) path makes after the guard; the
     # failure is reported as the delivery error string.
     monkeypatch.setattr("gateway.config.load_gateway_config", _standalone)
-    monkeypatch.setenv("_HERMES_CRON_EXTERNAL_WORKER", "exec-outer")
+    monkeypatch.setenv("_TINO_CRON_EXTERNAL_WORKER", "exec-outer")
 
     # Own attempt: routed through the durable queue.
     assert scheduler._deliver_result(
@@ -871,7 +871,7 @@ def test_managed_gateway_restart_preserves_active_worker_and_single_side_effect(
         "print('completed')\n",
         encoding="utf-8",
     )
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("TINO_HOME", str(home))
     with use_cron_store(home):
         job = create_job(
             prompt=None,
@@ -917,7 +917,7 @@ def test_managed_gateway_restart_preserves_active_worker_and_single_side_effect(
 
     harness = (
         "import json, os, pathlib, time\n"
-        f"os.environ['HERMES_HOME'] = {str(home)!r}\n"
+        f"os.environ['TINO_HOME'] = {str(home)!r}\n"
         "os.environ['INVOCATION_ID'] = 'restart-fixture'\n"
         "from cron import scheduler\n"
         "from tools import process_registry\n"

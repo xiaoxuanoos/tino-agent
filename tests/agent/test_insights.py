@@ -551,7 +551,7 @@ class TestTerminalFormatting:
         report = engine.generate(days=30)
         text = engine.format_terminal(report)
 
-        assert "Hermes Insights" in text
+        assert "Tino Insights" in text
         assert "Overview" in text
         assert "Models Used" in text
         assert "Top Tools" in text

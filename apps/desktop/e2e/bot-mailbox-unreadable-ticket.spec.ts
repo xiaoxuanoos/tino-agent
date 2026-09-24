@@ -28,7 +28,7 @@ type Page = MockBackendFixture['page']
 let fixture: MockBackendFixture | null = null
 
 const REPO_ROOT = path.resolve(import.meta.dirname, '..', '..', '..')
-const PYTHON = process.env.HERMES_E2E_PYTHON ?? path.join(REPO_ROOT, '.venv', 'bin', 'python')
+const PYTHON = process.env.TINO_E2E_PYTHON ?? path.join(REPO_ROOT, '.venv', 'bin', 'python')
 
 async function openBots(page: Page): Promise<void> {
   const tab = page
@@ -79,7 +79,7 @@ except Exception as exc:
 
   return execFileSync(PYTHON, ['-c', script, profileHome, message], {
     cwd: REPO_ROOT,
-    env: { ...process.env, PYTHONPATH: REPO_ROOT, HERMES_HOME: profileHome },
+    env: { ...process.env, PYTHONPATH: REPO_ROOT, TINO_HOME: profileHome },
     encoding: 'utf8'
   }).trim()
 }

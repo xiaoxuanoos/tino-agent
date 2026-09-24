@@ -1,12 +1,12 @@
 declare global {
   interface Window {
-    __HERMES_INITIAL_PROFILE__?: string;
+    __TINO_INITIAL_PROFILE__?: string;
   }
 }
 
 export function dashboardInitialProfile(): string {
   if (typeof window === "undefined") return "";
-  return window.__HERMES_INITIAL_PROFILE__ ?? "";
+  return window.__TINO_INITIAL_PROFILE__ ?? "";
 }
 
 export function initialProfileScope(

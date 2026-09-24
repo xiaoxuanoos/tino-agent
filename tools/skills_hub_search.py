@@ -1,4 +1,4 @@
-"""Skills Hub discovery: the centralized Hermes index fetch (cached, stale-
+"""Skills Hub discovery: the centralized Tino index fetch (cached, stale-
 fallback), the source router, and parallel/unified search across source
 adapters.
 
@@ -24,8 +24,8 @@ from tools.skills_hub_sources import BrowseShSource, LobeHubSource, UrlSource, W
 # Log-record parity with the origin module.
 logger = logging.getLogger("tools.skills_hub")
 
-HERMES_INDEX_URL = "https://hermes-agent.nousresearch.com/docs/api/skills-index.json"
-HERMES_INDEX_TTL = 6 * 3600  # 6 hours
+TINO_INDEX_URL = "website/docs/api/skills-index.json"
+TINO_INDEX_TTL = 6 * 3600  # 6 hours
 
 
 def _hermes_index_cache_file() -> Path:
@@ -35,7 +35,7 @@ def _hermes_index_cache_file() -> Path:
 
 def _load_hermes_index() -> Optional[dict]:
     """Fetch the centralized skills index (docs site, rebuilt daily), cached
-    locally for HERMES_INDEX_TTL; on any failure serve the stale cache.
+    locally for TINO_INDEX_TTL; on any failure serve the stale cache.
 
     Brotli is deliberately NOT negotiated: the index is tens of MB and httpx's
     streaming Brotli decoder (brotlicffi, pinned for Discord attachments) raises
@@ -45,23 +45,23 @@ def _load_hermes_index() -> Optional[dict]:
     """
     from tools.skills_hub import _read_json_if_fresh
     cache_file = _hermes_index_cache_file()
-    cached = _read_json_if_fresh(cache_file, HERMES_INDEX_TTL)
+    cached = _read_json_if_fresh(cache_file, TINO_INDEX_TTL)
     if cached is not None:
         return cached
     data = None
     for accept_encoding in ("gzip, deflate", "identity"):
         try:
-            resp = httpx.get(HERMES_INDEX_URL, timeout=15, follow_redirects=True,
+            resp = httpx.get(TINO_INDEX_URL, timeout=15, follow_redirects=True,
                              headers={"Accept-Encoding": accept_encoding})
             if resp.status_code != 200:
-                logger.debug("Hermes index fetch returned %d", resp.status_code)
+                logger.debug("Tino index fetch returned %d", resp.status_code)
                 return _load_stale_index_cache()
             data = resp.json()
             break
         except httpx.DecodingError as e:
-            logger.debug("Hermes index decode failed (Accept-Encoding=%s): %s", accept_encoding, e)
+            logger.debug("Tino index decode failed (Accept-Encoding=%s): %s", accept_encoding, e)
         except (httpx.HTTPError, json.JSONDecodeError) as e:
-            logger.debug("Hermes index fetch failed: %s", e)
+            logger.debug("Tino index fetch failed: %s", e)
             return _load_stale_index_cache()
     if not isinstance(data, dict) or "skills" not in data:
         return _load_stale_index_cache()

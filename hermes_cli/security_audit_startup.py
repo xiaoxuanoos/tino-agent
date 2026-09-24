@@ -30,7 +30,7 @@ def _is_root() -> bool:
 def _running_as_root() -> Optional[str]:
     return None if not _is_root() else (
         "Running as ROOT. The agent's terminal/file tools execute with full root privileges — a single "
-        "prompt-injection or exposed endpoint is a full host compromise. Run Hermes as an unprivileged user "
+        "prompt-injection or exposed endpoint is a full host compromise. Run Tino as an unprivileged user "
         "(or in a sandboxed terminal backend / container with a non-root user).")
 
 
@@ -71,7 +71,7 @@ def _in_container() -> bool:
     """Best-effort container detection (Docker / Podman / generic OCI)."""
     if os.path.exists("/.dockerenv"):
         return True
-    if os.environ.get("HERMES_DESKTOP_CHILD_PID"):
+    if os.environ.get("TINO_DESKTOP_CHILD_PID"):
         return False  # desktop child, not a server container
     try:
         cgroup = Path("/proc/1/cgroup").read_text(encoding="utf-8", errors="replace")
@@ -115,7 +115,7 @@ def _container_no_volume_mount(hermes_home: Optional[Path]) -> Optional[str]:
         return None
     return (f"Running in a container but the data dir ({hermes_home}) is NOT on a persistent volume mount — "
             "sessions, memory, skills, and API keys are ephemeral and lost on container restart. Mount a host "
-            "volume over the HERMES_HOME data directory.")
+            "volume over the TINO_HOME data directory.")
 
 
 def _network_listener_without_auth(config: Optional[dict]) -> list[str]:

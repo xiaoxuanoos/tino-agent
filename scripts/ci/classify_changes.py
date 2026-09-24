@@ -82,8 +82,8 @@ _PY_SKIP = ("docs/", "website/") + _FRONTEND
 # Python lane — otherwise dropping a redirect URI goes green here and breaks
 # every CIMD login on main.
 # website/docs/ and website/scripts/ are asserted about the same way. The docs
-# tree generates llms.txt — the index every LLM (Hermes included, via the
-# hermes-agent skill) reads to learn what Hermes can do — and
+# tree generates llms.txt — the index every LLM (Tino included, via the
+# hermes-agent skill) reads to learn what Tino can do — and
 # tests/website/test_generate_llms_txt.py holds every page to appearing in it.
 # Skipping Python on a docs-only PR is how the index drifted to 53% coverage.
 _PY_RELEVANT_SITE = (
@@ -140,7 +140,7 @@ _DESKTOP_UPDATER_FILES = {
     "pyproject.toml",
 }
 
-# Rust crates — currently just the Tauri bootstrap installer (Hermes-Setup).
+# Rust crates — currently just the Tauri bootstrap installer (Tino-Setup).
 # These live under ``apps/``, so before this lane existed a ``.rs`` edit matched
 # ``frontend`` and nothing more: the TypeScript matrix built, cargo never ran,
 # and the crate's unit tests had never executed in CI at all.

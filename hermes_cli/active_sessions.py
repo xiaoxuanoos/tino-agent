@@ -93,7 +93,7 @@ def active_session_limit_message(
     held = summarize_holders(entries or [])
     detail = f" Held by: {held}." if held else ""
     return (
-        f"Hermes is at the active session limit ({active_count}/{max_sessions})."
+        f"Tino is at the active session limit ({active_count}/{max_sessions})."
         f"{detail} Try again when another session finishes."
     )
 
@@ -163,7 +163,7 @@ def session_already_owned_message(session_id: str, entry: dict[str, Any]) -> str
     (no lease/pid/owner jargon); the second line is ``Details: ...`` for logs and bug reports.
     """
     return (
-        "This chat is open in another Hermes window/terminal. Use it there, or start a new chat here.\n"
+        "This chat is open in another Tino window/terminal. Use it there, or start a new chat here.\n"
         + session_owner_details(session_id, entry)
     )
 
@@ -401,7 +401,7 @@ class ActiveSessionLease:
     surface: str
     enabled: bool = True
     released: bool = False
-    # Pinned at acquisition: a lease taken under the root HERMES_HOME must release
+    # Pinned at acquisition: a lease taken under the root TINO_HOME must release
     # against the same registry even inside a profile-home override, or phantom
     # leases fill the session cap.
     # See #85431.
@@ -524,7 +524,7 @@ def try_acquire_active_session(
         )
         if loaded is None:
             return None, ActiveSessionRefusal(
-                "Hermes could not read the active-session registry at "
+                "Tino could not read the active-session registry at "
                 f"{state_path}, so it cannot prove this session has no other "
                 "live owner. Fix or remove that file and try again.",
                 SESSION_COORDINATION_UNAVAILABLE,
@@ -576,7 +576,7 @@ def try_acquire_active_session(
 
 def release_active_session(lease: ActiveSessionLease) -> None:
     # Prefer the registry the lease was acquired against: the caller may be
-    # running under a profile HERMES_HOME override.
+    # running under a profile TINO_HOME override.
     # See #85431.
     state_path, lock_path = _lease_paths(lease)
     with _FileLock(lock_path):

@@ -671,7 +671,7 @@ class TestWhatsAppSessionKeyConsistency:
             json.dumps("15551234567@s.whatsapp.net"),
             encoding="utf-8",
         )
-        monkeypatch.setenv("HERMES_HOME", str(tmp_home))
+        monkeypatch.setenv("TINO_HOME", str(tmp_home))
 
         lid_source = SessionSource(
             platform=Platform.WHATSAPP,
@@ -1043,7 +1043,7 @@ class TestWhatsAppIdentifierPublicHelpers:
             json.dumps("15551234567@s.whatsapp.net"),
             encoding="utf-8",
         )
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("TINO_HOME", str(tmp_path))
 
         canonical = canonical_whatsapp_identifier("999999999999999@lid")
         assert canonical == "15551234567"
@@ -1649,7 +1649,7 @@ class TestGatewaySessionDbRecovery:
         from types import SimpleNamespace
         import hermes_constants
 
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("TINO_HOME", str(tmp_path))
         monkeypatch.setattr(hermes_constants, "get_hermes_home", lambda: tmp_path)
         store = object.__new__(SessionStore)
         store._db = None
@@ -1682,7 +1682,7 @@ class TestGatewaySessionDbRecovery:
         from types import SimpleNamespace
         import hermes_constants
 
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("TINO_HOME", str(tmp_path))
         monkeypatch.setattr(hermes_constants, "get_hermes_home", lambda: tmp_path)
 
         def _fail(**kwargs):

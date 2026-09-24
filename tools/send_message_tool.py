@@ -345,7 +345,7 @@ def _not_configured_error(platform_name, platform, entry):
            f"{config_path} ({config_state}), environment ({env_state}), "
            f"external secret sources ({_secret_sources_state(user_config)}).")
     # The gateway can hold a token only in its own process environment; a fresh CLI cannot see it. A
-    # gateway started from the default root (the reporter's shell had HERMES_HOME=<root>/profiles/<p>)
+    # gateway started from the default root (the reporter's shell had TINO_HOME=<root>/profiles/<p>)
     # never reads this profile's .env at all.
     try:
         from gateway.status import read_runtime_status, runtime_status_pid_is_live
@@ -413,8 +413,8 @@ def _mirror_sent_message(platform_name, chat_id, mirror_text, thread_id):
         from gateway.session_context import get_session_env
         return bool(mirror_to_session(
             platform_name, chat_id, mirror_text, thread_id=thread_id,
-            source_label=get_session_env("HERMES_SESSION_PLATFORM", "cli"),
-            user_id=get_session_env("HERMES_SESSION_USER_ID", "") or None))
+            source_label=get_session_env("TINO_SESSION_PLATFORM", "cli"),
+            user_id=get_session_env("TINO_SESSION_USER_ID", "") or None))
     except Exception:
         return False
 
@@ -449,10 +449,10 @@ def _describe_media_for_mirror(media_files):
 def _maybe_skip_cron_duplicate_send(platform_name: str, chat_id: str, thread_id: str | None):
     """Skip redundant cron send_message calls when the scheduler will auto-deliver there."""
     from gateway.session_context import get_session_env
-    auto_platform = get_session_env("HERMES_CRON_AUTO_DELIVER_PLATFORM", "").strip().lower()
-    auto_chat_id = get_session_env("HERMES_CRON_AUTO_DELIVER_CHAT_ID", "").strip()
+    auto_platform = get_session_env("TINO_CRON_AUTO_DELIVER_PLATFORM", "").strip().lower()
+    auto_chat_id = get_session_env("TINO_CRON_AUTO_DELIVER_CHAT_ID", "").strip()
     if not (auto_platform and auto_chat_id and auto_platform == platform_name and auto_chat_id == str(chat_id)
-            and (get_session_env("HERMES_CRON_AUTO_DELIVER_THREAD_ID", "").strip() or None) == thread_id):
+            and (get_session_env("TINO_CRON_AUTO_DELIVER_THREAD_ID", "").strip() or None) == thread_id):
         return None
     target_label = f"{platform_name}:{chat_id}" + (f":{thread_id}" if thread_id is not None else "")
     return {"success": True, "skipped": True, "reason": "cron_auto_delivery_duplicate_target", "target": target_label,

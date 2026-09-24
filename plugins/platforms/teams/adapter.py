@@ -265,7 +265,7 @@ _SDK_IMPORTS = {
 @contextmanager
 def _suppress_third_party_dotenv() -> Iterator[None]:
     """No-op ``dotenv.load_dotenv`` while importing the Teams SDK: ``microsoft_teams.apps.app`` loads a
-    cwd-discovered ``.env`` at import, mutating process-global ``os.environ``. Hermes owns dotenv loading.
+    cwd-discovered ``.env`` at import, mutating process-global ``os.environ``. Tino owns dotenv loading.
 
     See #62935.
     """
@@ -400,7 +400,7 @@ class TeamsAdapter(BasePlatformAdapter):
             self._app = App(
                 client_id=self._client_id, client_secret=self._client_secret, tenant_id=self._tenant_id,
                 http_server_adapter=_AiohttpBridgeAdapter(aiohttp_app),
-                client=ClientOptions(headers={"User-Agent": "Hermes"}))
+                client=ClientOptions(headers={"User-Agent": "Tino"}))
             # Handlers (ours, then plugin on_* decorators) must be wired before initialize(),
             # which registers POST /api/messages on aiohttp_app via the bridge's register_route().
             @self._app.on_message
@@ -784,7 +784,7 @@ _SETUP_CREDENTIALS = (
 _SETUP_INTRO = (  # "" → blank line
     "You'll need the Teams CLI. If you haven't already:", "  npm install -g @microsoft/teams.cli@preview",
     "  teams login", "", "Then expose port 3978 publicly (devtunnel / ngrok / cloudflared),", "and create your bot:",
-    '  teams app create --name "Hermes" --endpoint "https://<tunnel>/api/messages"', "",
+    '  teams app create --name "Tino" --endpoint "https://<tunnel>/api/messages"', "",
     "The CLI will print CLIENT_ID, CLIENT_SECRET, and TENANT_ID. Paste them below.", "")
 
 
@@ -822,7 +822,7 @@ def interactive_setup() -> None:
 
 def _install_hint() -> str:
     """Install hint derived from the LAZY_DEPS pins (aiohttp is CVE-pinned, so bumps happen);
-    ``venv_pip=True`` targets the real Hermes venv, sidestepping PEP 668 on Ubuntu 24.04."""
+    ``venv_pip=True`` targets the real Tino venv, sidestepping PEP 668 on Ubuntu 24.04."""
     try:
         from tools.lazy_deps import feature_install_command
         cmd = feature_install_command("platform.teams", venv_pip=True)

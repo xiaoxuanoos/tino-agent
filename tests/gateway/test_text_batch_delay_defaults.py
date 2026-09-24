@@ -19,7 +19,7 @@ from plugins.platforms.whatsapp.adapter import WhatsAppAdapter
     ids=["whatsapp", "weixin"],
 )
 def test_default_text_batch_delays_match_telegram_cadence(adapter_cls, platform, tmp_path, monkeypatch):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("TINO_HOME", str(tmp_path))
     adapter = adapter_cls(PlatformConfig(enabled=True, extra={}))
     source = SessionSource(platform=platform, chat_id="c1", chat_type="dm", user_id="u1")
     short_event = MessageEvent(text="hello", message_type=MessageType.TEXT, source=source)
@@ -34,7 +34,7 @@ def test_default_text_batch_delays_match_telegram_cadence(adapter_cls, platform,
     "adapter_cls", [WhatsAppAdapter, WeixinAdapter], ids=["whatsapp", "weixin"],
 )
 def test_text_batch_delays_clamped_to_shared_ceilings(adapter_cls, tmp_path, monkeypatch):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("TINO_HOME", str(tmp_path))
     adapter = adapter_cls(PlatformConfig(
         enabled=True, extra={"text_batch_delay_seconds": "2.5", "text_batch_split_delay_seconds": 7}))
 

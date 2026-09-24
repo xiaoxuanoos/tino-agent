@@ -120,7 +120,7 @@ def _kanban_scratch(project, tmp_path, monkeypatch):
     from hermes_cli import kanban_db_workspace as kbw
     home = tmp_path / ".hermes"
     home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("TINO_HOME", str(home))
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
     kb.init_db()
     with kbc.connect() as conn:
@@ -175,7 +175,7 @@ def test_workspace_removal_releases_only_its_language_servers(entry, mock_pyrigh
 
 
 def test_reaper_shuts_down_client_whose_root_was_deleted(mock_pyright, tmp_path):
-    """A root deleted outside Hermes is reaped on the next sweep even though the client is not idle."""
+    """A root deleted outside Tino is reaped on the next sweep even though the client is not idle."""
     repo = _make_repo(tmp_path, "repo")
     svc = _service()
     try:

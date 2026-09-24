@@ -10,7 +10,7 @@ from hermes_cli import memory_provider_migration as mig
 
 @pytest.fixture
 def home(tmp_path, monkeypatch):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("TINO_HOME", str(tmp_path))
     (tmp_path / "config.yaml").write_text("memory:\n  provider: honcho\n  honcho:\n    workspace: keep-me\n")
     monkeypatch.setattr(mig, "provider_present", lambda name, home: (home / "plugins" / name).is_dir())
     return tmp_path
@@ -43,7 +43,7 @@ def test_presence_is_checked_in_the_home_being_migrated(tmp_path, monkeypatch):
         h.mkdir(); (h / "config.yaml").write_text("memory:\n  provider: twin\n")
     (b / "plugins" / "twin").mkdir(parents=True)
     (b / "plugins" / "twin" / "__init__.py").write_text("class Twin(MemoryProvider): ...\n")
-    monkeypatch.setenv("HERMES_HOME", str(a))
+    monkeypatch.setenv("TINO_HOME", str(a))
     monkeypatch.setattr(mig, "catalog_source", lambda name: name)
     installs: list[Path] = []
     assert mig.migrate_home(b, install=lambda n: installs.append(b) or {"ok": True}, say=lambda s: None) is None

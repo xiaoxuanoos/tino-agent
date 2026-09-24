@@ -63,7 +63,7 @@ function seedArchivedRows(hermesHome: string, hiddenId: string, controlId: strin
       HIDDEN_ARCHIVED_TEXT,
       CONTROL_TEXT,
     ],
-    { cwd: REPO_ROOT, env: { ...process.env, HERMES_HOME: hermesHome }, stdio: 'pipe' },
+    { cwd: REPO_ROOT, env: { ...process.env, TINO_HOME: hermesHome }, stdio: 'pipe' },
   )
   expect(fs.existsSync(path.join(hermesHome, 'state.db'))).toBe(true)
 }

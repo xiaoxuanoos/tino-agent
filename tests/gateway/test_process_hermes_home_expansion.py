@@ -1,8 +1,8 @@
-"""Gateway identity-file readers expand a literal ``~`` in HERMES_HOME.
+"""Gateway identity-file readers expand a literal ``~`` in TINO_HOME.
 
 ``python -m gateway.run`` never passes through the CLI's ``normalize_hermes_home_env()``, so the
 process-level home readers (PID/lock/status, lifecycle ledger, heartbeat) must expand on their own
-or a fish-style ``HERMES_HOME='~/.hermes'`` lands the identity files under ``<cwd>/~/.hermes``.
+or a fish-style ``TINO_HOME='~/.hermes'`` lands the identity files under ``<cwd>/~/.hermes``.
 """
 
 from pathlib import Path
@@ -21,8 +21,8 @@ from gateway import lifecycle_ledger, shutdown_watchdog, status
 def test_process_home_readers_expand_literal_tilde(reader, tmp_path, monkeypatch):
     monkeypatch.setenv("HOME", str(tmp_path))
     monkeypatch.setenv("USERPROFILE", str(tmp_path))
-    monkeypatch.setenv("HERMES_HOME", "~/.x")
+    monkeypatch.setenv("TINO_HOME", "~/.x")
     assert reader() == tmp_path / ".x"
     assert reader().is_absolute()
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / ".abs"))
+    monkeypatch.setenv("TINO_HOME", str(tmp_path / ".abs"))
     assert reader() == Path(tmp_path / ".abs")

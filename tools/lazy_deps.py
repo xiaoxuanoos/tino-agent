@@ -1,9 +1,9 @@
-"""Lazy dependency installer for opt-in Hermes backends.
+"""Lazy dependency installer for opt-in Tino backends.
 
 Backends call :func:`ensure(feature)` on first import; missing packages are installed into the
 active venv (or the durable target) unless ``security.allow_lazy_installs: false``, in which
 case :class:`FeatureUnavailable` carries a remediation hint. Security model: venv-scoped
-(never system Python); durable-target mode (``HERMES_LAZY_INSTALL_TARGET``, sealed images)
+(never system Python); durable-target mode (``TINO_LAZY_INSTALL_TARGET``, sealed images)
 APPENDS the target to ``sys.path`` so core site-packages wins every collision and a lazy
 package can only add modules, never shadow core; PyPI-by-name specs only (``_spec_is_safe``);
 ``ensure`` accepts only the :data:`LAZY_DEPS` allowlist; failures surface pip's stderr, no retry.
@@ -75,7 +75,7 @@ LAZY_DEPS: dict[str, tuple[str, ...]] = {
     # SILK voice-note decoding (WeChat/QQ); silk-v3 codec binding.
     "stt.silk": ("pilk==0.2.4",),
 
-    # ─── Wake word ("Hey Hermes") engines (sync with the `wake` extra) ──────
+    # ─── Wake word ("hey tino") engines (sync with the `wake` extra) ──────
     # openWakeWord's ONNX model scores ~0 on macOS ARM64, so macOS uses the tflite backend
     # (ai-edge-litert, bridged in tools/wake_word.py). Separate feature because specs cannot
     # carry PEP 508 markers (";" is rejected) — the caller applies the platform gate.
@@ -244,7 +244,7 @@ class _InstallResult:
 
 # Internal bridge var (set by the Docker image, not user config) redirecting lazy installs from the
 # sealed venv to a writable durable volume.
-_LAZY_TARGET_ENV = "HERMES_LAZY_INSTALL_TARGET"
+_LAZY_TARGET_ENV = "TINO_LAZY_INSTALL_TARGET"
 # Stamp of the Python X.Y + ABI the target was populated for; a mismatch after an image rebuild
 # wipes the store so stale .so files are never imported.
 _TARGET_STAMP_NAME = ".python-abi"
@@ -324,7 +324,7 @@ def activate_durable_lazy_target() -> None:
 
 def _allow_lazy_installs() -> bool:
     """Whether lazy installs are permitted: (1) ``security.allow_lazy_installs: false`` blocks in BOTH
-    modes; (2) the sealed venv (``HERMES_DISABLE_LAZY_INSTALLS=1``) blocks only without a durable
+    modes; (2) the sealed venv (``TINO_DISABLE_LAZY_INSTALLS=1``) blocks only without a durable
     target to redirect into. Unreadable config fails OPEN — blocking is an explicit opt-in."""
     cfg = None
     with contextlib.suppress(Exception):
@@ -332,7 +332,7 @@ def _allow_lazy_installs() -> bool:
         cfg = load_config()
     if cfg is not None and not bool((cfg.get("security") or {}).get("allow_lazy_installs", True)):
         return False
-    if os.environ.get("HERMES_DISABLE_LAZY_INSTALLS") == "1":
+    if os.environ.get("TINO_DISABLE_LAZY_INSTALLS") == "1":
         return _lazy_install_target() is not None
     return True
 
@@ -341,7 +341,7 @@ def _unsupported_feature_reason(feature: str) -> Optional[str]:
     """Platform capability gate (not policy): why a feature cannot work on this host, or None."""
     if sys.platform == "win32" and feature == "platform.matrix":
         return ("unsupported on Windows: Matrix E2EE depends on python-olm, which has no Windows wheel and "
-                "requires make + libolm to build from sdist. Run Hermes under WSL to use Matrix on Windows.")
+                "requires make + libolm to build from sdist. Run Tino under WSL to use Matrix on Windows.")
     return None
 
 
@@ -529,7 +529,7 @@ def _run_installer(cmd: list[str], **kw) -> subprocess.CompletedProcess:
 
 
 def _uv_binary() -> Optional[str]:
-    """Managed uv first ($HERMES_HOME/bin is never on PATH), then PATH. A lookup, not ensure_uv():
+    """Managed uv first ($TINO_HOME/bin is never on PATH), then PATH. A lookup, not ensure_uv():
     downloading uv mid-turn is more than the caller asked for; pip covers no-uv."""
     try:
         from hermes_cli.managed_uv import resolve_uv
@@ -562,7 +562,7 @@ def _venv_pip_install(specs: tuple[str, ...], *, timeout: int = 300, constraint_
     ``--target`` (constrained to core versions) when :data:`_LAZY_TARGET_ENV` is set. Independent of
     ``hermes_cli.tools_config._pip_install`` (no CLI dependency).
 
-    *constraint_lines* pins the resolver (plugin installs pass Hermes' own declared ranges so a plugin
+    *constraint_lines* pins the resolver (plugin installs pass Tino's own declared ranges so a plugin
     can never move a core package out of range); *dry_run* resolves without installing."""
     if not specs:
         return _InstallResult(True, "", "")
@@ -681,8 +681,8 @@ def ensure(feature: str, *, prompt: bool = True) -> None:
             raise FeatureUnavailable(
                 feature, missing,
                 f"unsupported on {managed_by}-managed installs: this build's packages come from {managed_by}, "
-                f"so Hermes cannot install them at runtime. Add the dependencies for {feature!r} via "
-                f"{managed_by} (or run a pip/uv install of Hermes instead).")
+                f"so Tino cannot install them at runtime. Add the dependencies for {feature!r} via "
+                f"{managed_by} (or run a pip/uv install of Tino instead).")
     for spec in missing:  # belt and braces on top of the allowlist
         if not _spec_is_safe(spec):
             raise FeatureUnavailable(feature, missing, f"refusing to install unsafe spec {spec!r}")
@@ -747,9 +747,9 @@ def install_specs(specs: list[str] | tuple[str, ...], *, timeout: int = 300,
             return InstallSpecsResult(ok=False, blocked=True, reason=f"refusing to install unsafe spec {spec!r}")
     target = _lazy_install_target()
     if not _allow_lazy_installs():
-        sealed = os.environ.get("HERMES_DISABLE_LAZY_INSTALLS") == "1" and target is None
+        sealed = os.environ.get("TINO_DISABLE_LAZY_INSTALLS") == "1" and target is None
         reason = ("runtime installs are disabled on this deployment: the agent environment is immutable "
-                  "and no writable install target is configured (HERMES_LAZY_INSTALL_TARGET)"
+                  "and no writable install target is configured (TINO_LAZY_INSTALL_TARGET)"
                   ) if sealed else "runtime installs disabled (security.allow_lazy_installs=false)"
         return InstallSpecsResult(ok=False, blocked=True, reason=reason)
     display = "uv pip install " + (f"--target {target} " if target is not None else "") + " ".join(cleaned)

@@ -26,7 +26,7 @@ class _FakeDB:
 
 def test_search_sessions_exposes_last_active_column(tmp_path, monkeypatch):
     # End-to-end: SessionDB must surface last_active and order by MRU.
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("TINO_HOME", str(tmp_path))
     monkeypatch.setattr("pathlib.Path.home", lambda: tmp_path)
 
     import hermes_state
@@ -103,7 +103,7 @@ class _WorkspaceAwareDB:
 def test_resolve_last_session_real_db_prefers_workspace(monkeypatch, tmp_path):
     # End-to-end through the real SessionDB + _resolve_last_session: -c from
     # repo A picks repo A's session even though repo B is globally newer.
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("TINO_HOME", str(tmp_path))
     monkeypatch.setattr("pathlib.Path.home", lambda: tmp_path)
 
     import hermes_state
@@ -138,7 +138,7 @@ def test_resolve_last_session_real_db_prefers_workspace(monkeypatch, tmp_path):
 def test_resolve_last_session_cli_continues_a_oneshot(monkeypatch, tmp_path):
     """`hermes -z … --resume latest` / `hermes -c` chain on the previous one-shot: its distinct `oneshot`
     source hides it from pickers but it is still CLI history (#112550)."""
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("TINO_HOME", str(tmp_path))
     monkeypatch.setattr("pathlib.Path.home", lambda: tmp_path)
 
     import hermes_state

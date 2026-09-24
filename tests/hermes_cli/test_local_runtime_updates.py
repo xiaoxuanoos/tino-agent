@@ -18,7 +18,7 @@ import pytest
 def hermes_home(tmp_path, monkeypatch):
     home = tmp_path / ".hermes"
     home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("TINO_HOME", str(home))
     return home
 
 
@@ -44,7 +44,7 @@ def test_installed_tags_newest_first(hermes_home):
 
 
 def test_default_tag_flows_from_default_config(hermes_home):
-    """Unpinned users inherit the Hermes-release default (deep-merge);
+    """Unpinned users inherit the Tino-release default (deep-merge);
     the shipped default must be a plausible rolling tag."""
     from hermes_cli.config import load_config
     from hermes_cli.config_defaults import DEFAULT_CONFIG

@@ -2201,9 +2201,9 @@ $selectedStoredSessionId.listen(selected => {
   revealTreePane('workspace')
 })
 
-// Dev hook for automation (mirrors __HERMES_LAYOUT_TREE__).
+// Dev hook for automation (mirrors __TINO_LAYOUT_TREE__).
 if ((import.meta.env.DEV || import.meta.env.VITE_PERF_PROBE === '1') && typeof window !== 'undefined') {
-  ;(window as unknown as Record<string, unknown>).__HERMES_SESSION_TILES__ = {
+  ;(window as unknown as Record<string, unknown>).__TINO_SESSION_TILES__ = {
     close: closeSessionTile,
     drop: dropSessionState,
     open: openSessionTile,

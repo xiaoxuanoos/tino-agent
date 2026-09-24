@@ -17,13 +17,13 @@ import urllib.request
 from pathlib import Path
 from typing import Any
 
-from hermes_cli import __version__ as _HERMES_VERSION
+from hermes_cli import __version__ as _TINO_VERSION
 from utils import atomic_json_write
 
 logger = logging.getLogger(__name__)
 
 DEFAULT_CATALOG_URL = (
-    "https://hermes-agent.nousresearch.com/docs/api/model-catalog.json")
+    "website/docs/api/model-catalog.json")
 # The Docusaurus site sits behind Vercel, which occasionally 403s non-browser clients (bot
 # challenge); the raw GitHub copy is the same manifest and is not bot-gated.
 DEFAULT_CATALOG_FALLBACK_URLS: tuple[str, ...] = (
@@ -35,7 +35,7 @@ DEFAULT_TTL_HOURS = DEFAULT_TTL_MINUTES / 60.0
 DEFAULT_FETCH_TIMEOUT = 8.0
 SUPPORTED_SCHEMA_VERSION = 1
 
-_HERMES_USER_AGENT = f"hermes-cli/{_HERMES_VERSION}"
+_TINO_USER_AGENT = f"hermes-cli/{_TINO_VERSION}"
 
 # In-process cache, invalidated against the disk file's path + mtime and TTL. The path matters:
 # under a multiplexed gateway each profile has its own ``<home>/cache/model_catalog.json``, and
@@ -87,7 +87,7 @@ def _cache_path() -> Path:
 def _fetch_manifest(url: str, timeout: float) -> dict[str, Any] | None:
     """HTTP GET the manifest URL and return a validated dict, or None on failure."""
     try:
-        req = urllib.request.Request(url, headers={"Accept": "application/json", "User-Agent": _HERMES_USER_AGENT})
+        req = urllib.request.Request(url, headers={"Accept": "application/json", "User-Agent": _TINO_USER_AGENT})
         with urllib.request.urlopen(req, timeout=timeout) as resp:
             data = json.loads(resp.read().decode())
     except (urllib.error.URLError, TimeoutError, json.JSONDecodeError, OSError) as exc:
@@ -307,7 +307,7 @@ def _default_model_from_block(block: dict[str, Any] | None) -> str | None:
 
 
 def get_default_model_from_cache(provider: str) -> str | None:
-    """The manifest's labeled default for ``provider`` (the model Hermes silently lands on when the
+    """The manifest's labeled default for ``provider`` (the model Tino silently lands on when the
     user never picked one) — in-process then disk cache only, never a fetch."""
     cached = _in_process_catalog()
     found = _default_model_from_block(_block_of(cached, provider)) if cached is not None else None

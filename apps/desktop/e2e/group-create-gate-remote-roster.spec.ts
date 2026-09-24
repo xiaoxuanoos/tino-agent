@@ -92,7 +92,7 @@ async function startRemoteGateway(root: string, mockUrl: string, profiles: strin
   const child: ChildProcess = spawn(hermes.bin, [...hermes.args, 'serve', '--host', '127.0.0.1', '--port', String(port), '--skip-build'], {
     cwd: REPO_ROOT,
     detached: true,
-    env: { ...process.env, HERMES_HOME: home, HERMES_DASHBOARD_SESSION_TOKEN: REMOTE_TOKEN, PYTHONPATH: REPO_ROOT },
+    env: { ...process.env, TINO_HOME: home, TINO_DASHBOARD_SESSION_TOKEN: REMOTE_TOKEN, PYTHONPATH: REPO_ROOT },
     stdio: ['ignore', 'pipe', 'pipe'],
   })
 
@@ -107,7 +107,7 @@ async function startRemoteGateway(root: string, mockUrl: string, profiles: strin
     }
 
     try {
-      const response = await fetch(`${url}/api/status`, { headers: { 'X-Hermes-Session-Token': REMOTE_TOKEN } })
+      const response = await fetch(`${url}/api/status`, { headers: { 'X-Tino-Session-Token': REMOTE_TOKEN } })
 
       if (response.ok) {
         break
@@ -208,7 +208,7 @@ test.describe('New Group Chat gate — one local bot plus remote-connection bots
 
     const dialog = page.getByRole('dialog', { name: 'New Group Chat' })
     await expect(dialog).toBeVisible()
-    await dialog.getByText('Hermes', { exact: true }).first().locator('xpath=ancestor::label').getByRole('checkbox').click()
+    await dialog.getByText('Tino', { exact: true }).first().locator('xpath=ancestor::label').getByRole('checkbox').click()
     await dialog.getByText('Inbox', { exact: true }).first().locator('xpath=ancestor::label').getByRole('checkbox').click()
     await expect(dialog.getByRole('button', { name: 'Create Group (2)' })).toBeEnabled()
     await page.screenshot({ path: `${SHOTS}/group-create-gate-dialog.png` })

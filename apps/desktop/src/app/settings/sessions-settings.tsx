@@ -308,7 +308,7 @@ function AutoArchiveSetting() {
 
 // Lets the user pin the default cwd for new sessions. Without this, packaged
 // builds on Windows used to spawn sessions in the install dir (`win-unpacked`
-// / Program Files), which buried any files Hermes wrote there.
+// / Program Files), which buried any files Tino wrote there.
 function DefaultProjectDirSetting() {
   const { t } = useI18n()
   const s = t.settings.sessions

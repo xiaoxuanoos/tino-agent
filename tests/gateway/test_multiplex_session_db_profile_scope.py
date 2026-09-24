@@ -45,7 +45,7 @@ from hermes_constants import (
 
 @pytest.fixture
 def multiplex_homes(tmp_path, monkeypatch):
-    """A root home plus a named profile home, with HERMES_HOME on the root.
+    """A root home plus a named profile home, with TINO_HOME on the root.
 
     Mirrors the reported layout: one gateway process launched under the root
     home, serving a ``fitness`` profile whose store lives under
@@ -58,7 +58,7 @@ def multiplex_homes(tmp_path, monkeypatch):
     root.mkdir(parents=True)
     profile.mkdir(parents=True)
     (profile / "config.yaml").write_text("{}\n", encoding="utf-8")  # identity marker: a bare dir is not a profile
-    monkeypatch.setenv("HERMES_HOME", str(root))
+    monkeypatch.setenv("TINO_HOME", str(root))
 
     # The suite-wide fixture in conftest re-points ``hermes_state.DEFAULT_DB_PATH``
     # at a fake home, which trips the deliberate escape hatch in
@@ -67,7 +67,7 @@ def multiplex_homes(tmp_path, monkeypatch):
     # want one fixed DB, but it would pin every lookup here to a single path
     # and make these assertions vacuous.  Restore the import-time snapshot so
     # the hatch is closed and resolution goes through ``get_hermes_home()``,
-    # which is what production does.  ``HERMES_HOME`` above still keeps that
+    # which is what production does.  ``TINO_HOME`` above still keeps that
     # resolution inside ``tmp_path``, so no real store is ever opened.
     monkeypatch.setattr(
         hermes_state, "DEFAULT_DB_PATH", hermes_state._IMPORT_DEFAULT_DB_PATH
