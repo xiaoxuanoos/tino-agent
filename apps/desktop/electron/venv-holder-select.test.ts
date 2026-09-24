@@ -20,7 +20,7 @@ test('matches the hindsight daemon shim (exe under venv Scripts + hindsight cmdl
 test('Windows path prefix match is ordinal case-insensitive', () => {
   assert.equal(
     isHermesOwnedVenvDaemon(
-      'c:\\hermes\\venv\\scripts\\python.exe',
+      'c:\\tino\\venv\\scripts\\python.exe',
       'python.exe -m hindsight_api.main --daemon',
       'C:\\Tino\\venv\\Scripts'
     ),

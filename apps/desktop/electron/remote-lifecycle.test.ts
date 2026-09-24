@@ -569,7 +569,7 @@ test('pidIsOurDashboard accepts the venv entrypoint an installer wrapper execs i
     await pidIsOurDashboard(ssh, 5, SPAWN_NONCE, '~/.local/bin/hermes', '/Users/cd9c/.hermes', OWNERSHIP_ID, 'ops'),
     true
   )
-  assert.match(ownershipProbe, /hermes-agent.*venv.*bin.*hermes/)
+  assert.match(ownershipProbe, /hermes-agent.*venv.*bin.*tino/)
   assert.match(ownershipProbe, /desktop-ssh.*0123456789abcdef\.token/)
   assert.match(ownershipProbe, /expected_profile=.*ops/)
 })

@@ -95,7 +95,7 @@ function resolveRemovableAppPath(execPath, platform, env: any = {}) {
     // NSIS per-user installs Tino.exe directly in the install dir.
     const dir = p.dirname(exe)
 
-    if (/[\\/]Hermes$/i.test(dir) || /[\\/]hermes-desktop$/i.test(dir)) {
+    if (/[\\/](?:Tino Agent|Tino|Hermes)$/i.test(dir) || /[\\/]hermes-desktop$/i.test(dir)) {
       return dir
     }
 

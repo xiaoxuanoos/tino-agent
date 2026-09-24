@@ -81,6 +81,10 @@ test('resolveRemovableAppPath: dev-run .app resolves (safety is shouldRemoveAppB
 
 test('resolveRemovableAppPath finds the install dir on Windows', () => {
   assert.equal(
+    resolveRemovableAppPath('C:\\Users\\x\\AppData\\Local\\Programs\\Tino Agent\\Tino Agent.exe', 'win32'),
+    'C:\\Users\\x\\AppData\\Local\\Programs\\Tino Agent'
+  )
+  assert.equal(
     resolveRemovableAppPath('C:\\Users\\x\\AppData\\Local\\Programs\\Tino\\Tino.exe', 'win32'),
     'C:\\Users\\x\\AppData\\Local\\Programs\\Tino'
   )
