@@ -607,6 +607,37 @@ def _is_shallow_checkout(git_cmd) -> bool:
     return _git_run(git_cmd, ["rev-parse", "--is-shallow-repository"]).stdout.strip() == "true"
 
 
+def _connect_shallow_update_history(git_cmd, branch: str, *, local_ref: str = "HEAD") -> None:
+    """Undo a depth-1 check's graft before deciding whether an update diverged.
+
+    ``update --check`` fetches only the remote tip. Git then records that tip in
+    ``.git/shallow`` even when its parent is our HEAD, so a later plain fetch
+    cannot fast-forward and ``merge-base`` falsely reports unrelated histories.
+    Fetch a bounded amount of ancestry; if it still cannot be established,
+    leave the checkout alone rather than guessing that a reset is safe.
+    """
+    if not _is_shallow_checkout(git_cmd):
+        return
+    target = f"origin/{branch}"
+    if _git_run(git_cmd, ["merge-base", local_ref, target]).returncode == 0:
+        return
+    print("→ Verifying shallow Git history before updating...")
+    for depth in (1, 32, 256):
+        fetched = _git_run(
+            git_cmd, ["fetch", f"--deepen={depth}", "origin", branch], network=True)
+        if fetched.returncode != 0:
+            print("✗ Could not deepen Git history; no local commits were reset.")
+            _print_fetch_failure(fetched.stderr)
+            sys.exit(1)
+        if _git_run(git_cmd, ["merge-base", local_ref, target]).returncode == 0:
+            return
+        if not _is_shallow_checkout(git_cmd):
+            break
+    print("✗ Cannot verify the update's ancestry; no local commits were reset.")
+    print(f"  Inspect the branch before retrying: git log --oneline --left-right {local_ref}...{target}")
+    sys.exit(1)
+
+
 def _tip_shas(git_cmd, target_ref: str) -> tuple[str, str]:
     """``(HEAD sha, <target_ref> sha)`` as printed by rev-parse ("" when unresolvable)."""
     return tuple(_git_run(git_cmd, ["rev-parse", ref]).stdout.strip() for ref in ("HEAD", target_ref))
@@ -772,9 +803,8 @@ def _repair_current_checkout(
     return current_checkout_complete
 
 
-def _reconcile_diverged_checkout(git_cmd, branch: str, pre_pull_sha) -> None:
-    """Fast-forward failed: merge on a custom branch (local commits survive) or reset --hard on the
-    same branch (rescue ref first when histories share no ancestor). ``sys.exit(1)`` on failure."""
+def _reconcile_diverged_checkout(git_cmd, branch: str, pre_pull_sha, *, merge_failure=None) -> None:
+    """Handle a failed fast-forward without discarding commits or working-tree files."""
     # A custom branch (local commits atop origin/<branch>) also can't ff, and reset --hard
     # would discard that work: merge instead, stop on conflict.
     _cur_branch = (_git_run(git_cmd, ["branch", "--show-current"]).stdout or "").strip()
@@ -791,36 +821,30 @@ def _reconcile_diverged_checkout(git_cmd, branch: str, pre_pull_sha) -> None:
             print("  Then re-run the update. Local work is untouched.")
             sys.exit(1)
         return
-    # Same branch: a true upstream force-push/rebase; local changes are stashed, so reset.
-    # Orphan divergence (no common ancestor: corrupted HEAD, re-init) would lose the whole
-    # local graph, so park pre_pull_sha behind a rescue ref first.
-    merge_base_result = _git_run(git_cmd, ["merge-base", "HEAD", f"origin/{branch}"])
-    has_common_ancestor = merge_base_result.returncode == 0 and merge_base_result.stdout.strip()
-    if not has_common_ancestor and pre_pull_sha:
-        from datetime import datetime as _dt, timezone
-        # SHA suffix so two updates in the same second get distinct refs.
-        rescue_ref = (
-            f"refs/hermes-update-backups/orphan-{branch}-"
-            f"{_dt.now(timezone.utc).strftime('%Y%m%d-%H%M%S')}-{pre_pull_sha[:12]}")
-        head = f"  ⚠ Local history shares no common ancestor with origin/{branch} (orphan divergence) — "
-        if _git_run(git_cmd, ["update-ref", rescue_ref, pre_pull_sha]).returncode == 0:
-            print(
-                f"{head}backed up current HEAD to {rescue_ref} before resetting. "
-                f"This backup expires after {_ORPHAN_RESCUE_REF_MAX_AGE_DAYS} days.")
-        else:
-            # update-ref failure is intentionally non-fatal, but never claim a backup exists.
-            print(
-                f"{head}attempted to back up current HEAD to {rescue_ref} before resetting, "
-                f"but the backup write failed (pre-reset SHA was {pre_pull_sha}).")
-        _prune_orphan_rescue_refs(git_cmd, _m().PROJECT_ROOT, branch)
-    print("  ⚠ Fast-forward not possible (history diverged), resetting to match remote...")
-    reset_result = _git_run(git_cmd, ["reset", "--hard", f"origin/{branch}"])
-    if reset_result.returncode != 0:
-        print(f"✗ Failed to reset to origin/{branch}.")
-        if reset_result.stderr.strip():
-            print(f"  {reset_result.stderr.strip()}")
-        print(f"  Try manually: git fetch origin && git reset --hard origin/{branch}")
+    # A depth-1 check can make already-published commits appear local, so the
+    # shallow history must be connected before this comparison.
+    local_only = _git_run(git_cmd, ["rev-list", "--count", f"origin/{branch}..HEAD"])
+    local_count = (local_only.stdout or "").strip()
+    if local_only.returncode != 0 or not local_count.isdecimal():
+        print("✗ Could not verify local commits; update stopped without resetting the branch.")
         sys.exit(1)
+    if int(local_count) > 0:
+        print(
+            f"✗ Update stopped: {local_count} local commit(s) are not on origin/{branch}. "
+            "No commits were reset."
+        )
+        print(f"  Review them with: git log --oneline origin/{branch}..HEAD")
+        print("  Push or merge your local commits, then retry the update.")
+        sys.exit(1)
+    # Zero local-only commits do not make a hard reset safe: the merge may have
+    # failed because an untracked file would be overwritten, or because of an
+    # I/O/lock error. A genuine force-push has local-only commits. In both
+    # cases the user must resolve the failure explicitly.
+    print(f"✗ Could not fast-forward to origin/{branch}; no commits or files were reset.")
+    if merge_failure is not None and (merge_failure.stderr or "").strip():
+        print(f"  Git reported: {merge_failure.stderr.strip().splitlines()[0]}")
+    print("  Inspect `git status` and resolve the Git error before retrying.")
+    sys.exit(1)
 
 
 def _rollback_if_pulled_syntax_error(git_cmd, pre_pull_sha) -> None:
@@ -868,8 +892,9 @@ def _pull_updates(
     try:
         # merge --ff-only the already-fetched ref instead of `git pull`, which would do a
         # SECOND network fetch; identical in effect given the fresh tracking ref.
-        if _git_run(git_cmd, ["merge", "--ff-only", f"origin/{branch}"]).returncode != 0:
-            _reconcile_diverged_checkout(git_cmd, branch, pre_pull_sha)
+        merge_result = _git_run(git_cmd, ["merge", "--ff-only", f"origin/{branch}"])
+        if merge_result.returncode != 0:
+            _reconcile_diverged_checkout(git_cmd, branch, pre_pull_sha, merge_failure=merge_result)
         _rollback_if_pulled_syntax_error(git_cmd, pre_pull_sha)
         update_succeeded = True
     finally:
@@ -1636,6 +1661,16 @@ def _cmd_update_impl(args, gateway_mode: bool):
             sys.exit(1)
 
         current_branch = _current_branch_name(git_cmd, check=True)
+        # Verify shallow ancestry before checkout preparation stashes local
+        # edits. For a parked branch, compare the local target branch (when
+        # present), not unrelated work on HEAD. A missing local target is
+        # handled by the normal checkout-from-origin path below.
+        if current_branch == branch:
+            _connect_shallow_update_history(git_cmd, branch)
+        elif _git_run(
+            git_cmd, ["rev-parse", "--verify", "--quiet", f"refs/heads/{branch}"]
+        ).returncode == 0:
+            _connect_shallow_update_history(git_cmd, branch, local_ref=f"refs/heads/{branch}")
         _plan = _prepare_checkout_for_update(
             git_cmd, branch, current_branch, is_fork=is_fork, assume_yes=assume_yes,
             gateway_mode=gateway_mode, gw_input_fn=gw_input_fn, switch_branch=opts.switch_branch,
