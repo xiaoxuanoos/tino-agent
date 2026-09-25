@@ -58,3 +58,10 @@ python3 scripts/tino_auto_commit.py \
 确实存在源码、虚拟环境及 `.tino-runtime/home` 时才继续使用原隔离聊天与设置；
 不要单独把 `.app` 复制到其他位置后启动。切换后检查 Git 工作树是否干净、
 `codesign --verify --deep --strict` 是否通过、后端是否仍打开原 `.tino-runtime/home/state.db`。
+
+## GitHub 源码预发布
+
+预发布标签应指向 `custom/tino-agent`，而不是尚未切换的默认 `main` 分支。
+当前 macOS 本地构建只有 ad-hoc 签名、尚未经过 Apple 公证；GitHub 的源码归档可供开发者检出，
+但不要把本机 `.app` 宣称为公众可直接安装的正式桌面包。正式二进制发行需先配置 Developer ID、
+完成公证并在干净机器上验证安装与首次启动。
