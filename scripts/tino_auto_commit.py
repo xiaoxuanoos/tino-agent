@@ -10,6 +10,7 @@ from pathlib import Path, PurePosixPath
 import re
 import subprocess
 import sys
+import time
 
 
 SENSITIVE = re.compile(r"(^|/)(\.env(?:\..*)?|auth\.json|credentials?[^/]*|.*(?:secret|token|password|private)[^/]*|id_rsa|\.tino-runtime)(/|$)|\.(?:pem|p12|pfx|key)$", re.I)
@@ -36,6 +37,19 @@ def validate_file(repo: Path, name: str) -> None:
 def git_files(repo: Path, *args: str) -> set[str]:
     output = subprocess.run(["git", *args, "-z"], cwd=repo, check=True, capture_output=True).stdout
     return {os.fsdecode(name) for name in output.split(b"\0") if name}
+
+
+def push_commit(repo: Path, branch: str) -> None:
+    """Retry one transient push failure; the operation is non-forcing and idempotent."""
+    command = ("git", "push", "origin", f"HEAD:refs/heads/{branch}")
+    for attempt in range(2):
+        try:
+            run(repo, *command)
+            return
+        except subprocess.CalledProcessError:
+            if attempt:
+                raise
+            time.sleep(1)
 
 
 def commit(repo: Path, repository: str, paths: list[str], tests: list[str], message: str, push: bool = False) -> str:
@@ -81,7 +95,7 @@ def commit(repo: Path, repository: str, paths: list[str], tests: list[str], mess
     revision = run(repo, "git", "rev-parse", "HEAD")
     if push:
         branch = run(repo, "git", "symbolic-ref", "--short", "HEAD")
-        run(repo, "git", "push", "origin", f"HEAD:refs/heads/{branch}")
+        push_commit(repo, branch)
     return revision
 
 
@@ -97,7 +111,12 @@ def main() -> int:
     try:
         print(commit(args.repo, args.repository, args.path, args.test_path, args.message, args.push))
         return 0
-    except (OSError, ValueError, subprocess.CalledProcessError) as error:
+    except subprocess.CalledProcessError as error:
+        print(f"Tino auto-commit stopped: command exited {error.returncode}.", file=sys.stderr)
+        if isinstance(error.cmd, (tuple, list)) and tuple(error.cmd[:2]) == ("git", "push"):
+            print("The local commit was kept. After checking Git access, retry with `git push origin HEAD`.", file=sys.stderr)
+        return 1
+    except (OSError, ValueError) as error:
         print(f"Tino auto-commit stopped: {error}", file=sys.stderr)
         return 1
 
