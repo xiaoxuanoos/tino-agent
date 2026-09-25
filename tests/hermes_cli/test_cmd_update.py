@@ -1483,7 +1483,7 @@ class TestUpdateNodeDependencies:
     @patch("subprocess.run")
     @patch("shutil.which", return_value="/usr/bin/npm")
     def test_skips_install_when_deps_up_to_date(self, _which, mock_run, tmp_path, monkeypatch):
-        """When _npm_lockfile_changed reports no change, npm must not be called."""
+        """Source-only updates must skip npm and the potentially slow npx warm-up."""
         from hermes_cli import main as hm
 
         (tmp_path / "package.json").write_text("{}")
@@ -1491,11 +1491,15 @@ class TestUpdateNodeDependencies:
         monkeypatch.setattr(hm, "PROJECT_ROOT", tmp_path)
         monkeypatch.setattr(hm, "_npm_lockfile_changed", lambda root: False)
 
-        update_cmd._update_node_dependencies()
+        with patch(
+            "tools.browser_tool_install.warm_agent_browser_npx_cache"
+        ) as mock_warm:
+            update_cmd._update_node_dependencies()
 
         assert not self._npm_calls(mock_run), (
             "npm must not run when _npm_lockfile_changed reports no change"
         )
+        mock_warm.assert_not_called()
 
     @patch("subprocess.Popen")
     @patch("shutil.which", return_value="/usr/bin/npm")

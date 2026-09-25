@@ -653,18 +653,19 @@ def _update_node_dependencies() -> list[str]:
     # node_modules is shared by every profile on this checkout: one per-checkout cache.
     shared_hermes_root = get_default_hermes_root()
 
-    # Best-effort npx cache warm before the lockfile-unchanged early return. Can block
-    # ~11s on a cold cache — print first so it doesn't look like a hang.
-    # Runs before the lockfile-unchanged early return below since that's the common `hermes update` case.
-    # See #43564.
+    if not _m()._npm_lockfile_changed(shared_hermes_root):
+        # A source-only update must not block on a best-effort npx registry lookup.
+        # The browser tool still resolves agent-browser lazily on first use.
+        logger.info("npm lockfile unchanged, skipping npm install")
+        return []
+
+    # Warm the browser cache when Node dependencies actually need refreshing.
+    # This can take up to 60s on a slow registry, so do not repeat it on every
+    # source-only desktop update. See #43564.
     print("→ Warming npx cache for agent-browser...")
     with suppress(Exception):
         from tools.browser_tool_install import warm_agent_browser_npx_cache
         warm_agent_browser_npx_cache()
-
-    if not _m()._npm_lockfile_changed(shared_hermes_root):
-        logger.info("npm lockfile unchanged, skipping npm install")
-        return []
 
     # Root package.json has no deps of its own, so a workspace-scoped install prunes nothing
     # root-only. apps/desktop is deliberately never named: its Electron devDependency has a
